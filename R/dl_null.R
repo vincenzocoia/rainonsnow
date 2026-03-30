@@ -18,5 +18,5 @@ dl_null <- function(data = NULL) {
 #' @export
 predict.dl_null <- function(object, newdata, ...) {
   n <- nrow(newdata)
-  rep(distionary::dst_null(), n)
+  rep(list(distionary::dst_null()), n)
 }
