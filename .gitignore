@@ -1,3 +1,7 @@
 __pycache__/
 cache/
 .DS_Store
+deprecated/*
+.Rproj.user
+Data/*
+.Rproj

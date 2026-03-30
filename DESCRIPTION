@@ -1,0 +1,39 @@
+Package: rainonsnow
+Type: Package
+Title: Functions for the rain-on-snow research project
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Vincenzo", "Coia",
+      email = "vincenzo.coia@gmail.com",
+      role = c("aut", "cre", "cph")
+    )
+  )
+Description: Provides modelling and predict functions for distributional
+  learning models, often wrapping existing methods to work with the
+  probaverse. Intended to be used for the ESA-Polimi cofunded research
+  project to predict rain-on-snow flooding.
+License: MIT + file LICENSE
+Imports:
+    checkmate,
+    datasets,
+    distionary,
+    dplyr,
+    ellipsis,
+    graphics,
+    quantregForest,
+    rlang,
+    stats,
+    tibble
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+Roxygen: list(markdown = TRUE)
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+URL: https://github.com/vincenzocoia/alps-data-explorer
+BugReports: https://github.com/vincenzocoia/alps-data-explorer/issues

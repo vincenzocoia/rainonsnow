@@ -1,0 +1,149 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# rainonsnow
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+`rainonsnow` is a research repository for exploring rain-on-snow hydrology in the Alps, focussing on extreme runoff as a consequence.
+
+The repo currently has two main pieces:
+
+- A Python workflow for downloading hourly ERA5-Land variables from Google Earth Engine.
+- An R package plus analysis script for fitting and inspecting distributional learning models on the exported data.
+
+## Current Workflow
+
+1. Download gridded hydroclimate data with `scripts/download_data.py`.
+2. Save the resulting NetCDF file locally.
+3. Analyze the data and fit models from R with `scripts/analyze.r`.
+
+The Python downloader writes `data/era5_land_hourly_alps.nc`, which matches the path used by `scripts/analyze.r`.
+
+## Python Setup
+
+This repository uses `uv` for the Python environment.
+
+```bash
+uv sync
+```
+
+The Python dependencies are declared in `pyproject.toml`.
+
+## Download Data
+
+The downloader script initializes Earth Engine, queries the `ECMWF/ERA5_LAND/HOURLY` image collection for an Alps bounding box, selects a small set of snow, precipitation, temperature, and runoff variables, and exports the result to NetCDF.
+
+Before running it, make sure you have authenticated with Google Earth Engine and that the project in `scripts/download_data.py` is valid for your account:
+
+```bash
+earthengine authenticate
+```
+
+Run the script with:
+
+```bash
+uv run python scripts/download_data.py
+```
+
+## R Setup
+
+The R side of the repository is structured like a package, with source files in `R/`, documentation in `man/`, and package metadata in `DESCRIPTION` and `NAMESPACE`.
+
+Install the required R packages as needed, then load the package locally during development:
+
+```r
+devtools::load_all()
+```
+
+## Run The Analysis
+
+Open `scripts/analyze.r` in R and run it interactively, or source it from an R session.
+
+The script currently:
+
+- Loads the NetCDF file with `terra::rast()`
+- Converts the raster stack into a tabular format
+- Fits a distributional learning model per cell
+- Generates predictions from the fitted models
+
+## R Package Contents
+
+```{r}
+library(rainonsnow)
+library(dplyr)
+```
+
+The R package part of the repository provides a small distributional learning interface for modelling the distribution of a target variable given some predictors.
+
+For a simple workflow, fit a model with `dl_rqforest()` and then call `predict()`, using the `mtcars` dataset from the stats package.
+
+```{r}
+df <- as_tibble(mtcars)
+model <- dl_rqforest(
+  data = df,
+  yname = "hp",
+  xnames = c("wt", "drat", "gear")
+)
+
+df <- mutate(df, distribution = predict(model), .before = everything())
+df
+```
+
+The predictions are distributions. Take a look at the first distribution using the probaverse, for example, and plot its cdf.
+
+```{r}
+plot(df$distribution[[1]], n = 1000)
+```
+
+The package also includes a null model to handle failures gracefully. For example, if you ask for `na_action = "null"` and the training data contain missing values, or if the training fails, `dl_rqforest()` returns a `dl_null` object instead of failing:
+
+```{r}
+df2 <- as_tibble(mtcars)
+df2$wt[2] <- NA_real_
+
+dl_rqforest(
+  data = df2,
+  yname = "hp",
+  xnames = c("wt", "drat", "gear")
+)
+```
+
+Predicting on these objects always returns a null distribution with the number of rows of the data:
+
+```{r}
+predict(dl_null(), newdata = tibble(x = 1:2))
+```
+
+## Repository Layout
+
+```text
+.
+├── R/
+├── man/
+├── scripts/
+│   ├── analyze.r
+│   └── download_data.py
+├── data/
+├── main.py
+├── DESCRIPTION
+├── NAMESPACE
+└── pyproject.toml
+```
+
+## Status
+
+This repository is in an active research/prototyping state, so scripts, paths, and interfaces may change as the workflow evolves.

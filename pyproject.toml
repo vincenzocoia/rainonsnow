@@ -1,0 +1,21 @@
+[project]
+name = "rainonsnow"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "earthengine-api>=1.7.19",
+    "matplotlib>=3.10.8",
+    "netcdf4>=1.7.4",
+    "numpy>=2.4.4",
+    "pandas>=3.0.1",
+    "scipy>=1.17.1",
+    "xarray>=2026.2.0",
+    "xee>=0.0.24",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+]
