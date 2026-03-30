@@ -4,4 +4,4 @@ cache/
 deprecated/*
 .Rproj.user
 Data/*
-.Rproj
+*.Rproj
