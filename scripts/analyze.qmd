@@ -1,0 +1,359 @@
+---
+title: "Rain-on-Snow Distributional Learning Model"
+bibliography: analyze.bib
+format:
+  html:
+    toc: true
+    toc-location: left
+    toc-depth: 3
+---
+
+This document explores a distributional learning model for prediction of gridded runoff from precipitation and snowmelt inputs for a region over the Alps.
+
+## Setup
+
+Load the packages used throughout the analysis and define a simple colour palette for the maps.
+
+```{r}
+library(tidyverse)
+library(probaverse)
+library(terra)
+library(tidyterra)
+devtools::load_all()
+
+# "Vibrant Summer" palette
+# https://coolors.co/palette/ff595e-ffca3a-8ac926-1982c4-6a4c93
+pal <- rev(c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
+```
+
+## Load Data
+
+Read the ERA5-Land NetCDF file and inspect its basic spatial dimensions.
+This dataset was retrieved by the Python script `download_data.py`:
+
+- Data are hourly from 1992-10-05 to 1993-03-31 -- one "winter" period just for exposition purposes.
+The question of "what data should we look at" will come later (albeit soon).
+- The study area is between latitudes 43.0 and 48.5 and longitudes 5.0 and 16.5 -- a box that roughly covers the European Alps.
+- Data are from ERA5-Land. Snow data from ESA has been difficult to obtain; will try again later.
+
+
+```{r}
+ds <- rast(here::here("data", "era5_land_hourly_alps.nc"))
+```
+
+```{r}
+res(ds)
+ncell(ds)
+```
+
+Convert the raster object to a tabular format for tabular workflow, and lengthen by time.
+
+```{r}
+dat <- as_tibble(ds, xy = TRUE) |>
+  pivot_longer(
+    !c(x, y),
+    names_to = c(".value", "hour"),
+    names_pattern = "^(.+)_([0-9]+)$"
+  ) |>
+  mutate(hour = as.numeric(hour))
+```
+
+Deal with the "almost zero" cases.
+
+```{r}
+dat <- mutate(
+  dat,
+  total_precipitation_hourly = if_else(
+    total_precipitation_hourly < 1e-7,
+    0,
+    total_precipitation_hourly
+  ),
+  snowmelt_hourly = if_else(
+    snowmelt_hourly < 1e-7,
+    0,
+    snowmelt_hourly
+  )
+)
+```
+
+A nice tabular dataset is now ready for analysis:
+
+```{r}
+dat
+```
+
+## Exploratory Plots
+
+These plots provide a quick look at the spatial pattern of runoff and its relation to rainfall and snowmelt.
+The basemap is omitted for now.
+
+Spatial runoff at 2 pm on October 5:
+
+```{r}
+dat |>
+  filter(hour == 14) |>
+  ggplot(aes(y, x)) +
+  geom_tile(aes(fill = runoff_hourly)) +
+  scale_fill_gradientn(colours = pal)
+```
+
+Runoff time series by cell (upper-left corner):
+
+```{r}
+dat |>
+  filter(x < 46, y > 15) |>
+  ggplot(aes(hour, runoff_hourly)) +
+  facet_grid(y ~ x) +
+  geom_line()
+```
+
+Runoff vs snowmelt by cell (upper-left corner):
+
+```{r}
+dat |>
+  filter(x < 46, y > 15) |>
+  ggplot(aes(snowmelt_hourly, runoff_hourly)) +
+  facet_grid(y ~ x) +
+  geom_point(alpha = 0.1)
+```
+
+Runoff vs precipitation by cell (upper-left corner).
+We're only using precipitation right now for exposition purposes;
+rainfall is harder to get and is a task for another day.
+
+```{r}
+dat |>
+  filter(x < 46, y > 15) |>
+  ggplot(aes(total_precipitation_hourly, runoff_hourly)) +
+  facet_grid(y ~ x) +
+  geom_point(alpha = 0.1)
+```
+
+## Distributional Learning Model
+
+Fit a distributional random forest model separately at each grid cell.
+
+This method follows quantile regression forests [@meinshausen2006quantile].
+Instead of calculating only the mean at each leaf in the random forest, conditional quantiles are estimated; taken together, these give the full conditional distribution.
+
+Distributional learning wrappers can be found under `R/` in this repository.
+These are needed because the base methods (e.g., `quantregForest::quantregForest()`) are geared towards quantiles, not distributions.
+The [probaverse](https://probaverse.com) is used for the handling of distributions.
+
+```{r}
+models <- dat |>
+  nest(data = !c(x, y)) |>
+  mutate(dl_rqforest = map(
+    data,
+    dl_rqforest,
+    yname = "runoff_hourly",
+    xnames = c("total_precipitation_hourly", "snowmelt_hourly")
+  ))
+
+# Inspect
+models
+```
+
+## Predictions on Training Data
+
+Generate predictive distributions for each hour on record.
+At this stage, we are not concerning ourselves with a holdout set, since this work is for expository purposes at this time.
+
+```{r}
+pred <- models |>
+  mutate(hat = map2(dl_rqforest, data, predict)) |>
+  select(!dl_rqforest) |>
+  unnest(c(data, hat))
+
+# Inspect
+pred
+```
+
+Inspect one fitted predictive distribution directly; here's its CDF, for example:
+
+```{r}
+example_prediction <- pred$hat[[1]]
+plot(example_prediction, n = 1000)
+```
+
+Note that the method employed by Bevacqua et al. [@bevacqua2017compound] forces this distribution to be normal.
+
+Here are its quartiles:
+
+```{r}
+enframe_quantile(example_prediction, at = c(0.25, 0.5, 0.75))
+```
+
+Its mean:
+
+```{r}
+mean(example_prediction)
+```
+
+## P-P Plot
+
+For distributional learning methods, a P-P plot is a way to assess calibration [@coia2017forecasting].
+In other words, could the data have feasibly been drawn from the predictive distributions?
+The closer the points are to the 1:1 line, the better calibrated the model is.
+Anything "off" from this line indicates a tendency for our predictive distributions to, for example, perhaps be too large, too small, or too wide.
+However, this isn't the full picture, because it doesn't reward narrowness of the distribution:
+for instance, the marginal distribution would appear perfectly calibrated, but for a predictive model, is too wide.
+
+```{r}
+pp_data <- pred |>
+  group_by(x, y) |>
+  mutate(
+    p_model = map2_dbl(hat, runoff_hourly, eval_cdf),
+    p_empirical = uscore(p_model)
+  ) |>
+  select(x, y, starts_with("p_"))
+
+ggplot(pp_data, aes(p_empirical, p_model)) +
+  geom_line(aes(group = interaction(x, y)), alpha = 0.1) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", colour = "orange3") +
+  theme_bw()
+```
+
+To include both calibration and narrowness of predictions, the quantile score is a useful measure [@gneiting2011making].
+Get quantiles and quantile scores from probaverse.
+
+```{r}
+qscores_model <- pred |>
+  mutate(
+    df = map(
+      hat,
+      enframe_quantile,
+      at = 1:99 / 100,
+      arg_name = "tau"
+    )
+  ) |>
+  unnest(df) |>
+  group_by(x, y, tau) |>
+  summarise(
+    qscore_model = mean(quantile_score(runoff_hourly, xhat = quantile, tau = tau)),
+    .groups = "drop"
+  )
+
+# Inspect
+qscores_model
+```
+
+On their own, quantile scores do not hold an obvious interpretation.
+They are better when compared against the models obtained from the univariate method -- that is, always predicting the marginal distribution obtained from the univariate data.
+This is just like the calculation of $R^2$, except instead of looking at the reduction of variance, it's the reduction in quantile score. Call this the "skill score".
+
+```{r}
+null_model <- dat |>
+  group_by(x, y) |>
+  summarise(runoff_hourly = list(runoff_hourly), .groups = "drop") |>
+  mutate(marginal = map(runoff_hourly, dst_empirical))
+
+null_quantiles <- null_model |>
+  mutate(
+    df = map(marginal, enframe_quantile, at = 1:99 / 100, arg_name = "tau")
+  ) |>
+  select(!marginal) |>
+  unnest(df)
+
+qscores_null <- null_quantiles |>
+  mutate(
+    qscore_null = pmap_dbl(
+      list(runoff_hourly, quantile, tau),
+      \(y, q, p) mean(quantile_score(y, xhat = q, tau = p))
+    )
+  ) |>
+  select(x, y, tau, qscore_null)
+
+qscores <- left_join(qscores_null, qscores_model, by = c("x", "y", "tau")) |>
+  mutate(skill_score = 1 - qscore_model / qscore_null)
+
+ggplot(qscores, aes(tau, skill_score)) +
+  geom_line(
+    aes(group = interaction(x, y)),
+    alpha = 0.33
+  ) +
+  labs(
+    x = "Quantile Level",
+    title = "Skill Score of Quantile Regression Forest Method"
+  ) +
+  scale_y_continuous("Skill", labels = scales::percent_format()) +
+  theme_bw()
+```
+
+## Marginal Distributions
+
+Unconditional runoff distributions are useful for calculating extreme events like the 100-year or 200-year runoff event.
+The dataset will have to be changed in order to calculate these events, but the process can be demonstrated with these models nonetheless, by [mixing](https://en.wikipedia.org/wiki/Mixture_distribution) all the predictive distributions in each cell.
+This calculates the marginal distribution of runoff, unconditional on the model inputs.
+Calculations are made easy by the probaverse: just use distplyr's `mix()` function.
+
+```{r}
+marginals <- pred |>
+  group_by(x, y) |>
+  summarise(marginal_runoff = list(mix(hat)), .groups = "drop")
+```
+
+Here is an example unconditional distribution (CDF) for one of the cells in the study region.
+
+```{r}
+plot(marginals$marginal_runoff[[4]], n = 1000)
+```
+
+One objective will be to show that, particularly when parametric tails are fit via distributional learning, this estimate of the marginal distribution will surpass that of the univariate method.
+I've seen this in small simulations before, and for a binary view of rain and snowmelt processes ([BGC, 2025](https://www.fraserbasin.bc.ca/_Library/TR_Flood/Coldwater%20and%20Nicola%20Rivers%20FFA%20Final%20Report.pdf)), and suspect it's because the shape of the distribution's tail can be explained by the drivers, rather than simply trying to extrapolate the tail from a univariate view. In practical terms: an extreme runoff becomes expected in the face of a large rainfall and large snowmelt, rather than something that appears to have come from "out of the blue".
+
+## Percentiles Maps
+
+Getting the unconditional distributions is useful for making a map of, say, the 100-year flood (with the appropriate dataset).
+For now, instead, take a look at the 1% and 99% values.
+
+```{r}
+pctl <- marginals |>
+  mutate(
+    df = map(
+      marginal_runoff,
+      enframe_quantile,
+      at = c(0.01, 0.99),
+      arg_name = "tau"
+    )
+  ) |>
+  select(!marginal_runoff) |>
+  unnest(df)
+
+ggplot(pctl, aes(y, x)) +
+  facet_wrap(~ tau, ncol = 2) +
+  geom_tile(aes(fill = quantile)) +
+  theme_void() +
+  scale_fill_gradientn("Percentile:\nHourly Runoff (mm)", colours = pal)
+```
+
+From a more day-to-day prediction standpoint, we can look at the percentiles of the predictive distributions (i.e., the conditional ones), and compare to what was observed.
+Do this for 2 pm on October 5; also compare with the mean predicted runoff (i.e., classical machine learning).
+
+```{r}
+pctl_hr14 <- pred |>
+  filter(hour == 14) |>
+  mutate(
+    runoff_01 = map_dbl(hat, eval_quantile, at = 0.01),
+    runoff_99 = map_dbl(hat, eval_quantile, at = 0.99),
+    runoff_mean = map_dbl(hat, mean),
+  ) |>
+  select(x, y, starts_with("runoff")) |>
+  pivot_longer(
+    starts_with("runoff"),
+    names_to = c(".value", "quantity"),
+    names_sep = "_"
+  ) |>
+  mutate(quantity = case_when(
+    quantity == "01" ~ "1% Percentile",
+    quantity == "99" ~ "99% Percentile",
+    quantity == "mean" ~ "Mean",
+    TRUE ~ "Observed"
+  ))
+
+ggplot(pctl_hr14, aes(y, x)) +
+  facet_wrap(~ quantity, nrow = 2) +
+  geom_tile(aes(fill = runoff)) +
+  theme_void() +
+  scale_fill_gradientn("Hourly Runoff (mm)", colours = pal)
+```
