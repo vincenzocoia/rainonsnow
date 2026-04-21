@@ -6,3 +6,4 @@ deprecated/*
 Data/*
 *.Rproj
 *cache/
+.vscode/*

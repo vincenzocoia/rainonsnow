@@ -82,6 +82,39 @@ The script currently:
 - Fits a distributional learning model per cell
 - Generates predictions from the fitted models
 
+## POT explorer (Shiny)
+
+There is a small interactive app under `apps/pot-explorer/` for
+inspecting **peaks over threshold (POT)** extraction: hourly runoff for
+one grid cell and year, the POT threshold line, and the peak events
+that enter the POT sample. You can pick the cell from a map or from the
+sidebar.
+
+**Prerequisites:** install [shiny](https://shiny.posit.co/), **ggplot2**,
+**dplyr**, **sf**, and **rnaturalearth** if you do not already have them
+(the same kinds of packages used in `scripts/analyze.qmd` for maps).
+
+**Data:** the app reads tabulated hourly series and POT peaks from the
+project `data/` folder:
+
+- `data/era5_land_hourly_alps_all.rds` — produced by
+  `scripts/2-tablify_spatial_eo.r`
+- `data/era5_land_hourly_alps_peaks.rds` — produced by
+  `scripts/3-pot_spatial_eo.r`
+
+Run those scripts first so both files exist (the first load can take a
+while if the hourly RDS is large).
+
+**Launch** from the repository root in R:
+
+``` r
+shiny::runApp("apps/pot-explorer")
+```
+
+The working directory must be the app folder’s parent (`rainonsnow/`),
+which is the usual behaviour when you call `runApp()` with that path
+from an R session whose working directory is the repo root.
+
 ## R Package Contents
 
 ``` r
@@ -178,6 +211,8 @@ predict(dl_null(), newdata = tibble(x = 1:2))
 .
 ├── R/
 ├── man/
+├── apps/
+│   └── pot-explorer/
 ├── scripts/
 │   ├── analyze.r
 │   └── download_data.py
