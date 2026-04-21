@@ -18,6 +18,58 @@ ncell(ds)
 # Turn into a tibble
 ds_tbl <- as_tibble(ds, xy = TRUE)
 
+# The NetCDF stores latitude in `x` and longitude in `y`.
+map_xlim <- range(ds_tbl$y, na.rm = TRUE) + c(-0.5, 0.5)
+map_ylim <- range(ds_tbl$x, na.rm = TRUE) + c(-0.5, 0.5)
+
+map_bbox <- sf::st_bbox(
+  c(
+    xmin = map_xlim[1],
+    xmax = map_xlim[2],
+    ymin = map_ylim[1],
+    ymax = map_ylim[2]
+  ),
+  crs = sf::st_crs(4326)
+)
+
+world_map <- rnaturalearth::ne_countries(
+  scale = 50,
+  returnclass = "sf"
+) |>
+  sf::st_crop(map_bbox)
+
+spatial_basemap <- list(
+  geom_sf(
+    data = world_map,
+    inherit.aes = FALSE,
+    fill = "grey96",
+    color = "grey70",
+    linewidth = 0.2
+  ),
+  coord_sf(
+    xlim = map_xlim,
+    ylim = map_ylim,
+    expand = FALSE
+  ),
+  labs(x = "Longitude", y = "Latitude"),
+  theme_minimal()
+)
+
+spatial_tile_basemap <- list(
+  ggspatial::annotation_map_tile(
+    type = "osm",
+    zoomin = -1,
+    progress = "none"
+  ),
+  coord_sf(
+    xlim = map_xlim,
+    ylim = map_ylim,
+    expand = FALSE
+  ),
+  labs(x = "Longitude", y = "Latitude"),
+  theme_minimal()
+)
+
 # %%
 # Pivot the tibble so that time is its own column
 dat <- ds_tbl |> 
@@ -39,8 +91,16 @@ dat <- mutate(
 # Some plots
 dat |>
   filter(hour == 14) |> 
-  ggplot(aes(x, y)) +
-  geom_tile(aes(fill = runoff_hourly)) +
+  ggplot(aes(y, x)) +
+  spatial_basemap +
+  geom_tile(aes(fill = runoff_hourly), alpha = 0.85) +
+  scale_fill_gradientn(colours = pal)
+
+dat |>
+  filter(hour == 14) |> 
+  ggplot(aes(y, x)) +
+  spatial_tile_basemap +
+  geom_tile(aes(fill = runoff_hourly), alpha = 0.65) +
   scale_fill_gradientn(colours = pal)
 
 dat |> 
@@ -115,10 +175,10 @@ pctl <- marginals |>
   select(!marginal_runoff) |> 
   unnest(df)
 
-ggplot(pctl, aes(x, y)) +
+ggplot(pctl, aes(y, x)) +
+  spatial_basemap +
   facet_wrap(~ tau, ncol = 2) +
-  geom_tile(aes(fill = quantile)) +
-  theme_void() +
+  geom_tile(aes(fill = quantile), alpha = 0.85) +
   scale_fill_gradientn("Percentile:\nHourly Runoff (mm)", colours = pal)
 
 # Map of percentiles on hour 14 vs actual
@@ -142,11 +202,10 @@ pctl_hr14 <- pred |>
     TRUE ~ "Observed"
   ))
 
-ggplot(pctl_hr14, aes(x, y)) +
+ggplot(pctl_hr14, aes(y, x)) +
+  spatial_basemap +
   facet_wrap(~ quantity, nrow = 2) +
-  geom_tile(aes(fill = runoff)) +
-  theme_void() +
-  scale_fill_gradientn(colors = rainbow(n = 5)) +
+  geom_tile(aes(fill = runoff), alpha = 0.85) +
   scale_fill_gradientn("Hourly Runoff (mm)", colours = pal)
 
 # %%

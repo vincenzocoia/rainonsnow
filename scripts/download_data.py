@@ -18,7 +18,8 @@ ee.Initialize(project="alps-data-explorer")
 # Download some ERA5 data
 def download_data():
     ic = ee.ImageCollection("ECMWF/ERA5_LAND/HOURLY").filterDate(
-        "1992-10-05", "1993-03-31"
+        #"1992-10-05", "1993-03-31"
+        "1992-01-01", "1992-12-31"
     )
     alps = ee.Geometry.Rectangle([5.0, 43.0, 16.5, 48.5])
     ds = xr.open_dataset(

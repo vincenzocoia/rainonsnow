@@ -26,95 +26,134 @@ devtools::load_all()
 pal <- rev(c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
 ```
 
-## Load Data
-
-Read the ERA5-Land NetCDF file and inspect its basic spatial dimensions.
-This dataset was retrieved by the Python script `download_data.py`:
-
-- Data are hourly from 1992-10-05 to 1993-03-31 -- one "winter" period just for exposition purposes.
-The question of "what data should we look at" will come later (albeit soon).
-- The study area is between latitudes 43.0 and 48.5 and longitudes 5.0 and 16.5 -- a box that roughly covers the European Alps.
-- Data are from ERA5-Land. Snow data from ESA has been difficult to obtain; will try again later.
-
-
 ```{r}
-ds <- rast(here::here("data", "era5_land_hourly_alps.nc"))
+dat <- read_rds(here::here("data", "era5_land_hourly_alps.rds"))
 ```
 
-```{r}
-res(ds)
-ncell(ds)
-```
-
-Convert the raster object to a tabular format for tabular workflow, and lengthen by time.
+Set up two basemap options for the spatial plots:
+a static vector basemap from Natural Earth and a tile-based basemap from OpenStreetMap.
+The NetCDF stores latitude in `x` and longitude in `y`, so the plotting helpers also convert to the conventional longitude/latitude axes.
 
 ```{r}
-dat <- as_tibble(ds, xy = TRUE) |>
-  pivot_longer(
-    !c(x, y),
-    names_to = c(".value", "hour"),
-    names_pattern = "^(.+)_([0-9]+)$"
-  ) |>
-  mutate(hour = as.numeric(hour))
-```
+map_xlim <- range(dat$y, na.rm = TRUE) + c(-0.5, 0.5)
+map_ylim <- range(dat$x, na.rm = TRUE) + c(-0.5, 0.5)
 
-Deal with the "almost zero" cases.
-
-```{r}
-dat <- mutate(
-  dat,
-  total_precipitation_hourly = if_else(
-    total_precipitation_hourly < 1e-7,
-    0,
-    total_precipitation_hourly
+map_bbox <- sf::st_bbox(
+  c(
+    xmin = map_xlim[1],
+    xmax = map_xlim[2],
+    ymin = map_ylim[1],
+    ymax = map_ylim[2]
   ),
-  snowmelt_hourly = if_else(
-    snowmelt_hourly < 1e-7,
-    0,
-    snowmelt_hourly
-  )
+  crs = sf::st_crs(4326)
+)
+
+world_map <- rnaturalearth::ne_countries(
+  scale = 50,
+  returnclass = "sf"
+) |>
+  sf::st_crop(map_bbox)
+
+spatial_basemap <- list(
+  geom_sf(
+    data = world_map,
+    inherit.aes = FALSE,
+    fill = NA,
+    #color = "grey70",
+    linewidth = 1
+  ),
+  coord_sf(
+    xlim = map_xlim,
+    ylim = map_ylim,
+    expand = FALSE
+  ),
+  labs(x = "Longitude", y = "Latitude"),
+  theme_minimal()
+)
+
+spatial_tile_basemap <- list(
+  ggspatial::annotation_map_tile(
+    type = "osm",
+    zoomin = -1,
+    progress = "none"
+  ),
+  coord_sf(
+    xlim = map_xlim,
+    ylim = map_ylim,
+    expand = FALSE
+  ),
+  labs(x = "Longitude", y = "Latitude"),
+  theme_minimal()
 )
 ```
 
-A nice tabular dataset is now ready for analysis:
-
-```{r}
-dat
-```
 
 ## Exploratory Plots
 
-These plots provide a quick look at the spatial pattern of runoff and its relation to rainfall and snowmelt.
-The basemap is omitted for now.
+Cell IDs overtop of the spatial basemap:
 
-Spatial runoff at 2 pm on October 5:
+```{r}
+dat |> 
+  distinct(cell_id, x, y) |>
+  ggplot(aes(y, x)) +
+  spatial_basemap +
+  geom_tile(fill = "white", colour = "black", alpha = 0.8) +
+  geom_text(aes(label = cell_id), size = 2)
+```
+
+Subset over threshold:
+
+```{r}
+dat_original
+threshold <- function(x) unname(quantile(x, 0.8, na.rm = TRUE))
+dat <- dat_original |>
+  group_by(cell_id, x, y) |> 
+  filter(runoff_hourly > threshold(runoff_hourly)) |> 
+  ungroup()
+```
+
+
+Spatial runoff at 2 pm on October 5 with a Natural Earth basemap:
 
 ```{r}
 dat |>
   filter(hour == 14) |>
   ggplot(aes(y, x)) +
-  geom_tile(aes(fill = runoff_hourly)) +
+  geom_tile(aes(fill = runoff_hourly), alpha = 0.75) +
+  spatial_basemap +
   scale_fill_gradientn(colours = pal)
 ```
+
 
 Runoff time series by cell (upper-left corner):
 
 ```{r}
 dat |>
-  filter(x < 46, y > 15) |>
-  ggplot(aes(hour, runoff_hourly)) +
-  facet_grid(y ~ x) +
-  geom_line()
+  filter(cell_id == 12) |>
+  mutate(
+    date = date_decimal(1992 + hour / 8760),
+    threshold = threshold(runoff_hourly * 1000)
+  ) |> 
+  ggplot(aes(date, runoff_hourly * 1000)) +
+  geom_line(alpha = 0.75) +
+  geom_hline(
+    aes(yintercept = threshold),
+    linetype = "dashed",
+    colour = "red3",
+    size = 1
+  ) +
+  theme_bw() +
+  labs(y = "Hourly Runoff (mm)")
 ```
 
 Runoff vs snowmelt by cell (upper-left corner):
 
 ```{r}
 dat |>
-  filter(x < 46, y > 15) |>
+  filter(cell_id == 39) |>
   ggplot(aes(snowmelt_hourly, runoff_hourly)) +
-  facet_grid(y ~ x) +
-  geom_point(alpha = 0.1)
+  geom_point(alpha = 0.1) +
+  theme_bw()
 ```
 
 Runoff vs precipitation by cell (upper-left corner).
@@ -123,11 +162,65 @@ rainfall is harder to get and is a task for another day.
 
 ```{r}
 dat |>
-  filter(x < 46, y > 15) |>
+  filter(cell_id == 39) |> 
   ggplot(aes(total_precipitation_hourly, runoff_hourly)) +
-  facet_grid(y ~ x) +
-  geom_point(alpha = 0.1)
+  geom_point(alpha = 0.1) +
+  theme_bw()
 ```
+
+Probability of snowmelt-rain combination
+
+```{r}
+prob_dat <- dat |> 
+  group_by(cell_id, x, y) |> 
+  summarise(
+    prob_snowyes_rainyes = mean(total_precipitation_hourly == 0 & snowmelt_hourly == 0, na.rm = TRUE),
+    prob_snowyes_rainno = mean(total_precipitation_hourly == 0 & snowmelt_hourly > 0, na.rm = TRUE),
+    prob_snowno_rainyes = mean(total_precipitation_hourly > 0 & snowmelt_hourly == 0, na.rm = TRUE),
+    prob_snowno_rainno = mean(total_precipitation_hourly > 0 & snowmelt_hourly > 0, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+Map showing probability of both rainfall and snowmelt occurring together:
+
+```{r}
+ggplot(prob_dat, aes(y, x)) +
+  spatial_basemap +
+  geom_tile(aes(fill = prob_snowyes_rainyes), alpha = 0.85) +
+  scale_fill_gradientn("Probability\nRain-on-Snow", colours = pal, labels = scales::percent_format())
+```
+
+2x2 plot showing histograms of probabilities of each combination: snowmelt-rain, no snowmelt-rain, no snowmelt-no rain, snowmelt-no rain:
+
+```{r}
+prob_dat |>
+  pivot_longer(starts_with("prob_"), names_to = c(".value", "rain", "snow"), names_pattern = "(prob)_snow(.+)_rain(.+)") |>
+  ggplot(aes(prob)) +
+  facet_grid(
+    rain ~ snow,
+    labeller = labeller(
+      rain = c("yes" = "Rain", "no" = "No Rain"),
+      snow = c("yes" = "Snow", "no" = "No Snow")
+    )
+  ) +
+  geom_histogram() +
+  labs(
+    caption = paste(
+      "Probability that an event has the specified combination of rain and snowmelt\n",
+      "pooled across all cells."
+    ),
+    x = "Probability",
+    y = NULL
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+
 
 ## Distributional Learning Model
 
@@ -142,7 +235,7 @@ The [probaverse](https://probaverse.com) is used for the handling of distributio
 
 ```{r}
 models <- dat |>
-  nest(data = !c(x, y)) |>
+  nest(data = !c(cell_id, x, y)) |>
   mutate(dl_rqforest = map(
     data,
     dl_rqforest,
@@ -321,9 +414,9 @@ pctl <- marginals |>
   unnest(df)
 
 ggplot(pctl, aes(y, x)) +
+  spatial_basemap +
   facet_wrap(~ tau, ncol = 2) +
-  geom_tile(aes(fill = quantile)) +
-  theme_void() +
+  geom_tile(aes(fill = quantile), alpha = 0.85) +
   scale_fill_gradientn("Percentile:\nHourly Runoff (mm)", colours = pal)
 ```
 
@@ -352,8 +445,8 @@ pctl_hr14 <- pred |>
   ))
 
 ggplot(pctl_hr14, aes(y, x)) +
+  spatial_basemap +
   facet_wrap(~ quantity, nrow = 2) +
-  geom_tile(aes(fill = runoff)) +
-  theme_void() +
+  geom_tile(aes(fill = runoff), alpha = 0.85) +
   scale_fill_gradientn("Hourly Runoff (mm)", colours = pal)
 ```
