@@ -1,5 +1,5 @@
 #' Convert an ecdf to an empirical distribution
-#' 
+#'
 #' @param fun An ecdf function.
 #' @returns An empirical distribution from the distionary package.
 #' @examples
@@ -16,7 +16,7 @@ ecdf_to_dst <- function(fun) {
 }
 
 #' Check if rows of a data frame have missing values
-#' 
+#'
 #' @param df A data frame.
 #' @returns A logical vector of length `nrow(df)` indicating which rows have
 #'   missing values.
@@ -31,3 +31,11 @@ df_rows_have_missing <- function(df) {
   ))
   apply(lgl_mat, 1, any)
 }
+
+#' Return periods for reporting
+#'
+#' @returns A vector of commonly reported return periods.
+#' @examples
+#' rp_reporting()
+#' @export
+rp_reporting <- function() c(2, 5, 10, 20, 50, 100, 200, 500, 1000)

@@ -8,7 +8,7 @@ format:
     toc-depth: 3
 ---
 
-This document explores a distributional learning model for prediction of gridded runoff from precipitation and snowmelt inputs for a region over the Alps.
+This document explores a distributional learning model for prediction of gridded runoff from rainfall and snowmelt inputs for a region over the Alps.
 
 ## Setup
 
@@ -146,14 +146,12 @@ dat |>
   theme_bw()
 ```
 
-Runoff vs precipitation by cell (upper-left corner).
-We're only using precipitation right now for exposition purposes;
-rainfall is harder to get and is a task for another day.
+Runoff vs rainfall by cell (upper-left corner).
 
 ```{r}
 dat |>
   filter(cell_id == 39) |>
-  ggplot(aes(total_precipitation_hourly, runoff_hourly)) +
+  ggplot(aes(rainfall_hourly, runoff_hourly)) +
   geom_point(alpha = 0.1) +
   theme_bw()
 ```
@@ -165,19 +163,19 @@ prob_dat <- dat |>
   group_by(cell_id, x, y) |>
   summarise(
     prob_snowyes_rainyes = mean(
-      total_precipitation_hourly == 0 & snowmelt_hourly == 0,
+      rainfall_hourly > 0 & snowmelt_hourly > 0,
       na.rm = TRUE
     ),
     prob_snowyes_rainno = mean(
-      total_precipitation_hourly == 0 & snowmelt_hourly > 0,
+      rainfall_hourly == 0 & snowmelt_hourly > 0,
       na.rm = TRUE
     ),
     prob_snowno_rainyes = mean(
-      total_precipitation_hourly > 0 & snowmelt_hourly == 0,
+      rainfall_hourly > 0 & snowmelt_hourly == 0,
       na.rm = TRUE
     ),
     prob_snowno_rainno = mean(
-      total_precipitation_hourly > 0 & snowmelt_hourly > 0,
+      rainfall_hourly == 0 & snowmelt_hourly == 0,
       na.rm = TRUE
     ),
     .groups = "drop"
@@ -234,7 +232,7 @@ prob_dat |>
 
 ## Distributional Learning Model
 
-Fit a distributional random forest model separately at each grid cell.
+Fit a distributional random forest model separately at each grid cell (see `scripts/4-dl_rqforest_spatial_eo.r`, which writes `data/era5_land_hourly_alps_dl_predictions.rds`; marginal mixtures and precomputed return levels follow in `scripts/5-marginal_mixtures_spatial_eo.r`; joint rainfall–snowmelt copulas in `scripts/6-joint_rain_snow_spatial_eo.r`).
 
 This method follows quantile regression forests [@meinshausen2006quantile].
 Instead of calculating only the mean at each leaf in the random forest, conditional quantiles are estimated; taken together, these give the full conditional distribution.
@@ -244,40 +242,23 @@ These are needed because the base methods (e.g., `quantregForest::quantregForest
 The [probaverse](https://probaverse.com) is used for the handling of distributions.
 
 ```{r}
-models <- dat |>
-  nest(data = !c(cell_id, x, y)) |>
-  mutate(
-    dl_rqforest = map(
-      data,
-      dl_rqforest,
-      yname = "runoff_hourly",
-      xnames = c("total_precipitation_hourly", "snowmelt_hourly")
-    )
-  )
+peak_hour_distributions <- read_rds(
+  here::here("data", "era5_land_hourly_alps_dl_predictions.rds")
+)
 
-# Inspect
-models
+peak_hour_distributions
 ```
 
 ## Predictions on Training Data
 
-Generate predictive distributions for each hour on record.
+`tibble` `peak_hour_distributions` has one row per peak hour and cell.
+Column `distribution_forest` holds the quantile-regression-forest predictive distribution for that row; `distribution_gp` is the same forecast after fitting a generalized Pareto tail via `convert_emp_to_gp()`.
 At this stage, we are not concerning ourselves with a holdout set, since this work is for expository purposes at this time.
-
-```{r}
-pred <- models |>
-  mutate(hat = map2(dl_rqforest, data, predict)) |>
-  select(!dl_rqforest) |>
-  unnest(c(data, hat))
-
-# Inspect
-pred
-```
 
 Inspect one fitted predictive distribution directly; here's its CDF, for example:
 
 ```{r}
-example_prediction <- pred$hat[[1]]
+example_prediction <- peak_hour_distributions$distribution_forest[[1]]
 plot(example_prediction, n = 1000)
 ```
 
@@ -295,12 +276,6 @@ Its mean:
 mean(example_prediction)
 ```
 
-Convert the empirical distribution to a generalized Pareto distribution.
-
-```{r}
-predgp <- mutate(pred, hat = map(hat, convert_emp_to_gp))
-```
-
 
 ## P-P Plot
 
@@ -312,10 +287,10 @@ However, this isn't the full picture, because it doesn't reward narrowness of th
 for instance, the marginal distribution would appear perfectly calibrated, but for a predictive model, is too wide.
 
 ```{r}
-pp_data <- pred |>
+pp_data <- peak_hour_distributions |>
   group_by(x, y) |>
   mutate(
-    p_model = map2_dbl(hat, runoff_hourly, eval_cdf),
+    p_model = map2_dbl(distribution_forest, runoff_hourly, eval_cdf),
     p_empirical = uscore(p_model)
   ) |>
   select(x, y, starts_with("p_"))
@@ -335,10 +310,10 @@ To include both calibration and narrowness of predictions, the quantile score is
 Get quantiles and quantile scores from probaverse.
 
 ```{r}
-qscores_model <- pred |>
+qscores_model <- peak_hour_distributions |>
   mutate(
     df = map(
-      hat,
+      distribution_forest,
       enframe_quantile,
       at = 1:99 / 100,
       arg_name = "tau"
@@ -406,20 +381,26 @@ ggplot(qscores, aes(tau, skill_score)) +
 Unconditional runoff distributions are useful for calculating extreme events like the 100-year or 200-year runoff event.
 The dataset will have to be changed in order to calculate these events, but the process can be demonstrated with these models nonetheless, by [mixing](https://en.wikipedia.org/wiki/Mixture_distribution) all the predictive distributions in each cell.
 This calculates the marginal distribution of runoff, unconditional on the model inputs.
-Calculations are made easy by the probaverse: just use distplyr's `mix()` function.
+Calculations are made easy by the probaverse: use `rainonsnow::mix2()` (same role as `distplyr::mix()`, with safer range bounds for large GP mixtures).
 
 ```{r}
-marginals <- pred |>
+marginals <- peak_hour_distributions |>
   group_by(x, y) |>
-  summarise(marginal_runoff = list(mix(hat)), .groups = "drop")
+  summarise(
+    marginal_runoff = list(mix2(distribution_forest, na_action_dst = "drop")),
+    .groups = "drop"
+  )
 ```
 
 Get the marginals from the generalized Pareto distributions.
 
 ```{r}
-marginalsgp <- predgp |>
+marginalsgp <- peak_hour_distributions |>
   group_by(x, y) |>
-  summarise(marginal_runoff = list(mix(hat)), .groups = "drop")
+  summarise(
+    marginal_runoff = list(mix2(distribution_gp, na_action_dst = "drop")),
+    .groups = "drop"
+  )
 ```
 
 Here is an example unconditional distribution (CDF) for one of the cells in the study region, comparing the empirical model and the generalized Pareto model.
@@ -467,12 +448,12 @@ From a more day-to-day prediction standpoint, we can look at the percentiles of 
 Do this for 2 pm on October 5; also compare with the mean predicted runoff (i.e., classical machine learning).
 
 ```{r}
-pctl_hr14 <- pred |>
+pctl_hr14 <- peak_hour_distributions |>
   filter(hour == 14) |>
   mutate(
-    runoff_01 = map_dbl(hat, eval_quantile, at = 0.01),
-    runoff_99 = map_dbl(hat, eval_quantile, at = 0.99),
-    runoff_mean = map_dbl(hat, mean),
+    runoff_01 = map_dbl(distribution_forest, eval_quantile, at = 0.01),
+    runoff_99 = map_dbl(distribution_forest, eval_quantile, at = 0.99),
+    runoff_mean = map_dbl(distribution_forest, mean),
   ) |>
   select(x, y, starts_with("runoff")) |>
   pivot_longer(
@@ -596,12 +577,23 @@ Now get the most likely combination of rain and snowmelt to produce that return 
 grids <- dat |>
   nest(data = !c(cell_id, x, y)) |>
   mutate(
+    dl_rqforest = map(
+      data,
+      dl_rqforest,
+      yname = "runoff_hourly",
+      xnames = c("rainfall_hourly", "snowmelt_hourly")
+    ),
     grid = map(
       data,
-      grid_from_scatter,
-      x = total_precipitation_hourly,
-      y = snowmelt_hourly,
-      mult = .env$grid_mult
+      \(df) {
+        g <- grid_from_scatter(
+          rainfall_hourly,
+          snowmelt_hourly,
+          data = df,
+          mult = .env$grid_mult
+        )
+        dplyr::rename(g, rainfall_hourly = x, snowmelt_hourly = y)
+      }
     )
   ) |>
   select(!data) |>
@@ -609,15 +601,20 @@ grids <- dat |>
 
 grids_pred <- grids |>
   mutate(
-    pred = map2(grid, data, predict),
-    pred = map(pred, convert_emp_to_gp)
-  )
+    forecast_forest = map2(dl_rqforest, grid, predict),
+    forecast_gp = map(forecast_forest, convert_emp_to_gp)
+  ) |>
+  select(!dl_rqforest)
 
 likely_combinations <- grids_pred |>
   mutate(
-    prob_responsible = map2(pred, magnitude, distribution_likeliness)
+    df = pmap(
+      list(grid, forecast_gp, magnitude),
+      \(g, p, m) dplyr::mutate(g, prob_responsible = distribution_likeliness(p, m))
+    )
   ) |>
-  unnest(c(pred, prob_responsible)) |>
+  select(cell_id, x, y, magnitude, df) |>
+  unnest(df) |>
   group_by(cell_id, x, y)
 ```
 
@@ -627,8 +624,8 @@ Plot the likely combinations for a given cell:
 this_cell <- 36
 this_data <- filter(dat, cell_id == .env$this_cell)
 this_likely <- filter(likely_combinations, cell_id == .env$this_cell)
-ggplot(this_likely, aes(total_precipitation_hourly, snowmelt_hourly)) +
-  geom_contour(aes(z = prob_responsible))) +
+ggplot(this_likely, aes(rainfall_hourly, snowmelt_hourly)) +
+  geom_contour(aes(z = prob_responsible)) +
   geom_point(data = this_data, color = "red3") +
   theme_bw()
 ```

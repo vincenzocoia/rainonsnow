@@ -2,18 +2,72 @@
 # Run from the package root:
 #   shiny::runApp("apps/pot-explorer")
 #
-# Requires: hourly and POT RDS files from scripts 2 and 3 in data/.
+# Requires: hourly and POT RDS files from scripts 2 and 3 in data/; optional
+#   inputs/pot_metadata.yaml (created with defaults by script 3 if missing).
+# Suggests: yaml (for reading/writing pot_metadata.yaml)
 
 library(shiny)
 library(tidyverse)
 library(sf)
 library(fs)
 library(rnaturalearth)
+library(yaml)
 
 repo_root <- here::here()
+meta_path <- path(repo_root, "inputs", "pot_metadata.yaml")
 hourly_path <- path(repo_root, "data", "era5_land_hourly_alps_all.rds")
 peaks_path <- path(repo_root, "data", "era5_land_hourly_alps_peaks.rds")
 threshold_path <- path(repo_root, "data", "era5_land_hourly_alps_pot_thresholds.rds")
+read_pot_meta <- function(path) {
+  if (!file.exists(path)) {
+    return(list(quantile = 0.995, min_gap = 6L))
+  }
+  y <- read_yaml(path)
+  q <- y$quantile
+  mg <- y$min_gap
+  list(
+    quantile = if (is.null(q)) 0.995 else as.numeric(q),
+    min_gap = if (is.null(mg)) 6L else as.integer(max(0, round(as.numeric(mg))))
+  )
+}
+
+write_pot_meta <- function(path, quantile, min_gap) {
+  write_yaml(
+    list(quantile = as.numeric(quantile), min_gap = as.integer(min_gap)),
+    path
+  )
+}
+
+run_script3 <- function(root) {
+  rscript <- file.path(R.home("bin"), if (.Platform$OS.type == "windows") "Rscript.exe" else "Rscript")
+  script <- normalizePath(file.path(root, "scripts", "3-pot_spatial_eo.r"), mustWork = FALSE)
+  if (!file.exists(script)) {
+    return(list(
+      ok = FALSE,
+      message = paste("Script not found:", script)
+    ))
+  }
+  owd <- getwd()
+  on.exit(setwd(owd), add = TRUE)
+  setwd(root)
+  cmd <- paste(shQuote(normalizePath(rscript, mustWork = TRUE)), "--vanilla", shQuote(script))
+  out <- tryCatch(
+    suppressWarnings(system(cmd, intern = TRUE)),
+    error = function(e) e
+  )
+  if (inherits(out, "error")) {
+    return(list(ok = FALSE, message = conditionMessage(out), output = character()))
+  }
+  status <- attr(out, "status")
+  ok <- is.null(status) || identical(as.integer(status), 0L)
+  msg_out <- paste(as.character(out), collapse = "\n")
+  list(
+    ok = ok,
+    message = if (!ok) paste("Script exited with status", status) else "Finished.",
+    output = msg_out,
+    status = status
+  )
+}
 
 nearest_cell <- function(lon_click, lat_click, cells_tbl) {
   dx <- cells_tbl$y - lon_click
@@ -30,9 +84,11 @@ tile_dims <- function(xy_tbl, x_col = "y", y_col = "x") {
   c(width = w, height = h)
 }
 
+pot_meta0 <- read_pot_meta(meta_path)
+
 hourly_all <- read_rds(hourly_path)
-peaks_all <- read_rds(peaks_path)
-threshold_by_cell <- read_rds(threshold_path)
+peaks_all_init <- read_rds(peaks_path)
+threshold_init <- read_rds(threshold_path)
 
 cells_ref <- hourly_all |>
   distinct(cell_id, x, y) |>
@@ -57,14 +113,37 @@ ui <- fluidPage(
   helpText(
     "Threshold comes from ",
     code("get_pot_events()"),
-    " (column ",
-    code("threshold"),
-    " in the POT file when present). ",
+    " (quantile over ",
+    code("runoff_hourly"),
+    " per cell). ",
+    "Adjust quantile / min gap, then ",
+    strong("Re-run POT extraction"),
+    " to rebuild peaks (runs ",
+    code("scripts/3-pot_spatial_eo.r"),
+    "). ",
     "Click the map to pick a cell."
   ),
   sidebarLayout(
     sidebarPanel(
       width = 3,
+      numericInput(
+        "quantile",
+        "Threshold quantile (per cell)",
+        value = pot_meta0$quantile,
+        min = 0,
+        max = 1,
+        step = 0.001
+      ),
+      numericInput(
+        "min_gap",
+        "Min gap between peaks (observations)",
+        value = pot_meta0$min_gap,
+        min = 0,
+        step = 1
+      ),
+      actionButton("rerun_pot", "Re-run POT extraction", class = "btn-primary"),
+      verbatimTextOutput("rerun_log"),
+      hr(),
       selectInput("year", "Year", choices = years_avail, selected = max(years_avail)),
       selectInput(
         "cell_id",
@@ -83,6 +162,64 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+  peaks_all <- reactiveVal(peaks_all_init)
+  threshold_by_cell <- reactiveVal(threshold_init)
+  rerun_log_txt <- reactiveVal("Adjust settings and click Re-run to rebuild POT outputs.")
+
+  output$rerun_log <- renderText({
+    rerun_log_txt()
+  })
+
+  observeEvent(input$rerun_pot, {
+    q <- input$quantile
+    mg <- input$min_gap
+    if (!is.finite(q) || q <= 0 || q >= 1) {
+      showNotification("Quantile must be strictly between 0 and 1.", type = "warning")
+      return(invisible(NULL))
+    }
+    if (!is.finite(mg) || mg < 0) {
+      showNotification("Min gap must be non-negative.", type = "warning")
+      return(invisible(NULL))
+    }
+
+    write_pot_meta(meta_path, q, mg)
+
+    withProgress(message = "Running POT script…", value = 0.5, {
+      res <- run_script3(repo_root)
+    })
+
+    out_txt <- res$output
+    if (!nzchar(out_txt)) {
+      out_txt <- res$message
+    } else {
+      out_txt <- paste(out_txt, res$message, sep = "\n")
+    }
+
+    if (!isTRUE(res$ok)) {
+      rerun_log_txt(paste0("ERROR\n", out_txt))
+      showNotification(
+        paste("POT script failed:", res$message),
+        type = "error",
+        duration = NULL
+      )
+      return(invisible(NULL))
+    }
+
+    peaks_all(read_rds(peaks_path))
+    threshold_by_cell(read_rds(threshold_path))
+
+    rerun_log_txt(paste(
+      "Last run: OK",
+      format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+      paste0("(wrote ", basename(meta_path), ")"),
+      "",
+      out_txt,
+      sep = "\n"
+    ))
+
+    showNotification("POT extraction finished; data reloaded.", type = "message")
+  })
+
   observeEvent(input$map_click, {
     cid <- nearest_cell(input$map_click$x, input$map_click$y, cells_ref)
     updateSelectInput(session, "cell_id", selected = cid)
@@ -98,7 +235,7 @@ server <- function(input, output, session) {
 
   thr_rv <- reactive({
     cid <- as.integer(input$cell_id)
-    threshold_by_cell |>
+    threshold_by_cell() |>
       filter(cell_id == cid) |>
       slice_head(n = 1) |>
       pull(threshold)
@@ -135,7 +272,7 @@ server <- function(input, output, session) {
     h <- hourly_all |>
       filter(cell_id == cid, year(date) == yr)
 
-    peaks_yr <- peaks_all |>
+    peaks_yr <- peaks_all() |>
       filter(cell_id == cid, year(date) == yr)
 
     validate(
@@ -143,7 +280,6 @@ server <- function(input, output, session) {
     )
 
     thr <- thr_rv()
-    thr_lbl <- if (is.finite(thr)) sprintf("%.3g mm", thr) else "NA"
 
     ggplot(h, aes(date, runoff_hourly)) +
       geom_line(linewidth = 0.2, colour = "#2c7fb8") +

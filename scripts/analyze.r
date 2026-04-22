@@ -157,7 +157,7 @@ pp_data <- pred |>
 # Marginal (Unconditional) distributions
 marginals <- pred |> 
   group_by(x, y) |> 
-  summarise(marginal_runoff = list(mix(hat)), .groups = "drop")
+  summarise(marginal_runoff = list(mix2(hat)), .groups = "drop")
 
 # Example of one unconditional distribution
 plot(marginals$marginal_runoff[[4]], to = 0.00001, n = 1000)

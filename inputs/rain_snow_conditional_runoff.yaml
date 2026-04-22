@@ -1,0 +1,38 @@
+# Options for scripts/7-rain_snow_conditional_runoff_spatial_eo.r
+# Combine joint hourly rainfall–snowmelt (script 6) with conditional runoff given
+# rain/snow from the rqforest (script 4). Surface shown is proportional to
+# f(rain,snow | runoff=z) ∝ f(z|rain,snow) × f(rain,snow).
+
+rain_snow_conditional_runoff:
+  cell_id: 1
+
+  # Target runoff depth z (mm/h). Use this for a fast, explicit contour level.
+  runoff_threshold_mm: 15
+
+  # Alternative: set `runoff_threshold_mm` to null and set return_period (years).
+  # Requires script 5 output data/era5_land_hourly_alps_dl_marginal_return_levels.rds.
+  return_period: null
+
+  # When using return_period: which precomputed marginal return level to use.
+  marginal_return_model: gp
+  # gp     -> "Forest mixture + GP tail"
+  # forest -> "Forest mixture (empirical)"
+
+  # Predictive distribution for f(z | rain, snow): forest = raw rqforest ecdf dst;
+  # gp = GP-adjusted tail per convert_emp_to_gp() (matches script 4 hourly preds).
+  runoff_conditional_model: forest
+
+  # Optional: divide the surface by f_Z(z) from script 5 (equal-weight mixture of
+  # peak-hour predictive distributions). Then the contour levels match the proper
+  # conditional density up to the mixture approximation for f_Z.
+  normalize_by_marginal_runoff_density: false
+
+  grid:
+    size: [45, 45]
+    mult: [1.3, 1.3]
+
+  output_pdf: null
+  output_rds: null
+  # Default write paths when null:
+  #   plots/rain_snow_conditional_runoff_cell_<id>_z_<...>.pdf
+  #   data/rain_snow_conditional_runoff_cell_<id>_z_<...>.rds

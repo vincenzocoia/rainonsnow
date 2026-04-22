@@ -7,3 +7,5 @@ Data/*
 *.Rproj
 *cache/
 .vscode/*
+*Rcheck
+Rplots.pdf

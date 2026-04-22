@@ -84,7 +84,8 @@ dat <- mutate(
     snowmelt_hourly < epsilon,
     0,
     snowmelt_hourly * 1000
-  )
+  ),
+  runoff_hourly = runoff_hourly * 1000
 )
 
 # %%

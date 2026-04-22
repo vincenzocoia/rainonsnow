@@ -1,0 +1,15 @@
+fit_joint_rain_snow_cells:
+  group_cols:
+  - cell_id
+  - x
+  - 'y'
+  rainfall_col: rainfall_hourly
+  snowmelt_col: snowmelt_hourly
+  marginal_rainfall: gamma
+  marginal_snowmelt: gamma
+  bicop_family_set: parametric
+  bicop_controls:
+    cores: 1
+  min_obs: 40
+  progress: no
+  verbose: no
