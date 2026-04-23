@@ -1,5 +1,5 @@
 # Joint distributional modelling of hourly rainfall and snowmelt per cell:
-# famish marginals + rvinecopulib bicop. Fitting options: inputs/joint_rain_snow_metadata.yaml
+# famish marginals + rvinecopulib bicop. Fitting options: inputs/rain_snow_joint_model.yaml
 # Requires: data/era5_land_hourly_alps_all.rds from scripts/2-tablify_spatial_eo.r
 # Downstream: conditional rain–snow given runoff — scripts/7-likeliest_rain_snow.r
 # %%
@@ -10,7 +10,7 @@ library(rvinecopulib)
 library(logger)
 devtools::load_all()
 
-meta <- read_yaml(here::here("inputs", "joint_rain_snow_metadata.yaml"))
+meta <- read_yaml(here::here("inputs", "rain_snow_joint_model.yaml"))
 cfg <- meta$fit_joint_rain_snow_cells
 
 log_info("Starting 6-drivers_joint_distribution.r")

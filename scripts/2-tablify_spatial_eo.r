@@ -3,11 +3,31 @@
 library(tidyverse)
 library(terra)
 library(tidyterra)
-library(tidyverse)
 library(logger)
 library(fs)
+library(yaml)
+
 log_info("Starting 2-tablify_spatial_eo.r")
-epsilon <- 1e-7
+
+data_spec_path <- here::here("inputs", "data_specifications.yaml")
+read_tablify_meta <- function(path) {
+  default <- list(epsilon_mm = 1e-4)
+  if (!file.exists(path)) {
+    log_warn(paste("Missing", path, "; using defaults (see inputs/data_specifications.yaml)."))
+    return(default)
+  }
+  y <- read_yaml(path)
+  tab <- y$tablify
+  if (is.null(tab) || !is.list(tab)) {
+    tab <- list()
+  }
+  em <- tab$epsilon_mm
+  list(epsilon_mm = if (is.null(em)) default$epsilon_mm else as.numeric(em))
+}
+
+tablify_meta <- read_tablify_meta(data_spec_path)
+# Compare to ERA5-Land rates in metres (YAML stores the mm equivalent).
+epsilon_m <- tablify_meta$epsilon_mm / 1000
 
 files <- dir_ls(here::here("data", "eo"), glob = "*.nc")
 
@@ -77,12 +97,12 @@ log_info("Removing near-zero and negatives")
 dat <- mutate(
   dat,
   rainfall_hourly = if_else(
-    rainfall_hourly < epsilon,
+    rainfall_hourly < epsilon_m,
     0,
     rainfall_hourly * 1000
   ),
   snowmelt_hourly = if_else(
-    snowmelt_hourly < epsilon,
+    snowmelt_hourly < epsilon_m,
     0,
     snowmelt_hourly * 1000
   ),

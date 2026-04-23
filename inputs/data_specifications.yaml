@@ -1,0 +1,31 @@
+# ERA5-Land → tabular Alps pipeline (scripts 1-download_data-eo.py and 2-tablify_spatial_eo.r).
+#
+# earth_engine.project_id — Google Cloud project passed to ee.Initialize().
+#   Run `earthengine authenticate` separately per machine/user.
+#
+# download — Earth Engine export: image collection, year range, and variable
+#   (band) names as used in ECMWF/ERA5_LAND/HOURLY on Earth Engine.
+#
+# tablify.epsilon_mm — rain/melt near-zero cutoff (mm/h equivalent) before
+#   converting ERA5 depth rates from m to mm in script 2.
+
+earth_engine:
+  project_id: alps-data-explorer
+
+download:
+  collection_id: ECMWF/ERA5_LAND/HOURLY
+  first_year: 1950
+  last_year: 2025
+  variables:
+    - temperature_2m
+    - total_precipitation_hourly
+    - snowfall_hourly
+    - snowmelt_hourly
+    - snow_depth
+    - snow_depth_water_equivalent
+    - runoff_hourly
+    - surface_runoff_hourly
+    - sub_surface_runoff_hourly
+
+tablify:
+  epsilon_mm: 0.0001

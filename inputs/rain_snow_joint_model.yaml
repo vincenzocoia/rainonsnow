@@ -1,9 +1,25 @@
-# Options for scripts/7-likeliest_rain_snow.r
-# Combine joint hourly rainfall–snowmelt (script 6) with conditional runoff given
-# rain/snow from the rqforest (script 4). Surface shown is proportional to
-# f(rain,snow | runoff=z) ∝ f(z|rain,snow) × f(rain,snow).
+# Joint rainfall–snowmelt model (scripts/6-drivers_joint_distribution.r, apps/joint-rain-snow-explorer).
 
-rain_snow_conditional_runoff:
+fit_joint_rain_snow_cells:
+  group_cols:
+  - cell_id
+  - x
+  - 'y'
+  rainfall_col: rainfall_hourly
+  snowmelt_col: snowmelt_hourly
+  marginal_rainfall: gamma
+  marginal_snowmelt: gamma
+  bicop_family_set: parametric
+  bicop_controls:
+    cores: 1
+  min_obs: 40
+  progress: yes
+  verbose: yes
+
+# Conditional density / likeliest rain–snow given runoff = z (scripts/7-likeliest_rain_snow.r).
+# Combines joint model from script 6 with conditional runoff given rain/snow from script 4.
+
+likeliest_rain_snow:
   cell_id: 1
 
   # Target runoff depth z (mm/h). Use this for a fast, explicit contour level.

@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "earthengine-api>=1.7.19",
+    "pyyaml>=6.0.2",
     "matplotlib>=3.10.8",
     "netcdf4>=1.7.4",
     "numpy>=2.4.4",

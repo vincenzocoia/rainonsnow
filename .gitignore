@@ -9,3 +9,4 @@ Data/*
 .vscode/*
 *Rcheck
 Rplots.pdf
+plots/*

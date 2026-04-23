@@ -3,6 +3,7 @@
 # script 4 and the joint marginal+copula model from script 6.
 #
 # Requires:
+#   - inputs/rain_snow_joint_model.yaml (likeliest_rain_snow block)
 #   - data/era5_land_hourly_alps_all.rds (script 2)
 #   - data/era5_land_hourly_alps_dl_rqforest_models.rds (script 4)
 #   - data/era5_land_hourly_alps_joint_rain_snow.rds (script 6)
@@ -18,17 +19,24 @@ library(rvinecopulib)
 library(logger)
 devtools::load_all()
 
-meta_path <- here::here("inputs", "rain_snow_conditional_runoff.yaml")
+meta_path <- here::here("inputs", "rain_snow_joint_model.yaml")
 if (!file.exists(meta_path)) {
   stop("Missing ", meta_path, "; see repository template.", call. = FALSE)
 }
 
 meta <- read_yaml(meta_path)
-cfg <- meta$rain_snow_conditional_runoff
+cfg <- meta$likeliest_rain_snow
+if (is.null(cfg) || !is.list(cfg)) {
+  stop(
+    "Add a `likeliest_rain_snow:` block to inputs/rain_snow_joint_model.yaml ",
+    "(see comments in that file).",
+    call. = FALSE
+  )
+}
 
 cell_id <- as.integer(cfg$cell_id %||% NA_integer_)
 if (is.na(cell_id)) {
-  stop("`cell_id` must be set in inputs/rain_snow_conditional_runoff.yaml", call. = FALSE)
+  stop("`cell_id` must be set under likeliest_rain_snow in inputs/rain_snow_joint_model.yaml", call. = FALSE)
 }
 
 marginal_rp_model <- match.arg(
@@ -86,7 +94,7 @@ if (!is.null(runoff_mm) && length(runoff_mm) == 1L && is.finite(as.numeric(runof
   z_src <- sprintf("%g-year return level (%s; %g mm/h)", rp_years, model_lab, z)
 } else {
   stop(
-    "Set either `runoff_threshold_mm` or `return_period` in the yaml.",
+    "Set either `runoff_threshold_mm` or `return_period` under likeliest_rain_snow in inputs/rain_snow_joint_model.yaml.",
     call. = FALSE
   )
 }

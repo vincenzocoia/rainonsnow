@@ -4,7 +4,7 @@
 #
 # Requires: data/era5_land_hourly_alps_all.rds and
 #   data/era5_land_hourly_alps_joint_rain_snow.rds (after script 6);
-#   inputs/joint_rain_snow_metadata.yaml
+#   inputs/rain_snow_joint_model.yaml
 # Suggests: yaml, shiny, tidyverse, sf, rnaturalearth
 
 library(shiny)
@@ -22,7 +22,7 @@ devtools::load_all(repo_root, quiet = TRUE)
 
 `%||%` <- function(x, y) if (!is.null(x)) x else y
 
-meta_path <- path(repo_root, "inputs", "joint_rain_snow_metadata.yaml")
+meta_path <- path(repo_root, "inputs", "rain_snow_joint_model.yaml")
 hourly_path <- path(repo_root, "data", "era5_land_hourly_alps_all.rds")
 joint_path <- path(repo_root, "data", "era5_land_hourly_alps_joint_rain_snow.rds")
 
@@ -215,7 +215,7 @@ ui <- fluidPage(
     "; the copula uses ",
     code("rvinecopulib::bicop()"),
     ". Edit options, write ",
-    code("inputs/joint_rain_snow_metadata.yaml"),
+    code("inputs/rain_snow_joint_model.yaml"),
     ", then ",
     strong("Re-run joint fitting"),
     " (",

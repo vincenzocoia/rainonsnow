@@ -1,4 +1,4 @@
-# POT selection explorer: hourly runoff, threshold, and peaks for one cell/year.
+# POT selection explorer: hourly runoff + POT for one cell/year; pooled peak timing.
 # Run from the package root:
 #   shiny::runApp("apps/pot-explorer")
 #
@@ -151,7 +151,8 @@ ui <- fluidPage(
     " to rebuild peaks (runs ",
     code("scripts/3-pot_spatial_eo.r"),
     "). ",
-    "Click the map to pick a cell."
+    "Click the map to pick a cell. ",
+    "Lower panel: all POT peaks for that cell vs day of year (pooled years)."
   ),
   sidebarLayout(
     sidebarPanel(
@@ -186,7 +187,8 @@ ui <- fluidPage(
     mainPanel(
       width = 9,
       plotOutput("map_tiles", height = "360px", click = "map_click"),
-      plotOutput("ts_runoff", height = "380px")
+      plotOutput("ts_runoff", height = "380px"),
+      plotOutput("event_timing", height = "320px")
     )
   )
 )
@@ -332,6 +334,26 @@ server <- function(input, output, session) {
       labs(
         title = paste0("Hourly runoff | cell ", cid, ", year ", yr),
         x = NULL,
+        y = "Hourly runoff (mm)"
+      )
+  })
+
+  output$event_timing <- renderPlot({
+    cid <- as.integer(input$cell_id)
+    peaks_cell <- peaks_all() |>
+      filter(cell_id == cid) |>
+      mutate(doy = as.integer(format(as.Date(date), "%j")))
+
+    validate(
+      need(nrow(peaks_cell) > 0, "No POT peaks for this cell.")
+    )
+
+    ggplot(peaks_cell, aes(.data$doy, runoff_hourly)) +
+      geom_point(alpha = 0.75, colour = "#2c7fb8") +
+      theme_bw() +
+      labs(
+        title = paste0("Event timing | cell ", cid, " (all years)"),
+        x = "Day of year",
         y = "Hourly runoff (mm)"
       )
   })

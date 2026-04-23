@@ -1,4 +1,5 @@
-# Distributional learning model formula. Used by scripts/4-distributional_learning.r
+# Quantile regression forest on POT peaks (scripts/4-distributional_learning.r).
+
 dl_rqforest:
   yname: runoff_hourly
   xnames:

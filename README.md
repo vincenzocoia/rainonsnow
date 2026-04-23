@@ -14,17 +14,43 @@ The repo currently has two main pieces:
 
 - A Python workflow for downloading hourly ERA5-Land variables from
   Google Earth Engine.
-- An R package plus analysis script for fitting and inspecting
-  distributional learning models on the exported data.
+- A numbered R analysis pipeline and Shiny apps for fitting and
+  inspecting distributional learning (and related) models on the
+  exported data.
 
 ## Current Workflow
 
-1.  Download gridded hydroclimate data with `scripts/download_data.py`.
-2.  Save the resulting NetCDF file locally.
-3.  Analyze the data and fit models from R with `scripts/analyze.r`.
+Scripts are numbered in pipeline order (`scripts/1-*` … `scripts/7-*`).
+Intermediate files land under `data/` (and yearly NetCDF under
+`data/eo/`).
 
-The Python downloader writes `data/era5_land_hourly_alps.nc`, which
-matches the path used by `scripts/analyze.r`.
+1.  **`scripts/1-download_data-eo.py`** — Download hourly ERA5-Land
+    from Google Earth Engine to `data/eo/era5_land_hourly_alps_<year>.nc`
+    (bands and years from `inputs/data_specifications.yaml`).
+2.  **`scripts/2-tablify_spatial_eo.r`** — Raster NetCDF → tabular
+    hourly series; writes `data/era5_land_hourly_alps_all.rds`.
+3.  **`scripts/3-pot_spatial_eo.r`** — Peaks over threshold per cell
+    (`data/era5_land_hourly_alps_peaks.rds`, thresholds, metadata).
+4.  **`scripts/4-distributional_learning.r`** — Quantile regression
+    forest on POT peak hours (models and predictions used by later apps).
+5.  **`scripts/5-runoff_marginals.r`** — Marginal return-level tables
+    for runoff (`data/era5_land_hourly_alps_dl_*`).
+6.  **`scripts/6-drivers_joint_distribution.r`** — Joint
+    rainfall–snowmelt model per cell.
+7.  **`scripts/7-likeliest_rain_snow.r`** — Conditional rain–snow
+    structure given extreme runoff (optional follow-on).
+
+## Dependency management
+
+Python dependencies are managed with
+**[uv](https://github.com/astral-sh/uv)** (`pyproject.toml`; run `uv sync`
+so the lockfile matches the resolved environment). R package dependencies are
+declared in `DESCRIPTION`; install them from the repo root with something like
+`devtools::install_deps()` (or your preferred workflow). While editing package
+code, `devtools::load_all()` attaches the package from source.
+
+Exploratory work may also live in `scripts/analyze.qmd` (to be retired
+in favour of this script chain).
 
 ## Python Setup
 
@@ -36,26 +62,46 @@ uv sync
 
 The Python dependencies are declared in `pyproject.toml`.
 
-## Download Data
+## Data specifications (`inputs/data_specifications.yaml`)
 
-The downloader script initializes Earth Engine, queries the
-`ECMWF/ERA5_LAND/HOURLY` image collection for an Alps bounding box,
-selects a small set of snow, precipitation, temperature, and runoff
-variables, and exports the result to NetCDF.
+Pipeline settings for ERA5-Land export and tabular cleanup live in
+**`inputs/data_specifications.yaml`**:
 
-Before running it, make sure you have authenticated with Google Earth
-Engine and that the project in `scripts/download_data.py` is valid for
-your account:
+- **`earth_engine.project_id`** — Google Cloud project passed to
+  `ee.Initialize(project=...)`.
+- **`download`** — Earth Engine **`collection_id`**, **`first_year`** /
+  **`last_year`**, and **`variables`** (hourly band names exported from the
+  collection).
+- **`tablify.epsilon_mm`** — Near-zero cutoff for rain and melt (mm/h
+  equivalent) in script 2 before other steps.
+
+Authentication is separate from this file: run once per machine/user:
 
 ``` bash
 earthengine authenticate
 ```
 
-Run the script with:
+Run the downloader with:
 
 ``` bash
-uv run python scripts/download_data.py
+uv run python scripts/1-download_data-eo.py
 ```
+
+If `data_specifications.yaml` is missing, scripts 1 and 2 fall back to the
+same defaults as the template file.
+
+## Input Controls
+
+YAML files under **`inputs/`** configure scripts and apps (beyond
+`data_specifications.yaml` above):
+
+- **`distributional_learning.yaml`** — Response and predictors for
+  **`dl_rqforest`** in script 4.
+- **`rain_snow_joint_model.yaml`** — Joint marginal + copula options for
+  script 6 (key `fit_joint_rain_snow_cells`), and **`likeliest_rain_snow`**
+  settings for script 7 (conditional rain–snow surface given runoff).
+- **`pot_metadata.yaml`** — POT quantile / min-gap for script 3 and
+  `apps/pot-explorer`.
 
 ## R Setup
 
@@ -72,15 +118,21 @@ devtools::load_all()
 
 ## Run The Analysis
 
-Open `scripts/analyze.r` in R and run it interactively, or source it
-from an R session.
+After downloading NetCDF files, run the R scripts in order (each writes
+inputs for the next). From the repo root, with packages installed and
+`devtools::load_all()` as needed inside each script:
 
-The script currently:
+``` r
+source("scripts/2-tablify_spatial_eo.r")
+source("scripts/3-pot_spatial_eo.r")
+source("scripts/4-distributional_learning.r")
+source("scripts/5-runoff_marginals.r")
+source("scripts/6-drivers_joint_distribution.r")
+```
 
-- Loads the NetCDF file with `terra::rast()`
-- Converts the raster stack into a tabular format
-- Fits a distributional learning model per cell
-- Generates predictions from the fitted models
+Script 2 is long-running on the full yearly stack; scripts 4–6 depend on
+outputs from 2–3. Script 7 is optional and expects metadata under
+`inputs/` as noted in its header.
 
 ## Shiny apps
 
@@ -100,8 +152,10 @@ may need **yaml**, **probaverse**, **distionary**, **famish**,
 ### POT explorer (`apps/pot-explorer`)
 
 Inspect **peaks over threshold (POT)** extraction: hourly runoff for one
-grid cell and year, the POT threshold line, and peak events in the POT
-sample. Pick the cell from a map or the sidebar.
+grid cell and year with the POT threshold and marked peaks; **event
+timing** scatter of all POT peaks for that cell (runoff vs day of year,
+all years pooled). Pick the cell from the map or sidebar; optional
+re-run of script 3 from the sidebar.
 
 **Data:** `data/era5_land_hourly_alps_all.rds`
 (`scripts/2-tablify_spatial_eo.r`) and `data/era5_land_hourly_alps_peaks.rds`
@@ -145,12 +199,12 @@ shiny::runApp("apps/return-level-explorer")
 Marginal fits and copula per cell: Gaussian-score diagnostics, joint
 density contours, marginal histograms, and frequency–magnitude curves
 for rainfall and snowmelt. Optional re-run of joint fitting from the
-sidebar (writes `inputs/joint_rain_snow_metadata.yaml` and runs
+sidebar (writes `inputs/rain_snow_joint_model.yaml` and runs
 `scripts/6-drivers_joint_distribution.r`).
 
 **Data:** `data/era5_land_hourly_alps_all.rds` and joint output from
-script 6 (`data/era5_land_hourly_alps_joint_rain_snow.rds`); metadata in
-`inputs/joint_rain_snow_metadata.yaml`.
+script 6 (`data/era5_land_hourly_alps_joint_rain_snow.rds`); fitting options
+and script 7 settings share `inputs/rain_snow_joint_model.yaml`.
 
 ``` r
 shiny::runApp("apps/joint-rain-snow-explorer")
@@ -275,10 +329,16 @@ predict(dl_null(), newdata = tibble(x = 1:2))
 │   ├── return-level-explorer/
 │   └── runoff-marginals-explorer/
 ├── scripts/
-│   ├── analyze.r
-│   └── download_data.py
+│   ├── 1-download_data-eo.py
+│   ├── 2-tablify_spatial_eo.r
+│   ├── 3-pot_spatial_eo.r
+│   ├── 4-distributional_learning.r
+│   ├── 5-runoff_marginals.r
+│   ├── 6-drivers_joint_distribution.r
+│   ├── 7-likeliest_rain_snow.r
+│   └── analyze.qmd
+├── inputs/
 ├── data/
-├── main.py
 ├── DESCRIPTION
 ├── NAMESPACE
 └── pyproject.toml
