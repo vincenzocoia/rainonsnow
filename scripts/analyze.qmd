@@ -232,7 +232,7 @@ prob_dat |>
 
 ## Distributional Learning Model
 
-Fit a distributional random forest model separately at each grid cell (see `scripts/4-dl_rqforest_spatial_eo.r`, which writes `data/era5_land_hourly_alps_dl_predictions.rds`; marginal mixtures and precomputed return levels follow in `scripts/5-marginal_mixtures_spatial_eo.r`; joint rainfall–snowmelt copulas in `scripts/6-joint_rain_snow_spatial_eo.r`).
+Fit a distributional random forest model separately at each grid cell (see `scripts/4-distributional_learning.r`, which writes `data/era5_land_hourly_alps_dl_predictions.rds`; marginal mixtures and precomputed return levels follow in `scripts/5-runoff_marginals.r`; joint rainfall–snowmelt copulas in `scripts/6-drivers_joint_distribution.r`).
 
 This method follows quantile regression forests [@meinshausen2006quantile].
 Instead of calculating only the mean at each leaf in the random forest, conditional quantiles are estimated; taken together, these give the full conditional distribution.

@@ -34,7 +34,12 @@ df_rows_have_missing <- function(df) {
 
 #' Return periods for reporting
 #'
-#' @returns A vector of commonly reported return periods.
+#' Canonical year-based grid used in summaries and maps. This is the default
+#' for [enframe_at_events()] (`return_periods` argument): each value is multiplied
+#' by `num_events_per_year` there to evaluate return levels on a POT event axis.
+#'
+#' @returns A numeric vector of commonly reported return periods (years).
+#' @seealso [enframe_at_events()]
 #' @examples
 #' rp_reporting()
 #' @export

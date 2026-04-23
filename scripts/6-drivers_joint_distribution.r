@@ -1,7 +1,7 @@
 # Joint distributional modelling of hourly rainfall and snowmelt per cell:
 # famish marginals + rvinecopulib bicop. Fitting options: inputs/joint_rain_snow_metadata.yaml
 # Requires: data/era5_land_hourly_alps_all.rds from scripts/2-tablify_spatial_eo.r
-# Downstream: conditional rain–snow given runoff — scripts/7-rain_snow_conditional_runoff_spatial_eo.r
+# Downstream: conditional rain–snow given runoff — scripts/7-likeliest_rain_snow.r
 # %%
 library(tidyverse)
 library(rlang)
@@ -13,7 +13,7 @@ devtools::load_all()
 meta <- read_yaml(here::here("inputs", "joint_rain_snow_metadata.yaml"))
 cfg <- meta$fit_joint_rain_snow_cells
 
-log_info("Starting 6-joint_rain_snow_spatial_eo.r")
+log_info("Starting 6-drivers_joint_distribution.r")
 
 hourly_all <- read_rds(here::here("data", "era5_land_hourly_alps_all.rds"))
 
@@ -24,6 +24,7 @@ log_info(
   )
 )
 
+# %%
 joint_by_cell <- fit_joint_rain_snow_cells(
   hourly_all,
   group_cols = cfg$group_cols,
@@ -38,10 +39,16 @@ joint_by_cell <- fit_joint_rain_snow_cells(
   verbose = isTRUE(cfg$verbose %||% FALSE)
 )
 
+sample_rain <- hourly_all |> filter(cell_id == 32) |> pull(rainfall_hourly)
+sample_snow <- hourly_all |> filter(cell_id == 32) |> pull(snowmelt_hourly)
+
+fit_joint_rain_snow_cell(sample_rain, sample_snow)
+
+# %%
 write_rds(
   joint_by_cell,
   here::here("data", "era5_land_hourly_alps_joint_rain_snow.rds")
 )
 log_info("Wrote era5_land_hourly_alps_joint_rain_snow.rds")
 
-log_info("Finished 6-joint_rain_snow_spatial_eo.r")
+log_info("Finished 6-drivers_joint_distribution.r")

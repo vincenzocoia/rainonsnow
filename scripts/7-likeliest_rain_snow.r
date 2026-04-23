@@ -63,7 +63,7 @@ if (!is.null(runoff_mm) && length(runoff_mm) == 1L && is.finite(as.numeric(runof
     )
   }
   bundle <- read_rds(lv_path)
-  lvls <- bundle$lvls_both_long
+  lvls <- bundle$marginal_return_levels_long
   model_lab <- switch(
     marginal_rp_model,
     gp = "Forest mixture + GP tail",
@@ -72,7 +72,7 @@ if (!is.null(runoff_mm) && length(runoff_mm) == 1L && is.finite(as.numeric(runof
   mag <- lvls |>
     dplyr::filter(
       .data$cell_id == .env$cell_id,
-      abs(.data$return_period - .env$rp_years) < 1e-4,
+      abs(.data$return_period_years - .env$rp_years) < 1e-4,
       .data$model == .env$model_lab
     )
   if (nrow(mag) != 1L) {
@@ -91,7 +91,7 @@ if (!is.null(runoff_mm) && length(runoff_mm) == 1L && is.finite(as.numeric(runof
   )
 }
 
-log_info("Starting 7-rain_snow_conditional_runoff_spatial_eo.r")
+log_info("Starting 7-likeliest_rain_snow.r")
 log_info(paste("Cell", cell_id, "| z =", signif(z, 6), "mm/h —", z_src))
 
 hourly_path <- here::here("data", "era5_land_hourly_alps_all.rds")
@@ -277,4 +277,4 @@ saveRDS(
   out_rds
 )
 log_info(paste("Wrote", out_rds))
-log_info("Finished 7-rain_snow_conditional_runoff_spatial_eo.r")
+log_info("Finished 7-likeliest_rain_snow.r")

@@ -14,6 +14,36 @@ library(rnaturalearth)
 library(yaml)
 
 repo_root <- here::here()
+
+# Hourly timestamps are built as Jan 1 + hours; non-leap annual files spill a few
+# rows into the next calendar year. That inflates max(year(date)) by 1. Here we tag
+# each row with explorer_year: calendar year, except sparse tail years whose row
+# count is tiny vs a typical year (detected below) — those rows attach to year-1.
+explorer_year_from_dates <- function(tbl, date_col = "date") {
+  dc <- tbl |>
+    transmute(y = year(.data[[date_col]])) |>
+    count(y, name = "n")
+  med <- stats::median(dc$n)
+  spill_years <- dc$y[dc$n < max(100L, as.integer(med * 0.01))]
+  mutate(
+    tbl,
+    explorer_year = as.integer(
+      if_else(
+        year(.data[[date_col]]) %in% spill_years,
+        year(.data[[date_col]]) - 1L,
+        year(.data[[date_col]])
+      )
+    )
+  )
+}
+
+join_peaks_explorer_year <- function(peaks_tbl, hourly_tbl) {
+  lk <- hourly_tbl |> distinct(date, explorer_year)
+  peaks_tbl |>
+    dplyr::select(-dplyr::any_of("explorer_year")) |>
+    left_join(lk, by = "date")
+}
+
 meta_path <- path(repo_root, "inputs", "pot_metadata.yaml")
 hourly_path <- path(repo_root, "data", "era5_land_hourly_alps_all.rds")
 peaks_path <- path(repo_root, "data", "era5_land_hourly_alps_peaks.rds")
@@ -86,8 +116,8 @@ tile_dims <- function(xy_tbl, x_col = "y", y_col = "x") {
 
 pot_meta0 <- read_pot_meta(meta_path)
 
-hourly_all <- read_rds(hourly_path)
-peaks_all_init <- read_rds(peaks_path)
+hourly_all <- explorer_year_from_dates(read_rds(hourly_path))
+peaks_all_init <- join_peaks_explorer_year(read_rds(peaks_path), hourly_all)
 threshold_init <- read_rds(threshold_path)
 
 cells_ref <- hourly_all |>
@@ -106,7 +136,7 @@ world_map <- ne_countries(scale = 50, returnclass = "sf") |>
   st_crop(map_bbox)
 
 td <- tile_dims(cells_ref)
-years_avail <- sort(unique(year(hourly_all$date)))
+years_avail <- sort(unique(hourly_all$explorer_year))
 
 ui <- fluidPage(
   titlePanel("Peaks over threshold (POT) explorer"),
@@ -205,7 +235,7 @@ server <- function(input, output, session) {
       return(invisible(NULL))
     }
 
-    peaks_all(read_rds(peaks_path))
+    peaks_all(join_peaks_explorer_year(read_rds(peaks_path), hourly_all))
     threshold_by_cell(read_rds(threshold_path))
 
     rerun_log_txt(paste(
@@ -270,10 +300,10 @@ server <- function(input, output, session) {
     cid <- as.integer(input$cell_id)
 
     h <- hourly_all |>
-      filter(cell_id == cid, year(date) == yr)
+      filter(cell_id == cid, explorer_year == yr)
 
     peaks_yr <- peaks_all() |>
-      filter(cell_id == cid, year(date) == yr)
+      filter(cell_id == cid, explorer_year == yr)
 
     validate(
       need(nrow(h) > 0, "No hourly data for this cell and year — pick another combination.")

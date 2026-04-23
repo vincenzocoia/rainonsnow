@@ -72,7 +72,7 @@ write_joint_cfg <- function(path, cfg) {
 
 run_script6 <- function(root) {
   rscript <- file.path(R.home("bin"), if (.Platform$OS.type == "windows") "Rscript.exe" else "Rscript")
-  script <- normalizePath(file.path(root, "scripts", "6-joint_rain_snow_spatial_eo.r"), mustWork = FALSE)
+  script <- normalizePath(file.path(root, "scripts", "6-drivers_joint_distribution.r"), mustWork = FALSE)
   if (!file.exists(script)) {
     return(list(ok = FALSE, message = paste("Script not found:", script), output = character()))
   }
@@ -219,7 +219,7 @@ ui <- fluidPage(
     ", then ",
     strong("Re-run joint fitting"),
     " (",
-    code("scripts/6-joint_rain_snow_spatial_eo.r"),
+    code("scripts/6-drivers_joint_distribution.r"),
     "). Click the map to pick a cell."
   ),
   sidebarLayout(

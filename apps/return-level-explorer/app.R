@@ -106,7 +106,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   values <- reactiveValues(
     ready = FALSE,
-    lvls_both_long = NULL,
+    marginal_return_levels_long = NULL,
     cell_prep = NULL,
     error = NULL
   )
@@ -129,9 +129,9 @@ server <- function(input, output, session) {
       strong("Missing data: "),
       paste(missing, collapse = "; "),
       ". Run ",
-      code("scripts/4-dl_rqforest_spatial_eo.r"),
+      code("scripts/4-distributional_learning.r"),
       ". For faster startup, also run ",
-      code("scripts/5-marginal_mixtures_spatial_eo.r"),
+      code("scripts/5-runoff_marginals.r"),
       " (precomputed marginal return levels). Then reload this app."
     )
   })
@@ -156,7 +156,7 @@ server <- function(input, output, session) {
             if (file.exists(marginal_levels_path)) {
               incProgress(0.15, detail = "Reading precomputed marginal return levels")
               bundle <- read_rds(marginal_levels_path)
-              lvls_both_long <- bundle$lvls_both_long
+              marginal_return_levels_long <- bundle$marginal_return_levels_long
               rp_saved <- bundle$return_periods
               if (!identical(unname(rp_saved), unname(return_periods))) {
                 showNotification(
@@ -193,39 +193,43 @@ server <- function(input, output, session) {
                   .groups = "drop"
                 )
 
-              lvls <- marginals |>
-                mutate(
-                  df = map(
-                    marginal_runoff,
-                    enframe_return,
-                    at = return_periods,
-                    arg_name = "return_period"
-                  )
-                ) |>
-                select(-marginal_runoff) |>
-                unnest(df)
+              marginals <- marginals |>
+                left_join(num_pot_events, by = c("cell_id", "x", "y"))
+              marginalsgp <- marginalsgp |>
+                left_join(num_pot_events, by = c("cell_id", "x", "y"))
 
-              lvlsgp <- marginalsgp |>
-                left_join(num_pot_events, by = c("cell_id", "x", "y")) |>
+              forest_return_levels <- marginals |>
                 mutate(
                   df = map2(
                     marginal_runoff,
                     num_events_per_year,
-                    \(mr, nep) enframe_return(mr, at = return_periods * nep, arg_name = "rp_adjusted")
+                    enframe_at_events,
+                    return_periods = return_periods
                   )
                 ) |>
-                select(-marginal_runoff) |>
-                unnest(df) |>
-                mutate(return_period = rp_adjusted / num_events_per_year)
+                select(cell_id, x, y, df) |>
+                unnest(df)
 
-              lvls_both <- left_join(
-                lvls,
-                lvlsgp |> select(cell_id, x, y, return_period, return),
+              gp_return_levels <- marginalsgp |>
+                mutate(
+                  df = map2(
+                    marginal_runoff,
+                    num_events_per_year,
+                    enframe_at_events,
+                    return_periods = return_periods
+                  )
+                ) |>
+                select(cell_id, x, y, df) |>
+                unnest(df)
+
+              return_levels_joined <- left_join(
+                forest_return_levels,
+                gp_return_levels |> select(cell_id, x, y, return_period, return),
                 by = c("cell_id", "x", "y", "return_period"),
                 suffix = c("_emp", "_gp")
               )
 
-              lvls_both_long <- lvls_both |>
+              marginal_return_levels_long <- return_levels_joined |>
                 pivot_longer(
                   c(return_emp, return_gp),
                   names_to = "model",
@@ -268,7 +272,7 @@ server <- function(input, output, session) {
               select(cell_id, x, y, data, grid, forecast_gp)
 
             incProgress(0.95, detail = "Done")
-            values$lvls_both_long <- lvls_both_long
+            values$marginal_return_levels_long <- marginal_return_levels_long
             values$cell_prep <- cell_prep
             values$ready <- TRUE
           }
@@ -297,10 +301,10 @@ server <- function(input, output, session) {
   })
 
   map_df <- reactive({
-    req(values$ready, values$lvls_both_long)
+    req(values$ready, values$marginal_return_levels_long)
     rp <- as.numeric(input$return_period)
-    values$lvls_both_long |>
-      filter(return_period == rp, model == "Forest mixture + GP tail") |>
+    values$marginal_return_levels_long |>
+      filter(return_period_years == rp, model == "Forest mixture + GP tail") |>
       select(cell_id, x, y, return_level)
   })
 
@@ -365,11 +369,11 @@ server <- function(input, output, session) {
   })
 
   output$fm_curve <- renderPlot({
-    req(values$ready, values$lvls_both_long)
+    req(values$ready, values$marginal_return_levels_long)
     cid <- as.integer(input$cell_id)
-    values$lvls_both_long |>
+    values$marginal_return_levels_long |>
       filter(cell_id == cid) |>
-      ggplot(aes(return_period, return_level, colour = model)) +
+      ggplot(aes(return_period_years, return_level, colour = model)) +
       geom_line(linewidth = 0.9, alpha = 0.85) +
       geom_vline(
         xintercept = as.numeric(input$return_period),
@@ -395,10 +399,10 @@ server <- function(input, output, session) {
     row <- values$cell_prep |> dplyr::filter(cell_id == cid)
     validate(need(nrow(row) == 1L, "Cell data not found."))
 
-    mag_tbl <- values$lvls_both_long |>
+    mag_tbl <- values$marginal_return_levels_long |>
       filter(
         cell_id == cid,
-        return_period == rp,
+        return_period_years == rp,
         model == "Forest mixture + GP tail"
       )
     validate(need(nrow(mag_tbl) == 1L, "Return level not available for this cell."))

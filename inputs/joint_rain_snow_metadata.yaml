@@ -11,5 +11,5 @@ fit_joint_rain_snow_cells:
   bicop_controls:
     cores: 1
   min_obs: 40
-  progress: no
-  verbose: no
+  progress: yes
+  verbose: yes

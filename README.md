@@ -82,38 +82,95 @@ The script currently:
 - Fits a distributional learning model per cell
 - Generates predictions from the fitted models
 
-## POT explorer (Shiny)
+## Shiny apps
 
-There is a small interactive app under `apps/pot-explorer/` for
-inspecting **peaks over threshold (POT)** extraction: hourly runoff for
-one grid cell and year, the POT threshold line, and the peak events
-that enter the POT sample. You can pick the cell from a map or from the
-sidebar.
+Interactive apps live under `apps/*/app.R`. Run them from the
+**repository root** so paths such as `data/` and `devtools::load_all()`
+resolve:
 
-**Prerequisites:** install [shiny](https://shiny.posit.co/), **ggplot2**,
-**dplyr**, **sf**, and **rnaturalearth** if you do not already have them
-(the same kinds of packages used in `scripts/analyze.qmd` for maps).
+``` r
+shiny::runApp("apps/<app-folder>")
+```
 
-**Data:** the app reads tabulated hourly series and POT peaks from the
-project `data/` folder:
+Typical dependencies include [shiny](https://shiny.posit.co/),
+**ggplot2**, **tidyverse**, **sf**, and **rnaturalearth**; individual apps
+may need **yaml**, **probaverse**, **distionary**, **famish**,
+**rvinecopulib**, and others used in the analysis scripts.
 
-- `data/era5_land_hourly_alps_all.rds` — produced by
-  `scripts/2-tablify_spatial_eo.r`
-- `data/era5_land_hourly_alps_peaks.rds` — produced by
-  `scripts/3-pot_spatial_eo.r`
+### POT explorer (`apps/pot-explorer`)
 
-Run those scripts first so both files exist (the first load can take a
-while if the hourly RDS is large).
+Inspect **peaks over threshold (POT)** extraction: hourly runoff for one
+grid cell and year, the POT threshold line, and peak events in the POT
+sample. Pick the cell from a map or the sidebar.
 
-**Launch** from the repository root in R:
+**Data:** `data/era5_land_hourly_alps_all.rds`
+(`scripts/2-tablify_spatial_eo.r`) and `data/era5_land_hourly_alps_peaks.rds`
+(`scripts/3-pot_spatial_eo.r`).
 
 ``` r
 shiny::runApp("apps/pot-explorer")
 ```
 
-The working directory must be the app folder’s parent (`rainonsnow/`),
-which is the usual behaviour when you call `runApp()` with that path
-from an R session whose working directory is the repo root.
+### DL diagnostics explorer (`apps/dl-diagnostics-explorer`)
+
+Calibration (P–P), skill versus marginal fit, and rain–snow scatter with
+conditional runoff CDFs at clicked coordinates.
+
+**Data:** POT peaks, distributional-learning predictions, and fitted
+models from script 4 — e.g. `data/era5_land_hourly_alps_peaks.rds`,
+`data/era5_land_hourly_alps_dl_predictions.rds`,
+`data/era5_land_hourly_alps_dl_rqforest_models.rds`.
+
+``` r
+shiny::runApp("apps/dl-diagnostics-explorer")
+```
+
+### Return-level explorer (`apps/return-level-explorer`)
+
+Map of marginal runoff return levels by cell, frequency–magnitude curves
+(forest mixture vs GP tail), and rain–snow likelihood surfaces at a
+chosen return period.
+
+**Data:** peaks from script 3; script 4 models; precomputed marginal
+return levels from script 5 (`data/era5_land_hourly_alps_dl_marginal_return_levels.rds`
+or the bundle described in the app header), or
+`data/era5_land_hourly_alps_dl_predictions.rds` as a slower fallback.
+
+``` r
+shiny::runApp("apps/return-level-explorer")
+```
+
+### Joint rainfall–snowmelt explorer (`apps/joint-rain-snow-explorer`)
+
+Marginal fits and copula per cell: Gaussian-score diagnostics, joint
+density contours, marginal histograms, and frequency–magnitude curves
+for rainfall and snowmelt. Optional re-run of joint fitting from the
+sidebar (writes `inputs/joint_rain_snow_metadata.yaml` and runs
+`scripts/6-drivers_joint_distribution.r`).
+
+**Data:** `data/era5_land_hourly_alps_all.rds` and joint output from
+script 6 (`data/era5_land_hourly_alps_joint_rain_snow.rds`); metadata in
+`inputs/joint_rain_snow_metadata.yaml`.
+
+``` r
+shiny::runApp("apps/joint-rain-snow-explorer")
+```
+
+### Runoff marginals explorer (`apps/runoff-marginals-explorer`)
+
+Side-by-side frequency–magnitude curves: distributional-learning
+marginals (Random Forest mixture vs GP conversion) and **naive** POT-only
+marginals (`distionary::dst_empirical` vs `famish::fit_dst_gp` on peak
+runoff). Map cell selection; optional matched *y*-axis limits and log
+return level on both panels.
+
+**Data:** `data/era5_land_hourly_alps_peaks.rds` and
+`data/era5_land_hourly_alps_dl_return_levels.rds` from
+`scripts/5-runoff_marginals.r`.
+
+``` r
+shiny::runApp("apps/runoff-marginals-explorer")
+```
 
 ## R Package Contents
 
@@ -212,7 +269,11 @@ predict(dl_null(), newdata = tibble(x = 1:2))
 ├── R/
 ├── man/
 ├── apps/
-│   └── pot-explorer/
+│   ├── dl-diagnostics-explorer/
+│   ├── joint-rain-snow-explorer/
+│   ├── pot-explorer/
+│   ├── return-level-explorer/
+│   └── runoff-marginals-explorer/
 ├── scripts/
 │   ├── analyze.r
 │   └── download_data.py

@@ -7,11 +7,16 @@
 rp_reporting()
 }
 \value{
-A vector of commonly reported return periods.
+A numeric vector of commonly reported return periods (years).
 }
 \description{
-Return periods for reporting
+Canonical year-based grid used in summaries and maps. This is the default
+for \code{\link[=enframe_at_events]{enframe_at_events()}} (\code{return_periods} argument): each value is multiplied
+by \code{num_events_per_year} there to evaluate return levels on a POT event axis.
 }
 \examples{
 rp_reporting()
+}
+\seealso{
+\code{\link[=enframe_at_events]{enframe_at_events()}}
 }

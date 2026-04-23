@@ -1,15 +1,16 @@
 # Marginal distribution modelling: equal-weight mixture of peak-hour predictive
 # distributions per cell (forest + GP tail) and precomputed return-level table
 # for apps/return-level-explorer.
-# Requires: outputs of scripts/3-pot_spatial_eo.r and 4-dl_rqforest_spatial_eo.r
+# Requires: outputs of scripts/3-pot_spatial_eo.r and 4-distributional_learning.r
 # %%
 library(tidyverse)
 library(logger)
+library(probaverse)
 devtools::load_all()
 
 return_periods <- rp_reporting()
 
-log_info("Starting 5-marginal_mixtures_spatial_eo.r")
+log_info("Starting 5-runoff_marginals.r")
 
 dat <- read_rds(here::here("data", "era5_land_hourly_alps_peaks.rds"))
 peak_hour_distributions <- read_rds(
@@ -51,58 +52,54 @@ num_pot_events <- dat |>
     .groups = "drop"
   )
 
-lvls <- marginals_tbl |>
-  mutate(
-    df = map(
-      marginal_forest,
-      enframe_return,
-      at = return_periods,
-      arg_name = "return_period"
-    )
-  ) |>
-  select(cell_id, x, y, df) |>
-  unnest(df)
+marginals_tbl <- marginals_tbl |>
+  left_join(num_pot_events, by = c("cell_id", "x", "y"))
 
-lvlsgp <- marginals_tbl |>
-  left_join(num_pot_events, by = c("cell_id", "x", "y")) |>
-  mutate(
-    df = map2(
-      marginal_gp,
-      num_events_per_year,
-      \(mr, nep) {
-        enframe_return(mr, at = return_periods * nep, arg_name = "rp_adjusted")
-      }
-    )
-  ) |>
-  select(cell_id, x, y, df) |>
-  unnest(df) |>
-  mutate(return_period = rp_adjusted / num_events_per_year)
+# Marginals are evaluated on an event-frequency axis; see enframe_at_events().
 
-lvls_both <- left_join(
-  lvls,
-  lvlsgp |> select(cell_id, x, y, return_period, return),
-  by = c("cell_id", "x", "y", "return_period"),
-  suffix = c("_emp", "_gp")
+return_levels <- mutate(
+  marginals_tbl,
+  return_period = list(.env$return_periods),
+  levels_forest = map2(
+    marginal_forest,
+    num_events_per_year,
+    \(dist, num) eval_return(dist, at = return_periods * num),
+    .progress = TRUE
+  )
 )
 
-lvls_both_long <- lvls_both |>
+return_levels <- mutate(
+  return_levels,
+  levels_gp = map2(
+    marginal_gp,
+    num_events_per_year,
+    \(dist, num) eval_return(dist, at = return_periods * num),
+    .progress = TRUE
+  )
+)
+
+return_levels <- return_levels |>
+  select(!c(starts_with("marginal_"), data)) |>
+  unnest(c(return_period, starts_with("levels_")))
+
+return_levels_long <- return_levels |>
   pivot_longer(
-    c(return_emp, return_gp),
+    c(levels_forest, levels_gp),
     names_to = "model",
     values_to = "return_level",
-    names_prefix = "return_"
+    names_prefix = "levels_"
   ) |>
   mutate(
     model = case_when(
-      model == "emp" ~ "Forest mixture (empirical)",
-      model == "gp" ~ "Forest mixture + GP tail",
+      model == "forest" ~ "Random Forest",
+      model == "gp" ~ "GP conversion",
       TRUE ~ model
     )
   )
 
 write_rds(
-  list(lvls_both_long = lvls_both_long, return_periods = return_periods),
-  here::here("data", "era5_land_hourly_alps_dl_marginal_return_levels.rds")
+  return_levels_long,
+  here::here("data", "era5_land_hourly_alps_dl_return_levels.rds")
 )
 
-log_info("Finished 5-marginal_mixtures_spatial_eo.r")
+log_info("Finished 5-runoff_marginals.r")

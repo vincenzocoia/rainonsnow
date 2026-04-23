@@ -1,4 +1,4 @@
-# Options for scripts/7-rain_snow_conditional_runoff_spatial_eo.r
+# Options for scripts/7-likeliest_rain_snow.r
 # Combine joint hourly rainfall–snowmelt (script 6) with conditional runoff given
 # rain/snow from the rqforest (script 4). Surface shown is proportional to
 # f(rain,snow | runoff=z) ∝ f(z|rain,snow) × f(rain,snow).

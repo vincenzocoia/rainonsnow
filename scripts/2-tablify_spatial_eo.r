@@ -16,6 +16,7 @@ dir_create(tmp_dir)
 
 # %%
 # Read in each file and turn into a tibble
+# **This will take a day to run**
 log_info("Reading in each file and turning into a tibble")
 
 for (file in files) {
