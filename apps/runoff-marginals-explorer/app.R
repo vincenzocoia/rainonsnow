@@ -3,8 +3,8 @@
 #   shiny::runApp("apps/runoff-marginals-explorer")
 #
 # Requires:
-#   - data/era5_land_hourly_alps_peaks.rds
-#   - data/era5_land_hourly_alps_dl_return_levels.rds (scripts/5-runoff_marginals.r)
+#   - derived/era5_land_hourly_alps_peaks.rds
+#   - derived/era5_land_hourly_alps_dl_return_levels.rds (scripts/5-runoff_marginals.r)
 #
 # Suggests: shiny, tidyverse, sf, rnaturalearth, distionary, famish
 
@@ -19,8 +19,8 @@ library(famish)
 repo_root <- here::here()
 devtools::load_all(repo_root, quiet = TRUE)
 
-peaks_path <- path(repo_root, "data", "era5_land_hourly_alps_peaks.rds")
-marginal_levels_path <- path(repo_root, "data", "era5_land_hourly_alps_dl_return_levels.rds")
+peaks_path <- path(repo_root, "derived", "era5_land_hourly_alps_peaks.rds")
+marginal_levels_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_return_levels.rds")
 
 nearest_cell <- function(lon_click, lat_click, cells_tbl) {
   dx <- cells_tbl$y - lon_click
@@ -125,11 +125,20 @@ naive_colours <- c(
 fm_plot_height <- "380px"
 map_plot_height <- "260px"
 
+map_rp_choices <- rp_grid
+map_rp_default <- if (200 %in% map_rp_choices) 200 else max(map_rp_choices)
+
+map_fill_pal <- rev(c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
+
 ui <- fluidPage(
   titlePanel("Runoff marginals explorer"),
   uiOutput("data_banner"),
   helpText(
-    "Below the map, two frequency–magnitude panels are shown side by side at the same size: ",
+    "The map colours cells by the DL ",
+    strong("GP conversion"),
+    " marginal return level at a chosen return period (same ",
+    code("rp_reporting()"),
+    " grid as elsewhere). Below, two frequency–magnitude panels are shown side by side: ",
     "left — distributional learning (Random Forest vs GP conversion); ",
     "right — naive POT marginals (",
     code("dst_empirical"),
@@ -142,6 +151,12 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       width = 3,
+      selectInput(
+        "map_return_period",
+        "Map: return period T (years)",
+        choices = map_rp_choices,
+        selected = map_rp_default
+      ),
       selectInput(
         "cell_id",
         "Cell ID",
@@ -227,9 +242,31 @@ server <- function(input, output, session) {
     )
   })
 
+  map_df <- reactive({
+    req(nrow(cells_ref) > 0)
+    rp <- as.numeric(input$map_return_period)
+    if (!marginal_ok || is.null(marginal_long)) {
+      return(cells_ref |> dplyr::mutate(map_rl = NA_real_))
+    }
+    lv <- marginal_long |>
+      dplyr::filter(
+        .data$model == "GP conversion",
+        .data$return_period_years == rp,
+        is.finite(.data$return_level)
+      ) |>
+      dplyr::distinct(.data$cell_id, .keep_all = TRUE) |>
+      dplyr::select(cell_id, map_rl = return_level)
+    cells_ref |>
+      dplyr::left_join(lv, by = "cell_id")
+  })
+
   output$map_tiles <- renderPlot({
     req(!is.null(world_map), nrow(cells_ref) > 0)
-    ggplot(cells_ref, aes(y, x)) +
+    rp <- as.numeric(input$map_return_period)
+    d <- map_df() |>
+      dplyr::mutate(selected = .data$cell_id == as.integer(input$cell_id))
+
+    ggplot(d, aes(y, x)) +
       geom_sf(
         data = world_map,
         inherit.aes = FALSE,
@@ -237,17 +274,35 @@ server <- function(input, output, session) {
         linewidth = 1
       ) +
       geom_tile(
-        aes(fill = cell_id == as.integer(input$cell_id)),
-        colour = "grey30",
-        linewidth = 0.3,
+        aes(fill = map_rl),
+        colour = scales::alpha("grey35", 0.35),
+        linewidth = 0.25,
         width = td["width"],
         height = td["height"],
-        alpha = 0.5
+        alpha = 0.9
       ) +
-      geom_text(aes(label = cell_id), size = 2.2, colour = "grey20") +
-      scale_fill_manual(values = c(`TRUE` = "#b3cde3", `FALSE` = "#f7f7f7"), guide = "none") +
+      geom_tile(
+        data = dplyr::filter(d, selected),
+        aes(y, x),
+        inherit.aes = FALSE,
+        fill = NA,
+        colour = "grey10",
+        linewidth = 0.65,
+        width = td["width"],
+        height = td["height"]
+      ) +
+      geom_text(aes(label = cell_id), size = 2.2, colour = "grey15") +
+      scale_fill_gradientn(
+        paste0(rp, "-year return\nlevel (mm)"),
+        colours = map_fill_pal,
+        na.value = "grey90"
+      ) +
       coord_sf(xlim = map_xlim, ylim = map_ylim, expand = FALSE) +
-      labs(x = "Longitude", y = "Latitude", title = "Cells (click to select)") +
+      labs(
+        x = "Longitude",
+        y = "Latitude",
+        title = paste0("DL marginal (GP conversion) at ", rp, "-year return period")
+      ) +
       theme_minimal() +
       theme(panel.grid = element_blank())
   })

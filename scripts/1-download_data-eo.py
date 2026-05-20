@@ -77,7 +77,7 @@ def download_data(year: int):
     return ds
 
 
-data_dir = repo_root / "data" / "eo"
+data_dir = repo_root / "derived" / "eo"
 data_dir.mkdir(parents=True, exist_ok=True)
 
 years = range(FIRST_YEAR, LAST_YEAR + 1)

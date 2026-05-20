@@ -27,7 +27,7 @@ pal <- rev(c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
 ```
 
 ```{r}
-dat <- read_rds(here::here("data", "era5_land_hourly_alps_peaks.rds"))
+dat <- read_rds(here::here("derived", "era5_land_hourly_alps_peaks.rds"))
 ```
 
 Set up two basemap options for the spatial plots:
@@ -232,7 +232,7 @@ prob_dat |>
 
 ## Distributional Learning Model
 
-Fit a distributional random forest model separately at each grid cell (see `scripts/4-distributional_learning.r`, which writes `data/era5_land_hourly_alps_dl_predictions.rds`; marginal mixtures and precomputed return levels follow in `scripts/5-runoff_marginals.r`; joint rainfall–snowmelt copulas in `scripts/6-drivers_joint_distribution.r`).
+Fit a distributional random forest model separately at each grid cell (see `scripts/4-distributional_learning.r`, which writes `derived/era5_land_hourly_alps_dl_predictions.rds`; marginal mixtures and precomputed return levels follow in `scripts/5-runoff_marginals.r`; joint rainfall–snowmelt copulas in `scripts/6-drivers_joint_distribution.r`).
 
 This method follows quantile regression forests [@meinshausen2006quantile].
 Instead of calculating only the mean at each leaf in the random forest, conditional quantiles are estimated; taken together, these give the full conditional distribution.
@@ -243,7 +243,7 @@ The [probaverse](https://probaverse.com) is used for the handling of distributio
 
 ```{r}
 peak_hour_distributions <- read_rds(
-  here::here("data", "era5_land_hourly_alps_dl_predictions.rds")
+  here::here("derived", "era5_land_hourly_alps_dl_predictions.rds")
 )
 
 peak_hour_distributions

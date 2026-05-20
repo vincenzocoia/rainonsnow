@@ -2,8 +2,8 @@
 # Run from the package root:
 #   shiny::runApp("apps/joint-rain-snow-explorer")
 #
-# Requires: data/era5_land_hourly_alps_all.rds and
-#   data/era5_land_hourly_alps_joint_rain_snow.rds (after script 6);
+# Requires: derived/era5_land_hourly_alps_all.rds and
+#   derived/era5_land_hourly_alps_joint_rain_snow.rds (after script 6);
 #   inputs/rain_snow_joint_model.yaml
 # Suggests: yaml, shiny, tidyverse, sf, rnaturalearth
 
@@ -23,8 +23,8 @@ devtools::load_all(repo_root, quiet = TRUE)
 `%||%` <- function(x, y) if (!is.null(x)) x else y
 
 meta_path <- path(repo_root, "inputs", "rain_snow_joint_model.yaml")
-hourly_path <- path(repo_root, "data", "era5_land_hourly_alps_all.rds")
-joint_path <- path(repo_root, "data", "era5_land_hourly_alps_joint_rain_snow.rds")
+hourly_path <- path(repo_root, "derived", "era5_land_hourly_alps_all.rds")
+joint_path <- path(repo_root, "derived", "era5_land_hourly_alps_joint_rain_snow.rds")
 
 margs_choices <- c(
   "empirical", "gamma", "weibull", "lnorm", "gumbel",
@@ -138,9 +138,21 @@ empirical_rp_curve <- function(x, hours_per_year) {
   tibble(x = x, return_period = rp)
 }
 
-cdf_scores_to_copula_u <- function(u_mat, n) {
-  u_mat <- pmax(pmin(as.matrix(u_mat), 1), 0)
-  u_mat * (n / (n + 1L))
+interiorize_margin_cdf <- function(u, eps = 1e-6) {
+  u <- pmax(pmin(as.numeric(u), 1), 0)
+  pos <- u[u > 0]
+  lo <- if (length(pos) > 0) min(pos) else eps
+  low <- if (eps > lo) lo / 2 else eps
+  high <- 1 - low
+  u[u == 0] <- low
+  u[u == 1] <- high
+  u
+}
+
+cdf_scores_to_copula_u <- function(u, v, ..., eps = 1e-6) {
+  margins <- c(list(u, v), list(...))
+  processed <- lapply(margins, interiorize_margin_cdf, eps = eps)
+  do.call(cbind, processed)
 }
 
 copula_density_on_normal_grid <- function(bc, ngrid = 60L) {
@@ -393,12 +405,7 @@ server <- function(input, output, session) {
 
   cell_joint <- reactive({
     req(is.data.frame(joint_tbl()))
-    jt <- joint_tbl()
-    ## ungroup for filter
-    if (dplyr::is_grouped_df(jt)) {
-      jt <- dplyr::ungroup(jt)
-    }
-    row <- jt |> filter(cell_id == as.integer(input$cell_id))
+    row <- joint_tbl() |> filter(cell_id == as.integer(input$cell_id))
     if (nrow(row) != 1L) {
       return(NULL)
     }
@@ -464,15 +471,12 @@ server <- function(input, output, session) {
       ylab <- "Rank-based normal score (snowmelt)"
       gu <- copula_density_on_normal_grid(bc)
     } else {
-      u1 <- cdf_scores_to_copula_u(
-        cbind(
-          distionary::eval_cdf(j$marginal_rainfall, at = rain),
-          distionary::eval_cdf(j$marginal_snowmelt, at = sm)
-        ),
-        n
+      u_scores <- cdf_scores_to_copula_u(
+        distionary::eval_cdf(j$marginal_rainfall, at = rain),
+        distionary::eval_cdf(j$marginal_snowmelt, at = sm)
       )
-      z1 <- qnorm(u1[, 1])
-      z2 <- qnorm(u1[, 2])
+      z1 <- qnorm(u_scores[, 1])
+      z2 <- qnorm(u_scores[, 2])
       xlab <- "Gaussian scores (Phi^-1(u)), rain — marginal eval_cdf"
       ylab <- "Gaussian scores (Phi^-1(u)), snow — marginal eval_cdf"
       gu <- copula_density_on_normal_grid(bc)

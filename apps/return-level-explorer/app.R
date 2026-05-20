@@ -3,10 +3,11 @@
 #   shiny::runApp("apps/return-level-explorer")
 #
 # Requires:
-#   - data/era5_land_hourly_alps_peaks.rds
-#   - data/era5_land_hourly_alps_dl_rqforest_models.rds  (script 4)
-#   - data/era5_land_hourly_alps_dl_marginal_return_levels.rds  (script 5; precomputed mixtures)
-#     OR data/era5_land_hourly_alps_dl_predictions.rds as a slow fallback (mixtures built in app)
+#   - derived/era5_land_hourly_alps_peaks.rds
+#   - derived/era5_land_hourly_alps_dl_rqforest_models.rds  (script 4)
+#   - derived/era5_land_hourly_alps_dl_return_levels.rds  (script 5 flat table; preferred)
+#     OR derived/era5_land_hourly_alps_dl_marginal_return_levels.rds  (bundle with marginal_return_levels_long)
+#     OR derived/era5_land_hourly_alps_dl_predictions.rds as slow fallback (mixtures built in app)
 
 library(shiny)
 library(tidyverse)
@@ -18,10 +19,59 @@ library(probaverse)
 repo_root <- here::here()
 devtools::load_all(repo_root, quiet = TRUE)
 
-peaks_path <- path(repo_root, "data", "era5_land_hourly_alps_peaks.rds")
-dl_path <- path(repo_root, "data", "era5_land_hourly_alps_dl_predictions.rds")
-models_path <- path(repo_root, "data", "era5_land_hourly_alps_dl_rqforest_models.rds")
-marginal_levels_path <- path(repo_root, "data", "era5_land_hourly_alps_dl_marginal_return_levels.rds")
+peaks_path <- path(repo_root, "derived", "era5_land_hourly_alps_peaks.rds")
+dl_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_predictions.rds")
+models_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_rqforest_models.rds")
+marginal_flat_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_return_levels.rds")
+marginal_bundle_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_marginal_return_levels.rds")
+
+## Script 5 writes a long table with model labels "Random Forest" / "GP conversion";
+## this app plots using the names produced by its slow-path rebuild.
+normalize_marginal_levels_for_app <- function(tbl) {
+  if (!is.data.frame(tbl) || nrow(tbl) == 0L) {
+    return(tibble::tibble())
+  }
+  out <- tbl
+  if ("return_period" %in% names(out) && !"return_period_years" %in% names(out)) {
+    out <- dplyr::rename(out, return_period_years = return_period)
+  }
+  out |>
+    dplyr::mutate(
+      model = dplyr::case_when(
+        .data$model %in% c("Random Forest", "forest", "Forest mixture (empirical)") ~
+          "Forest mixture (empirical)",
+        .data$model %in% c("GP conversion", "gp", "Forest mixture + GP tail") ~
+          "Forest mixture + GP tail",
+        TRUE ~ .data$model
+      )
+    )
+}
+
+## Rain–snow panel only: grid + forecasts for one cell (was all cells at startup — very slow).
+cell_rain_snow_prep_one <- function(cid, dat_all, dl_models_tbl) {
+  cid <- as.integer(cid)
+  sub <- dat_all |> dplyr::filter(.data$cell_id == cid)
+  if (nrow(sub) == 0L) {
+    return(NULL)
+  }
+  row_dl <- dl_models_tbl |> dplyr::filter(.data$cell_id == cid)
+  if (nrow(row_dl) != 1L) {
+    return(NULL)
+  }
+  g <- grid_from_scatter(
+    sub$rainfall_hourly,
+    sub$snowmelt_hourly,
+    data = sub,
+    mult = 1.3
+  )
+  g <- dplyr::rename(g, rainfall_hourly = x, snowmelt_hourly = y)
+  forecast_forest <- stats::predict(row_dl$dl_rqforest[[1]], newdata = g)
+  forecast_gp <- purrr::map(
+    forecast_forest,
+    \(d) tryCatch(convert_emp_to_gp(d), error = function(e) d)
+  )
+  list(data = sub, grid = g, forecast_gp = forecast_gp)
+}
 
 pal <- rev(c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
 
@@ -62,7 +112,11 @@ td <- tile_dims(cells_ref)
 return_periods <- c(2, 5, 10, 20, 50, 100, 200, 500, 1000)
 
 data_ready <- file.exists(models_path) &&
-  (file.exists(marginal_levels_path) || file.exists(dl_path))
+  (
+    file.exists(marginal_flat_path) ||
+      file.exists(marginal_bundle_path) ||
+      file.exists(dl_path)
+  )
 
 ui <- fluidPage(
   titlePanel("Marginal return levels and rain–snowmelt drivers"),
@@ -107,7 +161,7 @@ server <- function(input, output, session) {
   values <- reactiveValues(
     ready = FALSE,
     marginal_return_levels_long = NULL,
-    cell_prep = NULL,
+    dl_models_tbl = NULL,
     error = NULL
   )
 
@@ -119,10 +173,18 @@ server <- function(input, output, session) {
     if (!file.exists(models_path)) {
       missing <- c(missing, basename(models_path))
     }
-    if (!file.exists(marginal_levels_path) && !file.exists(dl_path)) {
+    if (
+      !file.exists(marginal_flat_path) &&
+        !file.exists(marginal_bundle_path) &&
+        !file.exists(dl_path)
+    ) {
       missing <- c(
         missing,
-        paste0(basename(marginal_levels_path), " or ", basename(dl_path))
+        paste0(
+          basename(marginal_flat_path), ", ",
+          basename(marginal_bundle_path), ", or ",
+          basename(dl_path)
+        )
       )
     }
     helpText(
@@ -153,15 +215,32 @@ server <- function(input, output, session) {
           {
             dl_models <- read_rds(models_path)
 
-            if (file.exists(marginal_levels_path)) {
-              incProgress(0.15, detail = "Reading precomputed marginal return levels")
-              bundle <- read_rds(marginal_levels_path)
+            if (file.exists(marginal_bundle_path)) {
+              incProgress(0.15, detail = "Reading precomputed marginal return levels (bundle)")
+              bundle <- read_rds(marginal_bundle_path)
               marginal_return_levels_long <- bundle$marginal_return_levels_long
               rp_saved <- bundle$return_periods
               if (!identical(unname(rp_saved), unname(return_periods))) {
                 showNotification(
                   paste(
                     "Return periods in the precomputed RDS differ from `return_periods` in app.R.",
+                    "Align them or update the drop-down choices."
+                  ),
+                  type = "warning",
+                  duration = 12
+                )
+              }
+            } else if (file.exists(marginal_flat_path)) {
+              incProgress(0.15, detail = "Reading script 5 marginal return levels")
+              marginal_return_levels_long <- normalize_marginal_levels_for_app(
+                read_rds(marginal_flat_path)
+              )
+              rp_saved <- sort(unique(marginal_return_levels_long$return_period_years))
+              if (!identical(unname(rp_saved), unname(return_periods))) {
+                showNotification(
+                  paste(
+                    "Return periods in ", basename(marginal_flat_path),
+                    " differ from `return_periods` in app.R.",
                     "Align them or update the drop-down choices."
                   ),
                   type = "warning",
@@ -246,34 +325,9 @@ server <- function(input, output, session) {
               incProgress(0.55, detail = "Marginal mixtures finished")
             }
 
-            incProgress(0.65, detail = "Predicting rain–snowmelt grids (no refit)")
-            cell_prep <- dat |>
-              nest(data = !c(cell_id, x, y)) |>
-              left_join(dl_models, by = c("cell_id", "x", "y")) |>
-              mutate(
-                grid = map(
-                  data,
-                  \(df) {
-                    g <- grid_from_scatter(
-                      rainfall_hourly,
-                      snowmelt_hourly,
-                      data = df,
-                      mult = 1.3
-                    )
-                    dplyr::rename(g, rainfall_hourly = x, snowmelt_hourly = y)
-                  }
-                ),
-                forecast_forest = map2(dl_rqforest, grid, predict),
-                forecast_gp = map(
-                  forecast_forest,
-                  \(fc) purrr::map(fc, \(d) tryCatch(convert_emp_to_gp(d), error = function(e) d))
-                )
-              ) |>
-              select(cell_id, x, y, data, grid, forecast_gp)
-
             incProgress(0.95, detail = "Done")
             values$marginal_return_levels_long <- marginal_return_levels_long
-            values$cell_prep <- cell_prep
+            values$dl_models_tbl <- dl_models
             values$ready <- TRUE
           }
         )
@@ -298,6 +352,13 @@ server <- function(input, output, session) {
       return("Loading…")
     }
     "Ready."
+  })
+
+  ## Deferred: rain–snow likelihood surface is built only for the selected cell.
+  rain_snow_prep <- reactive({
+    req(values$ready, values$dl_models_tbl)
+    cid <- as.integer(input$cell_id)
+    cell_rain_snow_prep_one(cid, dat, values$dl_models_tbl)
   })
 
   map_df <- reactive({
@@ -392,12 +453,17 @@ server <- function(input, output, session) {
   })
 
   output$rain_snow <- renderPlot({
-    req(values$ready, values$cell_prep)
+    req(values$ready)
     cid <- as.integer(input$cell_id)
     rp <- as.numeric(input$return_period)
 
-    row <- values$cell_prep |> dplyr::filter(cell_id == cid)
-    validate(need(nrow(row) == 1L, "Cell data not found."))
+    prep <- rain_snow_prep()
+    validate(
+      need(
+        !is.null(prep),
+        "No POT data or DL model row for this cell."
+      )
+    )
 
     mag_tbl <- values$marginal_return_levels_long |>
       filter(
@@ -408,14 +474,14 @@ server <- function(input, output, session) {
     validate(need(nrow(mag_tbl) == 1L, "Return level not available for this cell."))
     magnitude <- mag_tbl$return_level[1]
 
-    g <- row$grid[[1]]
-    fgp <- row$forecast_gp[[1]]
+    g <- prep$grid
+    fgp <- prep$forecast_gp
     validate(need(length(fgp) == nrow(g), "Forecast grid mismatch."))
 
     g <- g |>
       mutate(prob_responsible = distribution_likeliness(fgp, magnitude))
 
-    pts <- row$data[[1]] |>
+    pts <- prep$data |>
       select(rainfall_hourly, snowmelt_hourly)
 
     ggplot(g, aes(rainfall_hourly, snowmelt_hourly)) +

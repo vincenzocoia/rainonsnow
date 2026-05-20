@@ -41,8 +41,8 @@ copula; otherwise \code{bicop} is \code{NULL}.}
 fitted (can be very chatty with many cells).}
 }
 \value{
-A grouped-by-row data frame with the same grouping keys plus column
-\code{joint} (list of \code{joint_rain_snow} objects).
+A tibble with one row per group: grouping columns plus list column
+\code{joint} (each element is a \code{joint_rain_snow} object).
 }
 \description{
 Groups \code{data} (usually \code{cell_id} or \verb{(x, y)}), fits one \code{joint_rain_snow}

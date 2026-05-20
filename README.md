@@ -10,31 +10,32 @@
 `rainonsnow` is a research repository for exploring rain-on-snow
 hydrology in the Alps, focussing on extreme runoff as a consequence.
 
-The repo currently has two main pieces:
+The repo consists of:
 
-- A Python workflow for downloading hourly ERA5-Land variables from
-  Google Earth Engine.
-- A numbered R analysis pipeline and Shiny apps for fitting and
-  inspecting distributional learning (and related) models on the
-  exported data.
+- A code pipeline for bringing in raster data from Google Earth Engine
+  and analyzing it.
+- A set of Shiny apps for exploring the data and models.
+- An R package for the distributional learning model and helper
+  functions.
 
 ## Current Workflow
 
 Scripts are numbered in pipeline order (`scripts/1-*` … `scripts/7-*`).
-Intermediate files land under `data/` (and yearly NetCDF under
-`data/eo/`).
+Intermediate files land under `derived/` (and yearly NetCDF under
+`derived/eo/`).
 
-1.  **`scripts/1-download_data-eo.py`** — Download hourly ERA5-Land
-    from Google Earth Engine to `data/eo/era5_land_hourly_alps_<year>.nc`
+1.  **`scripts/1-download_data-eo.py`** — Download hourly ERA5-Land from
+    Google Earth Engine to `derived/eo/era5_land_hourly_alps_<year>.nc`
     (bands and years from `inputs/data_specifications.yaml`).
 2.  **`scripts/2-tablify_spatial_eo.r`** — Raster NetCDF → tabular
-    hourly series; writes `data/era5_land_hourly_alps_all.rds`.
+    hourly series; writes `derived/era5_land_hourly_alps_all.rds`.
 3.  **`scripts/3-pot_spatial_eo.r`** — Peaks over threshold per cell
-    (`data/era5_land_hourly_alps_peaks.rds`, thresholds, metadata).
+    (`derived/era5_land_hourly_alps_peaks.rds`, thresholds, metadata).
 4.  **`scripts/4-distributional_learning.r`** — Quantile regression
-    forest on POT peak hours (models and predictions used by later apps).
+    forest on POT peak hours (models and predictions used by later
+    apps).
 5.  **`scripts/5-runoff_marginals.r`** — Marginal return-level tables
-    for runoff (`data/era5_land_hourly_alps_dl_*`).
+    for runoff (`derived/era5_land_hourly_alps_dl_*`).
 6.  **`scripts/6-drivers_joint_distribution.r`** — Joint
     rainfall–snowmelt model per cell.
 7.  **`scripts/7-likeliest_rain_snow.r`** — Conditional rain–snow
@@ -43,14 +44,12 @@ Intermediate files land under `data/` (and yearly NetCDF under
 ## Dependency management
 
 Python dependencies are managed with
-**[uv](https://github.com/astral-sh/uv)** (`pyproject.toml`; run `uv sync`
-so the lockfile matches the resolved environment). R package dependencies are
-declared in `DESCRIPTION`; install them from the repo root with something like
-`devtools::install_deps()` (or your preferred workflow). While editing package
-code, `devtools::load_all()` attaches the package from source.
-
-Exploratory work may also live in `scripts/analyze.qmd` (to be retired
-in favour of this script chain).
+**[uv](https://github.com/astral-sh/uv)** (`pyproject.toml`; run
+`uv sync` so the lockfile matches the resolved environment). R package
+dependencies are declared in `DESCRIPTION`; install them from the repo
+root with something like `devtools::install_deps()` (or your preferred
+workflow). While editing package code, `devtools::load_all()` attaches
+the package from source.
 
 ## Python Setup
 
@@ -70,8 +69,8 @@ Pipeline settings for ERA5-Land export and tabular cleanup live in
 - **`earth_engine.project_id`** — Google Cloud project passed to
   `ee.Initialize(project=...)`.
 - **`download`** — Earth Engine **`collection_id`**, **`first_year`** /
-  **`last_year`**, and **`variables`** (hourly band names exported from the
-  collection).
+  **`last_year`**, and **`variables`** (hourly band names exported from
+  the collection).
 - **`tablify.epsilon_mm`** — Near-zero cutoff for rain and melt (mm/h
   equivalent) in script 2 before other steps.
 
@@ -87,8 +86,8 @@ Run the downloader with:
 uv run python scripts/1-download_data-eo.py
 ```
 
-If `data_specifications.yaml` is missing, scripts 1 and 2 fall back to the
-same defaults as the template file.
+If `data_specifications.yaml` is missing, scripts 1 and 2 fall back to
+the same defaults as the template file.
 
 ## Input Controls
 
@@ -98,55 +97,56 @@ YAML files under **`inputs/`** configure scripts and apps (beyond
 - **`distributional_learning.yaml`** — Response and predictors for
   **`dl_rqforest`** in script 4.
 - **`rain_snow_joint_model.yaml`** — Joint marginal + copula options for
-  script 6 (key `fit_joint_rain_snow_cells`), and **`likeliest_rain_snow`**
-  settings for script 7 (conditional rain–snow surface given runoff).
+  script 6 (key `fit_joint_rain_snow_cells`), and
+  **`likeliest_rain_snow`** settings for script 7 (conditional rain–snow
+  surface given runoff).
 - **`pot_metadata.yaml`** — POT quantile / min-gap for script 3 and
   `apps/pot-explorer`.
 
 ## R Setup
 
-The R side of the repository is structured like a package, with source
-files in `R/`, documentation in `man/`, and package metadata in
-`DESCRIPTION` and `NAMESPACE`.
+In addition to the analysis stream of this repository, this repository
+is also structured like an R package, with source files in `R/`,
+documentation in `man/`, and package metadata in `DESCRIPTION` and
+`NAMESPACE`. This is useful so that custom functions can be more easily
+accessed by the analysis scripts, and more easily used by anyone
+developing this analysis.
 
-Install the required R packages as needed, then load the package locally
-during development:
+To make these functions available to the analysis scripts, run:
 
 ``` r
 devtools::load_all()
 ```
 
+If you make a change to the R package, run `devtools::document()` to
+update the package documentation.
+
 ## Run The Analysis
 
-After downloading NetCDF files, run the R scripts in order (each writes
-inputs for the next). From the repo root, with packages installed and
-`devtools::load_all()` as needed inside each script:
+Run the scripts in order (each writes inputs for the next) from the repo
+root.
 
-``` r
-source("scripts/2-tablify_spatial_eo.r")
-source("scripts/3-pot_spatial_eo.r")
-source("scripts/4-distributional_learning.r")
-source("scripts/5-runoff_marginals.r")
-source("scripts/6-drivers_joint_distribution.r")
+``` bash
+uv python scripts/1-download_data-eo.py
+Rscript scripts/2-tablify_spatial_eo.r
+Rscript scripts/3-pot_spatial_eo.r
+Rscript scripts/4-distributional_learning.r
+Rscript scripts/5-runoff_marginals.r
+Rscript scripts/6-drivers_joint_distribution.r
 ```
-
-Script 2 is long-running on the full yearly stack; scripts 4–6 depend on
-outputs from 2–3. Script 7 is optional and expects metadata under
-`inputs/` as noted in its header.
 
 ## Shiny apps
 
-Interactive apps live under `apps/*/app.R`. Run them from the
-**repository root** so paths such as `data/` and `devtools::load_all()`
-resolve:
+Interactive apps live under `apps/*`. Run them from the **repository
+root** so paths such as `derived/` and `devtools::load_all()` resolve:
 
 ``` r
 shiny::runApp("apps/<app-folder>")
 ```
 
 Typical dependencies include [shiny](https://shiny.posit.co/),
-**ggplot2**, **tidyverse**, **sf**, and **rnaturalearth**; individual apps
-may need **yaml**, **probaverse**, **distionary**, **famish**,
+**ggplot2**, **tidyverse**, **sf**, and **rnaturalearth**; individual
+apps may need **yaml**, **probaverse**, **distionary**, **famish**,
 **rvinecopulib**, and others used in the analysis scripts.
 
 ### POT explorer (`apps/pot-explorer`)
@@ -157,8 +157,9 @@ timing** scatter of all POT peaks for that cell (runoff vs day of year,
 all years pooled). Pick the cell from the map or sidebar; optional
 re-run of script 3 from the sidebar.
 
-**Data:** `data/era5_land_hourly_alps_all.rds`
-(`scripts/2-tablify_spatial_eo.r`) and `data/era5_land_hourly_alps_peaks.rds`
+**Data:** `derived/era5_land_hourly_alps_all.rds`
+(`scripts/2-tablify_spatial_eo.r`) and
+`derived/era5_land_hourly_alps_peaks.rds`
 (`scripts/3-pot_spatial_eo.r`).
 
 ``` r
@@ -171,9 +172,9 @@ Calibration (P–P), skill versus marginal fit, and rain–snow scatter with
 conditional runoff CDFs at clicked coordinates.
 
 **Data:** POT peaks, distributional-learning predictions, and fitted
-models from script 4 — e.g. `data/era5_land_hourly_alps_peaks.rds`,
-`data/era5_land_hourly_alps_dl_predictions.rds`,
-`data/era5_land_hourly_alps_dl_rqforest_models.rds`.
+models from script 4 — e.g. `derived/era5_land_hourly_alps_peaks.rds`,
+`derived/era5_land_hourly_alps_dl_predictions.rds`,
+`derived/era5_land_hourly_alps_dl_rqforest_models.rds`.
 
 ``` r
 shiny::runApp("apps/dl-diagnostics-explorer")
@@ -186,9 +187,10 @@ Map of marginal runoff return levels by cell, frequency–magnitude curves
 chosen return period.
 
 **Data:** peaks from script 3; script 4 models; precomputed marginal
-return levels from script 5 (`data/era5_land_hourly_alps_dl_marginal_return_levels.rds`
-or the bundle described in the app header), or
-`data/era5_land_hourly_alps_dl_predictions.rds` as a slower fallback.
+return levels from script 5
+(`derived/era5_land_hourly_alps_dl_marginal_return_levels.rds` or the
+bundle described in the app header), or
+`derived/era5_land_hourly_alps_dl_predictions.rds` as a slower fallback.
 
 ``` r
 shiny::runApp("apps/return-level-explorer")
@@ -202,9 +204,9 @@ for rainfall and snowmelt. Optional re-run of joint fitting from the
 sidebar (writes `inputs/rain_snow_joint_model.yaml` and runs
 `scripts/6-drivers_joint_distribution.r`).
 
-**Data:** `data/era5_land_hourly_alps_all.rds` and joint output from
-script 6 (`data/era5_land_hourly_alps_joint_rain_snow.rds`); fitting options
-and script 7 settings share `inputs/rain_snow_joint_model.yaml`.
+**Data:** `derived/era5_land_hourly_alps_all.rds` and joint output from
+script 6 (`derived/era5_land_hourly_alps_joint_rain_snow.rds`); fitting
+options and script 7 settings share `inputs/rain_snow_joint_model.yaml`.
 
 ``` r
 shiny::runApp("apps/joint-rain-snow-explorer")
@@ -213,20 +215,20 @@ shiny::runApp("apps/joint-rain-snow-explorer")
 ### Runoff marginals explorer (`apps/runoff-marginals-explorer`)
 
 Side-by-side frequency–magnitude curves: distributional-learning
-marginals (Random Forest mixture vs GP conversion) and **naive** POT-only
-marginals (`distionary::dst_empirical` vs `famish::fit_dst_gp` on peak
-runoff). Map cell selection; optional matched *y*-axis limits and log
-return level on both panels.
+marginals (Random Forest mixture vs GP conversion) and **naive**
+POT-only marginals (`distionary::dst_empirical` vs `famish::fit_dst_gp`
+on peak runoff). Map cell selection; optional matched *y*-axis limits
+and log return level on both panels.
 
-**Data:** `data/era5_land_hourly_alps_peaks.rds` and
-`data/era5_land_hourly_alps_dl_return_levels.rds` from
+**Data:** `derived/era5_land_hourly_alps_peaks.rds` and
+`derived/era5_land_hourly_alps_dl_return_levels.rds` from
 `scripts/5-runoff_marginals.r`.
 
 ``` r
 shiny::runApp("apps/runoff-marginals-explorer")
 ```
 
-## R Package Contents
+## R Package Demonstration
 
 ``` r
 library(rainonsnow)
@@ -239,9 +241,14 @@ library(dplyr)
 #> The following objects are masked from 'package:base':
 #> 
 #>     intersect, setdiff, setequal, union
+library(probaverse)
+#> ── Attaching core probaverse packages ──────────────────────────────────────────
+#> ✔ distionary   0.1.0   Create and Evaluate Probability Distributions
+#> ✔ distplyr     0.2.0   Manipulate and Combine Probability Distributions
+#> ✔ famish       0.2.0   Flexibly Tune Families of Probability Distributions
 ```
 
-The R package part of the repository provides a small distributional
+The R package is titled `rainonsnow` and provides a small distributional
 learning interface for modelling the distribution of a target variable
 given some predictors.
 
@@ -316,35 +323,12 @@ predict(dl_null(), newdata = tibble(x = 1:2))
 #> Null distribution (NA)
 ```
 
-## Repository Layout
-
-``` text
-.
-├── R/
-├── man/
-├── apps/
-│   ├── dl-diagnostics-explorer/
-│   ├── joint-rain-snow-explorer/
-│   ├── pot-explorer/
-│   ├── return-level-explorer/
-│   └── runoff-marginals-explorer/
-├── scripts/
-│   ├── 1-download_data-eo.py
-│   ├── 2-tablify_spatial_eo.r
-│   ├── 3-pot_spatial_eo.r
-│   ├── 4-distributional_learning.r
-│   ├── 5-runoff_marginals.r
-│   ├── 6-drivers_joint_distribution.r
-│   ├── 7-likeliest_rain_snow.r
-│   └── analyze.qmd
-├── inputs/
-├── data/
-├── DESCRIPTION
-├── NAMESPACE
-└── pyproject.toml
-```
-
 ## Status
 
 This repository is in an active research/prototyping state, so scripts,
 paths, and interfaces may change as the workflow evolves.
+
+## License
+
+This repository is licensed under the MIT License - see the `LICENSE`
+file for details.

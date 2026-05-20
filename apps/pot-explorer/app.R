@@ -2,7 +2,7 @@
 # Run from the package root:
 #   shiny::runApp("apps/pot-explorer")
 #
-# Requires: hourly and POT RDS files from scripts 2 and 3 in data/; optional
+# Requires: hourly and POT RDS files from scripts 2 and 3 in derived/; optional
 #   inputs/pot_metadata.yaml (created with defaults by script 3 if missing).
 # Suggests: yaml (for reading/writing pot_metadata.yaml)
 
@@ -45,9 +45,9 @@ join_peaks_explorer_year <- function(peaks_tbl, hourly_tbl) {
 }
 
 meta_path <- path(repo_root, "inputs", "pot_metadata.yaml")
-hourly_path <- path(repo_root, "data", "era5_land_hourly_alps_all.rds")
-peaks_path <- path(repo_root, "data", "era5_land_hourly_alps_peaks.rds")
-threshold_path <- path(repo_root, "data", "era5_land_hourly_alps_pot_thresholds.rds")
+hourly_path <- path(repo_root, "derived", "era5_land_hourly_alps_all.rds")
+peaks_path <- path(repo_root, "derived", "era5_land_hourly_alps_peaks.rds")
+threshold_path <- path(repo_root, "derived", "era5_land_hourly_alps_pot_thresholds.rds")
 read_pot_meta <- function(path) {
   if (!file.exists(path)) {
     return(list(quantile = 0.995, min_gap = 6L))

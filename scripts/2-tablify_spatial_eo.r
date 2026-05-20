@@ -29,9 +29,9 @@ tablify_meta <- read_tablify_meta(data_spec_path)
 # Compare to ERA5-Land rates in metres (YAML stores the mm equivalent).
 epsilon_m <- tablify_meta$epsilon_mm / 1000
 
-files <- dir_ls(here::here("data", "eo"), glob = "*.nc")
+files <- dir_ls(here::here("derived", "eo"), glob = "*.nc")
 
-tmp_dir <- here::here("data", "intermediate")
+tmp_dir <- here::here("derived", "intermediate")
 dir_create(tmp_dir)
 
 # %%
@@ -112,5 +112,5 @@ dat <- mutate(
 # %%
 # Write all data to CSV and RDS
 log_info("Writing all data to CSV and RDS")
-write_csv(dat, file = here::here("data", "era5_land_hourly_alps_all.csv"))
-write_rds(dat, file = here::here("data", "era5_land_hourly_alps_all.rds"))
+write_csv(dat, file = here::here("derived", "era5_land_hourly_alps_all.csv"))
+write_rds(dat, file = here::here("derived", "era5_land_hourly_alps_all.rds"))

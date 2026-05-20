@@ -4,9 +4,9 @@
 #   shiny::runApp("apps/dl-diagnostics-explorer")
 #
 # Requires:
-#   - data/era5_land_hourly_alps_peaks.rds
-#   - data/era5_land_hourly_alps_dl_predictions.rds  (script 4)
-#   - data/era5_land_hourly_alps_dl_rqforest_models.rds  (script 4)
+#   - derived/era5_land_hourly_alps_peaks.rds
+#   - derived/era5_land_hourly_alps_dl_predictions.rds  (script 4)
+#   - derived/era5_land_hourly_alps_dl_rqforest_models.rds  (script 4)
 
 library(shiny)
 library(tidyverse)
@@ -19,9 +19,9 @@ library(distionary)
 repo_root <- here::here()
 devtools::load_all(repo_root, quiet = TRUE)
 
-peaks_path <- path(repo_root, "data", "era5_land_hourly_alps_peaks.rds")
-dl_path <- path(repo_root, "data", "era5_land_hourly_alps_dl_predictions.rds")
-models_path <- path(repo_root, "data", "era5_land_hourly_alps_dl_rqforest_models.rds")
+peaks_path <- path(repo_root, "derived", "era5_land_hourly_alps_peaks.rds")
+dl_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_predictions.rds")
+models_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_rqforest_models.rds")
 
 pal <- rev(c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
 

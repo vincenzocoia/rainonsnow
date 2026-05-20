@@ -1,17 +1,42 @@
-#' Map margin CDF values into the interior of \eqn{[0,1]} for copula fitting
+#' Interiorize one margin's CDF scores away from 0 and 1
+#'
+#' @param u Numeric vector of cdf scores in \eqn{[0, 1]}.
+#' @param eps Candidate lower bound for exact zeros.
+#' @noRd
+interiorize_margin_cdf <- function(u, eps = 1e-6) {
+  u <- pmax(pmin(as.numeric(u), 1), 0)
+  pos <- u[u > 0]
+  lo <- if (length(pos) > 0) min(pos) else eps
+  low <- if (eps > lo) lo / 2 else eps
+  high <- 1 - low
+  u[u == 0] <- low
+  u[u == 1] <- high
+  u
+}
+
+#' Map margin CDF scores into the interior of \eqn{(0,1)} for copula fitting
 #'
 #' `rvinecopulib::bicop()` expects pseudo-observations strictly inside the unit
-#' hypercube. Semi-parametric margins often yield exact zeros and ones; scaling
-#' by \eqn{n/(n+1)} matches the usual rank-based pseudo-observation adjustment.
+#' hypercube. Exact zeros and ones from [distionary::eval_cdf()] are replaced
+#' per margin: zeros become `eps` or half the smallest positive score in that
+#' margin (whichever is smaller); ones become one minus that lower bound.
 #'
-#' @param u_mat Numeric matrix with two columns (rain, snowmelt margin cdf
-#'   scores).
-#' @param n Sample size used for scaling.
-#' @returns A numeric matrix of the same shape as `u_mat`.
+#' @param u,v Numeric vectors of margin cdf scores in \eqn{[0, 1]} (same length).
+#' @param ... Optional additional margin cdf vectors (same length as `u`).
+#' @param eps Lower interior bound for exact zeros when no smaller positive
+#'   score exists in a margin.
+#' @returns Numeric matrix with one column per margin (`u`, `v`, then `...`).
 #' @noRd
-cdf_scores_to_copula_u <- function(u_mat, n) {
-  u_mat <- pmax(pmin(as.matrix(u_mat), 1), 0)
-  u_mat * (n / (n + 1L))
+cdf_scores_to_copula_u <- function(u, v, ..., eps = 1e-6) {
+  rlang::check_dots_empty()
+  checkmate::assert_numeric(u)
+  checkmate::assert_numeric(v)
+  uv <- vctrs::vec_recycle_common(u, v)
+  u <- uv[[1]]
+  v <- uv[[2]]
+  u <- interiorize_margin_cdf(u, eps = eps)
+  v <- interiorize_margin_cdf(v, eps = eps)
+  cbind(u, v)
 }
 
 
@@ -23,7 +48,7 @@ cdf_scores_to_copula_u <- function(u_mat, n) {
 #' single `dst`, the result is a bespoke list with S3 class `joint_rain_snow`.
 #'
 #' Pseudo-observations are margin cdf scores from `distionary::eval_cdf()`,
-#' scaled to fall strictly inside \eqn{(0,1)^2} so `bicop()` accepts them.
+#' interiorized away from 0 and 1 (see [cdf_scores_to_copula_u()]) for `bicop()`.
 #'
 #' @param rainfall_hourly,snowmelt_hourly Paired numeric vectors (same length),
 #'   typically mm/h as in `scripts/2-tablify_spatial_eo.r`.
@@ -40,16 +65,17 @@ cdf_scores_to_copula_u <- function(u_mat, n) {
 #' @seealso [simulate_joint_rain_snow]
 #' @export
 fit_joint_rain_snow_cell <- function(
-    rainfall_hourly,
-    snowmelt_hourly,
-    cell_id = NA_integer_,
-    x = NA_real_,
-    y = NA_real_,
-    marginal_rainfall = "empirical",
-    marginal_snowmelt = "empirical",
-    bicop_family_set = "parametric",
-    bicop_controls = list(),
-    min_obs = 40L) {
+  rainfall_hourly,
+  snowmelt_hourly,
+  cell_id = NA_integer_,
+  x = NA_real_,
+  y = NA_real_,
+  marginal_rainfall = "empirical",
+  marginal_snowmelt = "empirical",
+  bicop_family_set = "parametric",
+  bicop_controls = list(),
+  min_obs = 40L
+) {
   checkmate::assert_numeric(rainfall_hourly)
   checkmate::assert_numeric(snowmelt_hourly)
   checkmate::assert_true(length(rainfall_hourly) == length(snowmelt_hourly))
@@ -76,7 +102,11 @@ fit_joint_rain_snow_cell <- function(
 
   if (n < min_obs) {
     warning(
-      "Only ", n, " paired observations (minimum ", min_obs, "); skipping copula."
+      "Only ",
+      n,
+      " paired observations (minimum ",
+      min_obs,
+      "); skipping copula."
     )
     return(structure(
       list(
@@ -91,7 +121,7 @@ fit_joint_rain_snow_cell <- function(
 
   u1 <- distionary::eval_cdf(dst_rain, at = rain)
   u2 <- distionary::eval_cdf(dst_sm, at = sm)
-  u <- cdf_scores_to_copula_u(cbind(u1, u2), n)
+  u <- cdf_scores_to_copula_u(u1, u2)
 
   bc <- tryCatch(
     do.call(
@@ -136,21 +166,22 @@ fit_joint_rain_snow_cell <- function(
 #' @param verbose If `TRUE`, prints a short [message()] after each cell is
 #'   fitted (can be very chatty with many cells).
 #'
-#' @returns A grouped-by-row data frame with the same grouping keys plus column
-#'   `joint` (list of `joint_rain_snow` objects).
+#' @returns A tibble with one row per group: grouping columns plus list column
+#'   `joint` (each element is a `joint_rain_snow` object).
 #' @export
 fit_joint_rain_snow_cells <- function(
-    data,
-    group_cols,
-    rainfall_col = "rainfall_hourly",
-    snowmelt_col = "snowmelt_hourly",
-    marginal_rainfall = "empirical",
-    marginal_snowmelt = "empirical",
-    bicop_family_set = "parametric",
-    bicop_controls = list(),
-    min_obs = 40L,
-    progress = FALSE,
-    verbose = FALSE) {
+  data,
+  group_cols,
+  rainfall_col = "rainfall_hourly",
+  snowmelt_col = "snowmelt_hourly",
+  marginal_rainfall = "empirical",
+  marginal_snowmelt = "empirical",
+  bicop_family_set = "parametric",
+  bicop_controls = list(),
+  min_obs = 40L,
+  progress = FALSE,
+  verbose = FALSE
+) {
   checkmate::assert_data_frame(data)
   checkmate::assert_character(group_cols, min.len = 1L)
   checkmate::assert_subset(group_cols, names(data))
@@ -160,86 +191,82 @@ fit_joint_rain_snow_cells <- function(
   checkmate::assert_flag(progress)
   checkmate::assert_flag(verbose)
 
-  grp <- dplyr::group_by(data, dplyr::across(dplyr::all_of(group_cols)))
-  keys <- dplyr::group_keys(grp)
-  chunks <- dplyr::group_split(grp)
-  n_grp <- nrow(keys)
+  nested <- data |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) |>
+    dplyr::summarise(
+      data = list(dplyr::pick(dplyr::everything())),
+      .groups = "drop"
+    )
+
+  n_grp <- nrow(nested)
 
   if (n_grp == 0L) {
-    out <- dplyr::mutate(keys, joint = vector("list", 0L))
-    return(dplyr::group_by(
-      out,
-      dplyr::across(dplyr::all_of(group_cols))
-    ))
+    return(dplyr::mutate(nested, joint = vector("list", 0L)))
   }
 
-  if (progress && n_grp > 0L) {
+  if (progress) {
     pb <- utils::txtProgressBar(min = 0L, max = n_grp, style = 3L)
     on.exit(close(pb), add = TRUE)
   }
 
-  rows <- vector("list", n_grp)
-  for (i in seq_len(n_grp)) {
-    g <- chunks[[i]]
-    key <- keys[i, , drop = FALSE]
+  nested$joint <- purrr::imap(
+    nested$data,
+    function(g, idx) {
+      i <- as.integer(idx)
+      row <- nested[i, , drop = FALSE]
 
-    cid <- if ("cell_id" %in% names(key)) {
-      key[["cell_id"]][[1]]
-    } else if ("cell_id" %in% names(g)) {
-      g[["cell_id"]][[1]]
-    } else {
-      NA_integer_
-    }
-    gx <- if ("x" %in% names(key)) {
-      key[["x"]][[1]]
-    } else if ("x" %in% names(g)) {
-      g[["x"]][[1]]
-    } else {
-      NA_real_
-    }
-    gy <- if ("y" %in% names(key)) {
-      key[["y"]][[1]]
-    } else if ("y" %in% names(g)) {
-      g[["y"]][[1]]
-    } else {
-      NA_real_
-    }
+      cid <- if ("cell_id" %in% group_cols) {
+        row[["cell_id"]]
+      } else {
+        NA_integer_
+      }
+      gx <- if ("x" %in% group_cols) {
+        row[["x"]]
+      } else {
+        NA_real_
+      }
+      gy <- if ("y" %in% group_cols) {
+        row[["y"]]
+      } else {
+        NA_real_
+      }
 
-    j <- fit_joint_rain_snow_cell(
-      g[[rainfall_col]],
-      g[[snowmelt_col]],
-      cell_id = cid,
-      x = gx,
-      y = gy,
-      marginal_rainfall = marginal_rainfall,
-      marginal_snowmelt = marginal_snowmelt,
-      bicop_family_set = bicop_family_set,
-      bicop_controls = bicop_controls,
-      min_obs = min_obs
-    )
-
-    rows[[i]] <- data.frame(joint = I(list(j)))
-
-    if (verbose) {
-      message(
-        sprintf(
-          "joint_rain_snow: cell %d / %d (cell_id=%s)",
-          i,
-          n_grp,
-          if (is.na(cid)) "NA" else as.character(cid)
-        )
+      j <- fit_joint_rain_snow_cell(
+        g[[rainfall_col]],
+        g[[snowmelt_col]],
+        cell_id = cid,
+        x = gx,
+        y = gy,
+        marginal_rainfall = marginal_rainfall,
+        marginal_snowmelt = marginal_snowmelt,
+        bicop_family_set = bicop_family_set,
+        bicop_controls = bicop_controls,
+        min_obs = min_obs
       )
+
+      if (verbose) {
+        message(
+          sprintf(
+            "joint_rain_snow: cell %d / %d (cell_id=%s)",
+            i,
+            n_grp,
+            if (is.na(cid)) "NA" else as.character(cid)
+          )
+        )
+      }
+      if (progress) {
+        utils::setTxtProgressBar(pb, i)
+      }
+      j
     }
-    if (progress && n_grp > 0L) {
-      utils::setTxtProgressBar(pb, i)
-    }
-  }
-  if (progress && n_grp > 0L) {
+  )
+
+  if (progress) {
     cat("\n")
   }
 
-  out <- dplyr::bind_cols(keys, dplyr::bind_rows(rows))
-  dplyr::group_by(out, dplyr::across(dplyr::all_of(group_cols)))
+  nested |>
+    dplyr::select(dplyr::all_of(group_cols), joint)
 }
 
 
@@ -257,7 +284,10 @@ simulate_joint_rain_snow <- function(joint, n) {
   checkmate::assert_class(joint, "joint_rain_snow")
   checkmate::assert_count(n, positive = TRUE)
   if (is.null(joint$bicop)) {
-    stop("No copula was fitted (`bicop` is NULL); cannot simulate.", call. = FALSE)
+    stop(
+      "No copula was fitted (`bicop` is NULL); cannot simulate.",
+      call. = FALSE
+    )
   }
 
   bc <- joint$bicop

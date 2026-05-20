@@ -4,6 +4,7 @@ cache/
 deprecated/*
 .Rproj.user
 Data/*
+derived/*
 *.Rproj
 *cache/
 .vscode/*

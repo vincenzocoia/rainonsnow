@@ -37,7 +37,7 @@ log_info(paste(
   "; min_gap =", min_gap_obs, "observations"
 ))
 
-dat <- read_rds(here::here("data", "era5_land_hourly_alps_all.rds"))
+dat <- read_rds(here::here("derived", "era5_land_hourly_alps_all.rds"))
 
 threshold <- function(x) unname(quantile(x, quantile_level, na.rm = TRUE))
 
@@ -68,15 +68,15 @@ pot <- unnest(pot_nested, data)
 
 # %%
 log_info("Writing peaks to CSV and RDS")
-write_csv(pot, file = here::here("data", "era5_land_hourly_alps_peaks.csv"))
-write_rds(pot, file = here::here("data", "era5_land_hourly_alps_peaks.rds"))
+write_csv(pot, file = here::here("derived", "era5_land_hourly_alps_peaks.csv"))
+write_rds(pot, file = here::here("derived", "era5_land_hourly_alps_peaks.rds"))
 
 log_info("Writing POT thresholds (one row per cell)")
 write_csv(
   pot_thresholds,
-  file = here::here("data", "era5_land_hourly_alps_pot_thresholds.csv")
+  file = here::here("derived", "era5_land_hourly_alps_pot_thresholds.csv")
 )
 write_rds(
   pot_thresholds,
-  file = here::here("data", "era5_land_hourly_alps_pot_thresholds.rds")
+  file = here::here("derived", "era5_land_hourly_alps_pot_thresholds.rds")
 )

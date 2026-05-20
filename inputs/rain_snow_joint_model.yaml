@@ -26,7 +26,7 @@ likeliest_rain_snow:
   runoff_threshold_mm: 15
 
   # Alternative: set `runoff_threshold_mm` to null and set return_period (years).
-  # Requires script 5 output data/era5_land_hourly_alps_dl_marginal_return_levels.rds.
+  # Requires script 5 output derived/era5_land_hourly_alps_dl_marginal_return_levels.rds.
   return_period: null
 
   # When using return_period: which precomputed marginal return level to use.
@@ -51,4 +51,4 @@ likeliest_rain_snow:
   output_rds: null
   # Default write paths when null:
   #   plots/rain_snow_conditional_runoff_cell_<id>_z_<...>.pdf
-  #   data/rain_snow_conditional_runoff_cell_<id>_z_<...>.rds
+  #   derived/rain_snow_conditional_runoff_cell_<id>_z_<...>.rds

@@ -4,13 +4,13 @@
 #
 # Requires:
 #   - inputs/rain_snow_joint_model.yaml (likeliest_rain_snow block)
-#   - data/era5_land_hourly_alps_all.rds (script 2)
-#   - data/era5_land_hourly_alps_dl_rqforest_models.rds (script 4)
-#   - data/era5_land_hourly_alps_joint_rain_snow.rds (script 6)
+#   - derived/era5_land_hourly_alps_all.rds (script 2)
+#   - derived/era5_land_hourly_alps_dl_rqforest_models.rds (script 4)
+#   - derived/era5_land_hourly_alps_joint_rain_snow.rds (script 6)
 # Optional for return-period choice of z:
-#   - data/era5_land_hourly_alps_dl_marginal_return_levels.rds (script 5)
+#   - derived/era5_land_hourly_alps_dl_marginal_return_levels.rds (script 5)
 # Optional for normalization by f_Z(z):
-#   - data/era5_land_hourly_alps_dl_marginals.rds (script 5)
+#   - derived/era5_land_hourly_alps_dl_marginals.rds (script 5)
 # %%
 library(tidyverse)
 library(rlang)
@@ -61,7 +61,7 @@ if (!is.null(runoff_mm) && length(runoff_mm) == 1L && is.finite(as.numeric(runof
   z_src <- sprintf("fixed threshold (%g mm/h)", z)
 } else if (!is.null(rp_years) && is.finite(as.numeric(rp_years))) {
   rp_years <- as.numeric(rp_years)
-  lv_path <- here::here("data", "era5_land_hourly_alps_dl_marginal_return_levels.rds")
+  lv_path <- here::here("derived", "era5_land_hourly_alps_dl_marginal_return_levels.rds")
   if (!file.exists(lv_path)) {
     stop(
       "Need script 5 output ",
@@ -102,9 +102,9 @@ if (!is.null(runoff_mm) && length(runoff_mm) == 1L && is.finite(as.numeric(runof
 log_info("Starting 7-likeliest_rain_snow.r")
 log_info(paste("Cell", cell_id, "| z =", signif(z, 6), "mm/h —", z_src))
 
-hourly_path <- here::here("data", "era5_land_hourly_alps_all.rds")
-joint_path <- here::here("data", "era5_land_hourly_alps_joint_rain_snow.rds")
-models_path <- here::here("data", "era5_land_hourly_alps_dl_rqforest_models.rds")
+hourly_path <- here::here("derived", "era5_land_hourly_alps_all.rds")
+joint_path <- here::here("derived", "era5_land_hourly_alps_joint_rain_snow.rds")
+models_path <- here::here("derived", "era5_land_hourly_alps_dl_rqforest_models.rds")
 
 for (p in c(hourly_path, joint_path, models_path)) {
   if (!file.exists(p)) {
@@ -190,7 +190,7 @@ surface <- f_z_given_xy * f_xy
 
 marginal_density_z <- NA_real_
 if (normalize_fz) {
-  marg_path <- here::here("data", "era5_land_hourly_alps_dl_marginals.rds")
+  marg_path <- here::here("derived", "era5_land_hourly_alps_dl_marginals.rds")
   if (!file.exists(marg_path)) {
     stop(
       "`normalize_by_marginal_runoff_density: true` requires ",
@@ -264,7 +264,7 @@ ggplot2::ggsave(out_pdf, p, width = 7.2, height = 5.4)
 log_info(paste("Wrote", out_pdf))
 
 out_rds <- cfg$output_rds %||% here::here(
-  "data",
+  "derived",
   sprintf("rain_snow_conditional_runoff_cell_%d_z_%s.rds", cell_id, slug_z)
 )
 saveRDS(

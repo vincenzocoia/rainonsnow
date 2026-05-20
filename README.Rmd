@@ -28,13 +28,13 @@ The repo consists of:
 
 ## Current Workflow
 
-Scripts are numbered in pipeline order (`scripts/1-*` … `scripts/7-*`). Intermediate files land under `data/` (and yearly NetCDF under `data/eo/`).
+Scripts are numbered in pipeline order (`scripts/1-*` … `scripts/7-*`). Intermediate files land under `derived/` (and yearly NetCDF under `derived/eo/`).
 
-1. **`scripts/1-download_data-eo.py`** — Download hourly ERA5-Land from Google Earth Engine to `data/eo/era5_land_hourly_alps_<year>.nc` (bands and years from `inputs/data_specifications.yaml`).
-2. **`scripts/2-tablify_spatial_eo.r`** — Raster NetCDF → tabular hourly series; writes `data/era5_land_hourly_alps_all.rds`.
-3. **`scripts/3-pot_spatial_eo.r`** — Peaks over threshold per cell (`data/era5_land_hourly_alps_peaks.rds`, thresholds, metadata).
+1. **`scripts/1-download_data-eo.py`** — Download hourly ERA5-Land from Google Earth Engine to `derived/eo/era5_land_hourly_alps_<year>.nc` (bands and years from `inputs/data_specifications.yaml`).
+2. **`scripts/2-tablify_spatial_eo.r`** — Raster NetCDF → tabular hourly series; writes `derived/era5_land_hourly_alps_all.rds`.
+3. **`scripts/3-pot_spatial_eo.r`** — Peaks over threshold per cell (`derived/era5_land_hourly_alps_peaks.rds`, thresholds, metadata).
 4. **`scripts/4-distributional_learning.r`** — Quantile regression forest on POT peak hours (models and predictions used by later apps).
-5. **`scripts/5-runoff_marginals.r`** — Marginal return-level tables for runoff (`data/era5_land_hourly_alps_dl_*`).
+5. **`scripts/5-runoff_marginals.r`** — Marginal return-level tables for runoff (`derived/era5_land_hourly_alps_dl_*`).
 6. **`scripts/6-drivers_joint_distribution.r`** — Joint rainfall–snowmelt model per cell.
 7. **`scripts/7-likeliest_rain_snow.r`** — Conditional rain–snow structure given extreme runoff (optional follow-on).
 
@@ -109,7 +109,7 @@ Rscript scripts/6-drivers_joint_distribution.r
 
 ## Shiny apps
 
-Interactive apps live under `apps/*`. Run them from the **repository root** so paths such as `data/` and `devtools::load_all()` resolve:
+Interactive apps live under `apps/*`. Run them from the **repository root** so paths such as `derived/` and `devtools::load_all()` resolve:
 
 ```r
 shiny::runApp("apps/<app-folder>")
@@ -121,7 +121,7 @@ Typical dependencies include [shiny](https://shiny.posit.co/), **ggplot2**, **ti
 
 Inspect **peaks over threshold (POT)** extraction: hourly runoff for one grid cell and year with the POT threshold and marked peaks; **event timing** scatter of all POT peaks for that cell (runoff vs day of year, all years pooled). Pick the cell from the map or sidebar; optional re-run of script 3 from the sidebar.
 
-**Data:** `data/era5_land_hourly_alps_all.rds` (`scripts/2-tablify_spatial_eo.r`) and `data/era5_land_hourly_alps_peaks.rds` (`scripts/3-pot_spatial_eo.r`).
+**Data:** `derived/era5_land_hourly_alps_all.rds` (`scripts/2-tablify_spatial_eo.r`) and `derived/era5_land_hourly_alps_peaks.rds` (`scripts/3-pot_spatial_eo.r`).
 
 ```r
 shiny::runApp("apps/pot-explorer")
@@ -131,7 +131,7 @@ shiny::runApp("apps/pot-explorer")
 
 Calibration (P–P), skill versus marginal fit, and rain–snow scatter with conditional runoff CDFs at clicked coordinates.
 
-**Data:** POT peaks, distributional-learning predictions, and fitted models from script 4 — e.g. `data/era5_land_hourly_alps_peaks.rds`, `data/era5_land_hourly_alps_dl_predictions.rds`, `data/era5_land_hourly_alps_dl_rqforest_models.rds`.
+**Data:** POT peaks, distributional-learning predictions, and fitted models from script 4 — e.g. `derived/era5_land_hourly_alps_peaks.rds`, `derived/era5_land_hourly_alps_dl_predictions.rds`, `derived/era5_land_hourly_alps_dl_rqforest_models.rds`.
 
 ```r
 shiny::runApp("apps/dl-diagnostics-explorer")
@@ -141,7 +141,7 @@ shiny::runApp("apps/dl-diagnostics-explorer")
 
 Map of marginal runoff return levels by cell, frequency–magnitude curves (forest mixture vs GP tail), and rain–snow likelihood surfaces at a chosen return period.
 
-**Data:** peaks from script 3; script 4 models; precomputed marginal return levels from script 5 (`data/era5_land_hourly_alps_dl_marginal_return_levels.rds` or the bundle described in the app header), or `data/era5_land_hourly_alps_dl_predictions.rds` as a slower fallback.
+**Data:** peaks from script 3; script 4 models; precomputed marginal return levels from script 5 (`derived/era5_land_hourly_alps_dl_marginal_return_levels.rds` or the bundle described in the app header), or `derived/era5_land_hourly_alps_dl_predictions.rds` as a slower fallback.
 
 ```r
 shiny::runApp("apps/return-level-explorer")
@@ -151,7 +151,7 @@ shiny::runApp("apps/return-level-explorer")
 
 Marginal fits and copula per cell: Gaussian-score diagnostics, joint density contours, marginal histograms, and frequency–magnitude curves for rainfall and snowmelt. Optional re-run of joint fitting from the sidebar (writes `inputs/rain_snow_joint_model.yaml` and runs `scripts/6-drivers_joint_distribution.r`).
 
-**Data:** `data/era5_land_hourly_alps_all.rds` and joint output from script 6 (`data/era5_land_hourly_alps_joint_rain_snow.rds`); fitting options and script 7 settings share `inputs/rain_snow_joint_model.yaml`.
+**Data:** `derived/era5_land_hourly_alps_all.rds` and joint output from script 6 (`derived/era5_land_hourly_alps_joint_rain_snow.rds`); fitting options and script 7 settings share `inputs/rain_snow_joint_model.yaml`.
 
 ```r
 shiny::runApp("apps/joint-rain-snow-explorer")
@@ -161,7 +161,7 @@ shiny::runApp("apps/joint-rain-snow-explorer")
 
 Side-by-side frequency–magnitude curves: distributional-learning marginals (Random Forest mixture vs GP conversion) and **naive** POT-only marginals (`distionary::dst_empirical` vs `famish::fit_dst_gp` on peak runoff). Map cell selection; optional matched *y*-axis limits and log return level on both panels.
 
-**Data:** `data/era5_land_hourly_alps_peaks.rds` and `data/era5_land_hourly_alps_dl_return_levels.rds` from `scripts/5-runoff_marginals.r`.
+**Data:** `derived/era5_land_hourly_alps_peaks.rds` and `derived/era5_land_hourly_alps_dl_return_levels.rds` from `scripts/5-runoff_marginals.r`.
 
 ```r
 shiny::runApp("apps/runoff-marginals-explorer")

@@ -15,7 +15,7 @@ rq <- meta$dl_rqforest
 
 log_info("Starting 4-distributional_learning.r")
 
-dat <- read_rds(here::here("data", "era5_land_hourly_alps_peaks.rds"))
+dat <- read_rds(here::here("derived", "era5_land_hourly_alps_peaks.rds"))
 
 # %%
 log_info("Fitting dl_rqforest at each grid cell")
@@ -34,7 +34,7 @@ models <- dat |>
 log_info("Writing per-cell dl_rqforest models (for apps/return-level-explorer)")
 models |>
   select(cell_id, x, y, dl_rqforest) |>
-  write_rds(here::here("data", "era5_land_hourly_alps_dl_rqforest_models.rds"))
+  write_rds(here::here("derived", "era5_land_hourly_alps_dl_rqforest_models.rds"))
 
 # %%
 log_info(
@@ -70,7 +70,7 @@ peak_hour_distributions <- peak_hour_distributions |>
 log_info("Writing hourly DL predictions (single RDS)")
 write_rds(
   peak_hour_distributions,
-  here::here("data", "era5_land_hourly_alps_dl_predictions.rds")
+  here::here("derived", "era5_land_hourly_alps_dl_predictions.rds")
 )
 
 # %%

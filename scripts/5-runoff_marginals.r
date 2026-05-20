@@ -12,9 +12,9 @@ return_periods <- rp_reporting()
 
 log_info("Starting 5-runoff_marginals.r")
 
-dat <- read_rds(here::here("data", "era5_land_hourly_alps_peaks.rds"))
+dat <- read_rds(here::here("derived", "era5_land_hourly_alps_peaks.rds"))
 peak_hour_distributions <- read_rds(
-  here::here("data", "era5_land_hourly_alps_dl_predictions.rds")
+  here::here("derived", "era5_land_hourly_alps_dl_predictions.rds")
 )
 
 # %%
@@ -38,10 +38,14 @@ marginals_tbl <- peak_hour_distributions |>
     )
   )
 
+log_info("Writing marginal mixtures to file")
 write_rds(
   marginals_tbl,
-  here::here("data", "era5_land_hourly_alps_dl_marginals.rds")
+  here::here("derived", "era5_land_hourly_alps_dl_marginals.rds")
 )
+
+# %%
+# Naive marginals
 
 # %%
 log_info("Precomputing marginal return levels (matches Shiny slow-path logic)")
@@ -57,6 +61,7 @@ marginals_tbl <- marginals_tbl |>
 
 # Marginals are evaluated on an event-frequency axis; see enframe_at_events().
 
+log_info("Computing marginal return levels - forest mixture")
 return_levels <- mutate(
   marginals_tbl,
   return_period = list(.env$return_periods),
@@ -68,6 +73,7 @@ return_levels <- mutate(
   )
 )
 
+log_info("Computing marginal return levels - GP mixture")
 return_levels <- mutate(
   return_levels,
   levels_gp = map2(
@@ -78,10 +84,12 @@ return_levels <- mutate(
   )
 )
 
+log_info("Formatting marginal return levels (unnesting)")
 return_levels <- return_levels |>
   select(!c(starts_with("marginal_"), data)) |>
   unnest(c(return_period, starts_with("levels_")))
 
+log_info("Pivoting marginal return levels to long format")
 return_levels_long <- return_levels |>
   pivot_longer(
     c(levels_forest, levels_gp),
@@ -97,9 +105,10 @@ return_levels_long <- return_levels |>
     )
   )
 
+log_info("Writing marginal return levels to file")
 write_rds(
   return_levels_long,
-  here::here("data", "era5_land_hourly_alps_dl_return_levels.rds")
+  here::here("derived", "era5_land_hourly_alps_dl_return_levels.rds")
 )
 
 log_info("Finished 5-runoff_marginals.r")
