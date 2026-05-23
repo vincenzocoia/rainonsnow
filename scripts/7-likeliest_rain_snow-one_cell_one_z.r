@@ -8,7 +8,7 @@
 #   - derived/era5_land_hourly_alps_dl_rqforest_models.rds (script 4)
 #   - derived/era5_land_hourly_alps_joint_rain_snow.rds (script 6)
 # Optional for return-period choice of z:
-#   - derived/era5_land_hourly_alps_dl_marginal_return_levels.rds (script 5)
+#   - derived/era5_land_hourly_alps_dl_return_levels.rds (script 5)
 # Optional for normalization by f_Z(z):
 #   - derived/era5_land_hourly_alps_dl_marginals.rds (script 5)
 # %%
@@ -19,6 +19,7 @@ library(rvinecopulib)
 library(logger)
 devtools::load_all()
 
+# %%
 meta_path <- here::here("inputs", "rain_snow_joint_model.yaml")
 if (!file.exists(meta_path)) {
   stop("Missing ", meta_path, "; see repository template.", call. = FALSE)
@@ -36,7 +37,10 @@ if (is.null(cfg) || !is.list(cfg)) {
 
 cell_id <- as.integer(cfg$cell_id %||% NA_integer_)
 if (is.na(cell_id)) {
-  stop("`cell_id` must be set under likeliest_rain_snow in inputs/rain_snow_joint_model.yaml", call. = FALSE)
+  stop(
+    "`cell_id` must be set under likeliest_rain_snow in inputs/rain_snow_joint_model.yaml",
+    call. = FALSE
+  )
 }
 
 marginal_rp_model <- match.arg(
@@ -49,19 +53,28 @@ runoff_cond_model <- match.arg(
 )
 normalize_fz <- isTRUE(cfg$normalize_by_marginal_runoff_density)
 
-grid_size <- cfg$grid$size %||% c(45L, 45L)
+grid_size <- as.integer(cfg$grid$size %||% c(45L, 45L))
 grid_mult <- cfg$grid$mult %||% c(1.3, 1.3)
-grid_size <- as.integer(grid_size)
 
 runoff_mm <- cfg$runoff_threshold_mm
 rp_years <- cfg$return_period
 
-if (!is.null(runoff_mm) && length(runoff_mm) == 1L && is.finite(as.numeric(runoff_mm))) {
+# %%
+# Target runoff z (mm/h): fixed threshold or return level from script 5.
+
+if (
+  !is.null(runoff_mm) &&
+    length(runoff_mm) == 1L &&
+    is.finite(as.numeric(runoff_mm))
+) {
   z <- as.numeric(runoff_mm)
   z_src <- sprintf("fixed threshold (%g mm/h)", z)
 } else if (!is.null(rp_years) && is.finite(as.numeric(rp_years))) {
   rp_years <- as.numeric(rp_years)
-  lv_path <- here::here("derived", "era5_land_hourly_alps_dl_marginal_return_levels.rds")
+  lv_path <- here::here(
+    "derived",
+    "era5_land_hourly_alps_dl_return_levels.rds"
+  )
   if (!file.exists(lv_path)) {
     stop(
       "Need script 5 output ",
@@ -70,28 +83,45 @@ if (!is.null(runoff_mm) && length(runoff_mm) == 1L && is.finite(as.numeric(runof
       call. = FALSE
     )
   }
-  bundle <- read_rds(lv_path)
-  lvls <- bundle$marginal_return_levels_long
-  model_lab <- switch(
+
+  marginal_rp_label <- switch(
     marginal_rp_model,
-    gp = "Forest mixture + GP tail",
-    forest = "Forest mixture (empirical)"
+    gp = "GP conversion",
+    forest = "Random Forest"
   )
+
+  lvls <- read_rds(lv_path)
+  if (
+    "return_period" %in% names(lvls) && !"return_period_years" %in% names(lvls)
+  ) {
+    lvls <- dplyr::rename(lvls, return_period_years = return_period)
+  }
+
   mag <- lvls |>
     dplyr::filter(
       .data$cell_id == .env$cell_id,
       abs(.data$return_period_years - .env$rp_years) < 1e-4,
-      .data$model == .env$model_lab
+      .data$model == .env$marginal_rp_label
     )
   if (nrow(mag) != 1L) {
     stop(
-      "Could not find return level for cell ", cell_id,
-      ", return_period ", rp_years, ", model ", model_lab,
+      "Could not find return level for cell ",
+      cell_id,
+      ", return_period ",
+      rp_years,
+      ", model ",
+      marginal_rp_label,
       call. = FALSE
     )
   }
+
   z <- mag$return_level[1]
-  z_src <- sprintf("%g-year return level (%s; %g mm/h)", rp_years, model_lab, z)
+  z_src <- sprintf(
+    "%g-year return level (%s; %g mm/h)",
+    rp_years,
+    marginal_rp_label,
+    z
+  )
 } else {
   stop(
     "Set either `runoff_threshold_mm` or `return_period` under likeliest_rain_snow in inputs/rain_snow_joint_model.yaml.",
@@ -102,93 +132,114 @@ if (!is.null(runoff_mm) && length(runoff_mm) == 1L && is.finite(as.numeric(runof
 log_info("Starting 7-likeliest_rain_snow.r")
 log_info(paste("Cell", cell_id, "| z =", signif(z, 6), "mm/h —", z_src))
 
-hourly_path <- here::here("derived", "era5_land_hourly_alps_all.rds")
-joint_path <- here::here("derived", "era5_land_hourly_alps_joint_rain_snow.rds")
-models_path <- here::here("derived", "era5_land_hourly_alps_dl_rqforest_models.rds")
+# %%
+# Peaks table, joint rain–snow model, and rqforest for f(z | rain, snow).
 
-for (p in c(hourly_path, joint_path, models_path)) {
+peaks_path <- here::here("derived", "era5_land_hourly_alps_peaks.rds")
+joint_path <- here::here("derived", "era5_land_hourly_alps_joint_rain_snow.rds")
+models_path <- here::here(
+  "derived",
+  "era5_land_hourly_alps_dl_rqforest_models.rds"
+)
+
+for (p in c(peaks_path, joint_path, models_path)) {
   if (!file.exists(p)) {
     stop("Missing required file: ", p, call. = FALSE)
   }
 }
 
-hourly_all <- read_rds(hourly_path)
+peaks <- read_rds(peaks_path)
 joint_tbl <- read_rds(joint_path)
 models_tbl <- read_rds(models_path)
 
-hourly_cell <- hourly_all |> dplyr::filter(.data$cell_id == .env$cell_id)
-if (nrow(hourly_cell) == 0L) {
+peaks <- filter(peaks, rainfall_hourly != 0, snowmelt_hourly != 0)
+
+peaks_cell <- dplyr::filter(peaks, .data$cell_id == .env$cell_id)
+if (nrow(peaks_cell) == 0L) {
   stop("No hourly rows for cell_id ", cell_id, call. = FALSE)
 }
 
-joint_row <- joint_tbl |> dplyr::filter(.data$cell_id == .env$cell_id)
+joint_row <- dplyr::filter(joint_tbl, .data$cell_id == .env$cell_id)
 if (nrow(joint_row) != 1L) {
-  stop("Expected exactly one joint model row for cell_id ", cell_id, call. = FALSE)
+  stop(
+    "Expected exactly one joint model row for cell_id ",
+    cell_id,
+    call. = FALSE
+  )
 }
 joint <- joint_row$joint[[1]]
 
-model_row <- models_tbl |> dplyr::filter(.data$cell_id == .env$cell_id)
+model_row <- dplyr::filter(models_tbl, .data$cell_id == .env$cell_id)
 if (nrow(model_row) != 1L) {
-  stop("Expected exactly one dl_rqforest row for cell_id ", cell_id, call. = FALSE)
+  stop(
+    "Expected exactly one dl_rqforest row for cell_id ",
+    cell_id,
+    call. = FALSE
+  )
 }
 dl_model <- model_row$dl_rqforest[[1]]
+
+# %%
+# Regular grid over the observed rain–snow range for this cell.
 
 gr <- grid_from_scatter(
   rainfall_hourly,
   snowmelt_hourly,
-  data = hourly_cell,
+  data = peaks,
   size = grid_size,
   mult = grid_mult
 ) |>
-  dplyr::rename(rainfall_hourly = x, snowmelt_hourly = y)
+  rename(rainfall_hourly = x, snowmelt_hourly = y)
 
-eval_joint_density_xy <- function(joint, rainfall_hourly, snowmelt_hourly) {
-  if (is.null(joint$bicop)) {
-    d1 <- as.numeric(distionary::eval_density(joint$marginal_rainfall, at = rainfall_hourly))
-    d2 <- as.numeric(distionary::eval_density(joint$marginal_snowmelt, at = snowmelt_hourly))
-    return(d1 * d2)
-  }
-  u1 <- distionary::eval_cdf(joint$marginal_rainfall, at = rainfall_hourly)
-  u2 <- distionary::eval_cdf(joint$marginal_snowmelt, at = snowmelt_hourly)
-  u1 <- pmin(pmax(as.numeric(u1), 1e-6), 1 - 1e-6)
-  u2 <- pmin(pmax(as.numeric(u2), 1e-6), 1 - 1e-6)
-  c_u <- rvinecopulib::dbicop(
-    cbind(u1, u2),
-    joint$bicop$family,
-    joint$bicop$rotation,
-    joint$bicop$parameters
-  )
-  d1 <- as.numeric(distionary::eval_density(joint$marginal_rainfall, at = rainfall_hourly))
-  d2 <- as.numeric(distionary::eval_density(joint$marginal_snowmelt, at = snowmelt_hourly))
-  as.numeric(c_u) * d1 * d2
-}
+# %%
+# Joint density f(rain, snow) from script 6.
 
-f_xy <- eval_joint_density_xy(joint, gr$rainfall_hourly, gr$snowmelt_hourly)
+f_xy <- eval_joint_rain_snow_density(
+  joint,
+  gr$rainfall_hourly,
+  gr$snowmelt_hourly
+)
+
+gr |>
+  mutate(joint_density = f_xy) |>
+  ggplot(aes(rainfall_hourly, snowmelt_hourly)) +
+  geom_point(data = peaks, alpha = 0.2, size = 0.2) +
+  geom_contour_filled(aes(z = log(joint_density)), alpha = 0.82) +
+  theme_bw()
+# %%
+# Conditional runoff density f(z | rain, snow) at each grid point (script 4).
 
 forecast <- predict(dl_model, newdata = gr)
-if (runoff_cond_model == "gp") {
+if (runoff_cond_model == "forest") {
   forecast <- purrr::map(
     forecast,
-    function(d) {
-      tryCatch(
-        convert_emp_to_gp(d),
-        error = function(e) d
-      )
-    }
+    \(d) tryCatch(convert_emp_to_gp(d), error = function(e) d),
+    .progress = TRUE
   )
 }
 
-f_z_given_xy <- purrr::map_dbl(forecast, function(d) {
-  v <- suppressWarnings(as.numeric(distionary::eval_density(d, at = z)))
+f_z_given_xy <- purrr::map_dbl(forecast, \(d) {
+  v <- distionary::eval_density(d, at = z)
   if (length(v) != 1L || !is.finite(v)) {
     return(0)
   }
   v
 })
 
-surface <- f_z_given_xy * f_xy
+# Take a look at f_z_given_xy:
+gr |>
+  mutate(f_z_given_xy = f_z_given_xy) |>
+  ggplot(aes(rainfall_hourly, snowmelt_hourly)) +
+  geom_point(data = peaks, alpha = 0.2, size = 0.2) +
+  geom_contour_filled(aes(z = (f_z_given_xy)), alpha = 0.82) +
+  theme_bw()
 
+# %%
+# Surface proportional to f(rain, snow | z); optionally divide by f_Z(z).
+
+surface <- f_z_given_xy * f_xy
 marginal_density_z <- NA_real_
+
 if (normalize_fz) {
   marg_path <- here::here("derived", "era5_land_hourly_alps_dl_marginals.rds")
   if (!file.exists(marg_path)) {
@@ -199,17 +250,24 @@ if (normalize_fz) {
       call. = FALSE
     )
   }
-  marg_tbl <- read_rds(marg_path)
-  mrow <- marg_tbl |> dplyr::filter(.data$cell_id == .env$cell_id)
-  if (nrow(mrow) != 1L) {
+
+  marg_row <- read_rds(marg_path) |>
+    dplyr::filter(.data$cell_id == .env$cell_id)
+  if (nrow(marg_row) != 1L) {
     stop("Marginal mixtures: no single row for cell ", cell_id, call. = FALSE)
   }
+
   marginal_dst <- if (runoff_cond_model == "gp") {
-    mrow$marginal_gp[[1]]
+    marg_row$marginal_gp[[1]]
   } else {
-    mrow$marginal_forest[[1]]
+    marg_row$marginal_forest[[1]]
   }
-  marginal_density_z <- as.numeric(distionary::eval_density(marginal_dst, at = z))
+
+  marginal_density_z <- as.numeric(distionary::eval_density(
+    marginal_dst,
+    at = z
+  ))
+
   if (!is.finite(marginal_density_z) || marginal_density_z <= 0) {
     warning(
       "Marginal density f_Z(z) is not usable; plotting unnormalized surface.",
@@ -220,14 +278,17 @@ if (normalize_fz) {
   }
 }
 
-plot_tbl <- gr |>
-  dplyr::mutate(
-    joint_xy = f_xy,
-    fz_given_xy = f_z_given_xy,
-    density_propto = surface
-  )
+plot_tbl <- mutate(
+  gr,
+  joint_xy = f_xy,
+  fz_given_xy = f_z_given_xy,
+  density_propto = surface
+)
 
-lab_z <- if (normalize_fz && is.finite(marginal_density_z) && marginal_density_z > 0) {
+# %%
+density_label <- if (
+  normalize_fz && is.finite(marginal_density_z) && marginal_density_z > 0
+) {
   sprintf("f(rain, snow | runoff = %.4g)", z)
 } else {
   sprintf(
@@ -236,37 +297,48 @@ lab_z <- if (normalize_fz && is.finite(marginal_density_z) && marginal_density_z
   )
 }
 
-p <- ggplot(plot_tbl, aes(.data$rainfall_hourly, .data$snowmelt_hourly)) +
-  geom_contour_filled(aes(z = .data$density_propto), alpha = 0.82) +
-  geom_contour(aes(z = .data$density_propto), colour = alpha("grey15", 0.35), linewidth = 0.2) +
+p <- ggplot(plot_tbl, aes(rainfall_hourly, snowmelt_hourly)) +
+  geom_contour_filled(aes(z = density_propto), alpha = 0.82) +
+  geom_contour(
+    aes(z = density_propto),
+    colour = "grey15",
+    linewidth = 0.2
+  ) +
   coord_cartesian(expand = FALSE) +
   scale_fill_viridis_d(option = "C", end = 0.95) +
   labs(
-    title = paste0("Rainfall vs snowmelt | hourly runoff @ ", signif(z, 4), " mm/h"),
-    subtitle = paste0(lab_z, "\n", z_src),
+    title = paste0(
+      "Rainfall vs snowmelt | hourly runoff @ ",
+      signif(z, 4),
+      " mm/h"
+    ),
+    subtitle = paste0(density_label, "\n", z_src),
     x = "Rainfall (mm/h)",
     y = "Snowmelt (mm/h)",
     fill = NULL
   ) +
   theme_bw()
 
+# %%
 plots_dir <- here::here("plots")
 dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
 
-slug_z <- sprintf("%.4g", z)
-slug_z <- gsub("[^0-9eE+.-]", "_", slug_z)
+slug_z <- gsub("[^0-9eE+.-]", "_", sprintf("%.4g", z))
 
-out_pdf <- cfg$output_pdf %||% file.path(
-  plots_dir,
-  sprintf("rain_snow_conditional_runoff_cell_%d_z_%s.pdf", cell_id, slug_z)
-)
+out_pdf <- cfg$output_pdf %||%
+  file.path(
+    plots_dir,
+    sprintf("rain_snow_conditional_runoff_cell_%d_z_%s.pdf", cell_id, slug_z)
+  )
 ggplot2::ggsave(out_pdf, p, width = 7.2, height = 5.4)
 log_info(paste("Wrote", out_pdf))
 
-out_rds <- cfg$output_rds %||% here::here(
-  "derived",
-  sprintf("rain_snow_conditional_runoff_cell_%d_z_%s.rds", cell_id, slug_z)
-)
+out_rds <- cfg$output_rds %||%
+  here::here(
+    "derived",
+    sprintf("rain_snow_conditional_runoff_cell_%d_z_%s.rds", cell_id, slug_z)
+  )
+
 saveRDS(
   list(
     cell_id = cell_id,

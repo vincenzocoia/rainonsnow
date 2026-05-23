@@ -1,6 +1,6 @@
 # Runoff marginal explorer: DL mixture return curves vs naive POT-only marginals.
 # Run from the package root:
-#   shiny::runApp("apps/runoff-marginals-explorer")
+#   shiny::runApp("apps/5-runoff-marginals-explorer")
 #
 # Requires:
 #   - derived/era5_land_hourly_alps_peaks.rds
@@ -107,7 +107,8 @@ world_map <- tryCatch(
 )
 td <- if (nrow(cells_ref) > 0) tile_dims(cells_ref) else c(width = 0.25, height = 0.25)
 
-rp_grid <- rp_reporting()
+rp_curve <- rp_marginal_curve()
+rp_map <- rp_reporting()[rp_reporting() <= 500]
 
 ## Orange-red vs blue (Wong palette): easier to distinguish than green vs blue.
 colour_forest <- "#D55E00"
@@ -125,7 +126,7 @@ naive_colours <- c(
 fm_plot_height <- "380px"
 map_plot_height <- "260px"
 
-map_rp_choices <- rp_grid
+map_rp_choices <- rp_map
 map_rp_default <- if (200 %in% map_rp_choices) 200 else max(map_rp_choices)
 
 map_fill_pal <- rev(c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
@@ -138,7 +139,9 @@ ui <- fluidPage(
     strong("GP conversion"),
     " marginal return level at a chosen return period (same ",
     code("rp_reporting()"),
-    " grid as elsewhere). Below, two frequency–magnitude panels are shown side by side: ",
+    " grid; curves use ",
+    code("rp_marginal_curve()"),
+    "). Below, two frequency–magnitude panels are shown side by side: ",
     "left — distributional learning (Random Forest vs GP conversion); ",
     "right — naive POT marginals (",
     code("dst_empirical"),
@@ -251,9 +254,12 @@ server <- function(input, output, session) {
     lv <- marginal_long |>
       dplyr::filter(
         .data$model == "GP conversion",
-        .data$return_period_years == rp,
         is.finite(.data$return_level)
       ) |>
+      dplyr::mutate(.rp_diff = abs(.data$return_period_years - rp)) |>
+      dplyr::group_by(.data$cell_id) |>
+      dplyr::slice_min(.data$.rp_diff, n = 1, with_ties = FALSE) |>
+      dplyr::ungroup() |>
       dplyr::distinct(.data$cell_id, .keep_all = TRUE) |>
       dplyr::select(cell_id, map_rl = return_level)
     cells_ref |>
@@ -361,11 +367,11 @@ server <- function(input, output, session) {
     }
 
     fm_emp <- tryCatch(
-      enframe_at_events(emp, nep, return_periods = rp_grid),
+      enframe_at_events(emp, nep, return_periods = rp_curve),
       error = function(e) NULL
     )
     fm_gp <- tryCatch(
-      enframe_at_events(gp, nep, return_periods = rp_grid),
+      enframe_at_events(gp, nep, return_periods = rp_curve),
       error = function(e) NULL
     )
     if (is.null(fm_emp) || is.null(fm_gp)) {
@@ -424,8 +430,7 @@ server <- function(input, output, session) {
 
     p <- ggplot(sub, aes(return_period_years, return_level, colour = model, group = model)) +
       geom_line(linewidth = 0.95, alpha = 0.9) +
-      geom_point(size = 1.8, alpha = 0.85) +
-      scale_x_log10(breaks = rp_grid, minor_breaks = NULL) +
+      scale_x_log10(breaks = rp_map, minor_breaks = NULL) +
       scale_colour_manual(
         values = dl_colours,
         breaks = names(dl_colours),
@@ -464,8 +469,7 @@ server <- function(input, output, session) {
 
     p <- ggplot(combined, aes(return_period_years, return_level, colour = model, group = model)) +
       geom_line(linewidth = 0.95, alpha = 0.9) +
-      geom_point(size = 1.8, alpha = 0.85) +
-      scale_x_log10(breaks = rp_grid, minor_breaks = NULL) +
+      scale_x_log10(breaks = rp_map, minor_breaks = NULL) +
       scale_colour_manual(
         values = naive_colours,
         breaks = names(naive_colours),

@@ -43,8 +43,20 @@ convert_emp_to_gp <- function(dst) {
 
   w <- probs
 
-  init_fit <- famish::fit_dst_gp(excesses)
+  init_fit <- famish::fit_dst_gp(excesses, method = "mle")
+
+  # Sometimes the excesses go above the max value of the GPD
+  # by some machine tolerance.
+  rng <- range(init_fit)
+  mx <- rng[2]
+  tol <- 1e-9
+  close <- abs(mx - excesses) < tol
+  excesses[close] <- mx - tol
+
   par <- distionary::parameters(init_fit)
+  par <- par[c("scale", "shape")]
+  par$scale <- log(par$scale)
+  par <- unname(unlist(par))
 
   negll <- function(par) {
     sigma <- exp(par[1])
@@ -58,9 +70,40 @@ convert_emp_to_gp <- function(dst) {
   if (fit$convergence != 0L) {
     warning(
       "`optim` reported non-zero convergence code when fitting the GPD (code ",
-      fit$convergence, ")."
+      fit$convergence,
+      ")."
     )
   }
 
   distionary::dst_gp(scale = exp(fit$par[1]), shape = fit$par[2]) + threshold
+}
+
+#' Fit and Graft a GPD to the upper tail of an empirical distribution.
+#'
+#' @param dst An empirical distribution: the object returned by
+#'   `distionary::dst_empirical()`.
+#' @param adaptive_threshold Number between 0 and 1. Takes the smallest
+#'   value between the quantile of `dst` (with the built-in weights)
+#'   and the quantile as if all weights were equal. (This prevents
+#'   situations where the empirical tail is dominated by a few outcomes.)
+#'
+#' @returns A distionary distribution with the GPD grafted back on.
+#' @note Requires distplyr > 0.2.0; may have to use the development version.
+#' @export
+fit_and_graft_gp <- function(dst, adaptive_threshold) {
+  checkmate::assert_class(dst, "dst")
+  checkmate::assert_number(adaptive_threshold, lower = 0, upper = 1)
+  checkmate::assert_true(distionary::pretty_name(dst) == "Finite")
+  trim_point1 <- distionary::eval_quantile(dst, at = adaptive_threshold)
+  parms <- distionary::parameters(dst)
+  outs <- parms$outcomes
+  trim_point2 <- quantile(outs, adaptive_threshold)
+  trim_point <- min(trim_point1, trim_point2)
+  upper_empirical <- distplyr::trim_left(
+    dst,
+    of = trim_point,
+    include = FALSE
+  )
+  gp <- convert_emp_to_gp(upper_empirical)
+  distplyr::graft_right(dst, gp, of = trim_point, include = FALSE)
 }

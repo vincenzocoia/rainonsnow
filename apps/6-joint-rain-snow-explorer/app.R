@@ -1,6 +1,6 @@
 # Joint rainfall–snowmelt explorer: marginals + copula per cell (script 6).
 # Run from the package root:
-#   shiny::runApp("apps/joint-rain-snow-explorer")
+#   shiny::runApp("apps/6-joint-rain-snow-explorer")
 #
 # Requires: derived/era5_land_hourly_alps_all.rds and
 #   derived/era5_land_hourly_alps_joint_rain_snow.rds (after script 6);

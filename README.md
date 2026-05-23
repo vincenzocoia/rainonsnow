@@ -101,7 +101,7 @@ YAML files under **`inputs/`** configure scripts and apps (beyond
   **`likeliest_rain_snow`** settings for script 7 (conditional rain–snow
   surface given runoff).
 - **`pot_metadata.yaml`** — POT quantile / min-gap for script 3 and
-  `apps/pot-explorer`.
+  `apps/3-pot-explorer`.
 
 ## R Setup
 
@@ -137,7 +137,9 @@ Rscript scripts/6-drivers_joint_distribution.r
 
 ## Shiny apps
 
-Interactive apps live under `apps/*`. Run them from the **repository
+Interactive apps live under `apps/*`, with folder names numbered to
+match the scripts they support (e.g. `apps/4a-distributional-learning-fit` and
+`apps/4b-distributional-learning-diagnostics` for script 4). Run them from the **repository
 root** so paths such as `derived/` and `devtools::load_all()` resolve:
 
 ``` r
@@ -149,7 +151,7 @@ Typical dependencies include [shiny](https://shiny.posit.co/),
 apps may need **yaml**, **probaverse**, **distionary**, **famish**,
 **rvinecopulib**, and others used in the analysis scripts.
 
-### POT explorer (`apps/pot-explorer`)
+### POT explorer (`apps/3-pot-explorer`)
 
 Inspect **peaks over threshold (POT)** extraction: hourly runoff for one
 grid cell and year with the POT threshold and marked peaks; **event
@@ -163,24 +165,39 @@ re-run of script 3 from the sidebar.
 (`scripts/3-pot_spatial_eo.r`).
 
 ``` r
-shiny::runApp("apps/pot-explorer")
+shiny::runApp("apps/3-pot-explorer")
 ```
 
-### DL diagnostics explorer (`apps/dl-diagnostics-explorer`)
+### Distributional learning — fit (`apps/4a-distributional-learning-fit`)
 
-Calibration (P–P), skill versus marginal fit, and rain–snow scatter with
-conditional runoff CDFs at clicked coordinates.
+Tune **`dl_rqforest`** hyperparameters (hints under each control), **fit
+one cell** as an in-memory preview, then **run script 4 for all cells**
+(writes **`inputs/distributional_learning.yaml`** and derived outputs).
+Model: hourly runoff ~ rainfall + snowmelt on POT peaks (fixed).
 
-**Data:** POT peaks, distributional-learning predictions, and fitted
-models from script 4 — e.g. `derived/era5_land_hourly_alps_peaks.rds`,
-`derived/era5_land_hourly_alps_dl_predictions.rds`,
-`derived/era5_land_hourly_alps_dl_rqforest_models.rds`.
+**Data:** `derived/era5_land_hourly_alps_peaks.rds` (script 3).
 
 ``` r
-shiny::runApp("apps/dl-diagnostics-explorer")
+shiny::runApp("apps/4a-distributional-learning-fit")
 ```
 
-### Return-level explorer (`apps/return-level-explorer`)
+### Distributional learning — diagnostics (`apps/4b-distributional-learning-diagnostics`)
+
+Explore fitted models: P–P calibration, skill versus marginal, map, and
+conditional runoff CDFs at clicked rain–snow pairs. **Fitted models load at
+startup** (CDF works for every cell); **load P–P / skill** when you want
+calibration plots (from `derived/era5_land_hourly_alps_dl_diagnostics.rds` when
+present; otherwise predictions RDS or rebuild from models).
+
+**Data:** peaks + `derived/era5_land_hourly_alps_dl_rqforest_models.rds`;
+`derived/era5_land_hourly_alps_dl_diagnostics.rds` after script 4 (optional
+`derived/era5_land_hourly_alps_dl_predictions.rds` for fallback recompute).
+
+``` r
+shiny::runApp("apps/4b-distributional-learning-diagnostics")
+```
+
+### Return-level explorer (`apps/5-return-level-explorer`)
 
 Map of marginal runoff return levels by cell, frequency–magnitude curves
 (forest mixture vs GP tail), and rain–snow likelihood surfaces at a
@@ -193,10 +210,10 @@ bundle described in the app header), or
 `derived/era5_land_hourly_alps_dl_predictions.rds` as a slower fallback.
 
 ``` r
-shiny::runApp("apps/return-level-explorer")
+shiny::runApp("apps/5-return-level-explorer")
 ```
 
-### Joint rainfall–snowmelt explorer (`apps/joint-rain-snow-explorer`)
+### Joint rainfall–snowmelt explorer (`apps/6-joint-rain-snow-explorer`)
 
 Marginal fits and copula per cell: Gaussian-score diagnostics, joint
 density contours, marginal histograms, and frequency–magnitude curves
@@ -209,10 +226,10 @@ script 6 (`derived/era5_land_hourly_alps_joint_rain_snow.rds`); fitting
 options and script 7 settings share `inputs/rain_snow_joint_model.yaml`.
 
 ``` r
-shiny::runApp("apps/joint-rain-snow-explorer")
+shiny::runApp("apps/6-joint-rain-snow-explorer")
 ```
 
-### Runoff marginals explorer (`apps/runoff-marginals-explorer`)
+### Runoff marginals explorer (`apps/5-runoff-marginals-explorer`)
 
 Side-by-side frequency–magnitude curves: distributional-learning
 marginals (Random Forest mixture vs GP conversion) and **naive**
@@ -225,7 +242,7 @@ and log return level on both panels.
 `scripts/5-runoff_marginals.r`.
 
 ``` r
-shiny::runApp("apps/runoff-marginals-explorer")
+shiny::runApp("apps/5-runoff-marginals-explorer")
 ```
 
 ## R Package Demonstration

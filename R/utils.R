@@ -44,3 +44,20 @@ df_rows_have_missing <- function(df) {
 #' rp_reporting()
 #' @export
 rp_reporting <- function() c(2, 5, 10, 20, 50, 100, 200, 500, 1000)
+
+#' Return periods for marginal frequency–magnitude curves
+#'
+#' Log-spaced grid from 2 to 500 years (500 points), used when precomputing or
+#' plotting DL and naive marginal return curves in
+#' `scripts/5-runoff_marginals.r` and `apps/5-runoff-marginals-explorer`.
+#' Maps and summaries should still use [rp_reporting()].
+#'
+#' @returns A numeric vector of return periods in years.
+#' @seealso [rp_reporting()], [enframe_at_events()]
+#' @examples
+#' rp_marginal_curve()
+#' length(rp_marginal_curve())
+#' @export
+rp_marginal_curve <- function() {
+  exp(seq(log(2), log(500), length.out = 500))
+}

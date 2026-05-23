@@ -1,7 +1,14 @@
-# Quantile regression forest on POT peaks (scripts/4-distributional_learning.r).
+# Quantile regression forest on POT peaks (scripts/4-distributional_learning.r,
+# apps/4a-distributional-learning-fit). Response and predictors are fixed.
 
 dl_rqforest:
   yname: runoff_hourly
   xnames:
-    - rainfall_hourly
-    - snowmelt_hourly
+  - rainfall_hourly
+  - snowmelt_hourly
+  na_action: drop
+  min_obs: 23
+  ntree: 500
+  mtry: 1
+  nodesize: 23
+  nthreads: 4

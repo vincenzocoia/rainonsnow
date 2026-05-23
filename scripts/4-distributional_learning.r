@@ -1,17 +1,28 @@
 # Distributional learning (quantile regression forest per cell) on POT peak hours.
-# Model formula: inputs/dl_metadata.yaml
+# Model formula: inputs/distributional_learning.yaml
+# Writes: derived/era5_land_hourly_alps_dl_{rqforest_models,predictions,diagnostics}.rds
 # Downstream: marginal mixtures + return levels — scripts/5-runoff_marginals.r;
 # joint rainfall–snowmelt — scripts/6-drivers_joint_distribution.r;
 # conditional rain–snow given runoff — scripts/7-likeliest_rain_snow.r
 # %%
 library(tidyverse)
+library(rlang)
 library(yaml)
 library(probaverse)
 library(logger)
 devtools::load_all()
 
-meta <- read_yaml(here::here("inputs", "dl_metadata.yaml"))
+meta <- read_yaml(here::here("inputs", "distributional_learning.yaml"))
 rq <- meta$dl_rqforest
+dl_fit_args <- c(
+  list(
+    yname = rq$yname,
+    xnames = unlist(rq$xnames, use.names = FALSE),
+    na_action = rq$na_action %||% "drop",
+    min_obs = as.integer(rq$min_obs %||% 5L)
+  ),
+  rq[setdiff(names(rq), c("yname", "xnames", "na_action", "min_obs"))]
+)
 
 log_info("Starting 4-distributional_learning.r")
 
@@ -24,35 +35,41 @@ models <- dat |>
   mutate(
     dl_rqforest = map(
       data,
-      dl_rqforest,
-      yname = rq$yname,
-      xnames = rq$xnames,
+      \(cell_data) do.call(dl_rqforest, c(list(data = cell_data), dl_fit_args)),
       .progress = TRUE
     )
   )
 
-log_info("Writing per-cell dl_rqforest models (for apps/return-level-explorer)")
+log_info(
+  "Writing per-cell dl_rqforest models (for apps/5-return-level-explorer)"
+)
 models |>
   select(cell_id, x, y, dl_rqforest) |>
-  write_rds(here::here("derived", "era5_land_hourly_alps_dl_rqforest_models.rds"))
+  write_rds(here::here(
+    "derived",
+    "era5_land_hourly_alps_dl_rqforest_models.rds"
+  ))
 
 # %%
 log_info(
   "Predictive distributions per hour: rqforest conditional dist and GP-tail version"
 )
-peak_hour_distributions <- models |>
+forest_models <- models |>
   mutate(
     distribution_forest = map2(dl_rqforest, data, predict, .progress = TRUE)
   ) |>
   select(!dl_rqforest) |>
-  unnest(c(data, distribution_forest)) |>
-  mutate(
-    distribution_gp = map(
-      distribution_forest,
-      convert_emp_to_gp,
-      .progress = TRUE
-    )
+  unnest(c(data, distribution_forest))
+
+peak_hour_distributions <- mutate(
+  forest_models,
+  distribution_gp = map(
+    distribution_forest,
+    fit_and_graft_gp,
+    adaptive_threshold = 0.5,
+    .progress = TRUE
   )
+)
 
 peak_hour_distributions <- peak_hour_distributions |>
   select(
@@ -74,27 +91,16 @@ write_rds(
 )
 
 # %%
-log_info("Diagnostic plots (P-P calibration, quantile skill vs marginal)")
+log_info("Diagnostics (P-P calibration, quantile skill vs marginal)")
+dl_diag <- dl_build_diagnostics(peak_hour_distributions, dat)
+diag_path <- here::here("derived", dl_diagnostics_basename())
+dl_write_diagnostics(dl_diag, diag_path)
+log_info(paste("Wrote", diag_path))
+
 plots_dir <- here::here("plots")
 dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
 
-pp_data <- peak_hour_distributions |>
-  group_by(cell_id, x, y) |>
-  mutate(
-    p_model_forest = map2_dbl(distribution_forest, runoff_hourly, eval_cdf),
-    p_empirical_forest = uscore(p_model_forest),
-    p_model_gp = map2_dbl(distribution_gp, runoff_hourly, eval_cdf),
-    p_empirical_gp = uscore(p_model_gp),
-  ) |>
-  ungroup() |>
-  select(cell_id, x, y, starts_with("p_")) |>
-  pivot_longer(
-    starts_with("p_"),
-    names_to = c(".value", "model"),
-    names_pattern = "(p_.*)_(.*)"
-  )
-
-p_pp <- ggplot(pp_data, aes(p_empirical, p_model)) +
+p_pp <- ggplot(dl_diag$pp, aes(p_empirical, p_model)) +
   facet_wrap(~model, nrow = 1) +
   geom_line(aes(group = cell_id), alpha = 0.1) +
   geom_abline(
@@ -112,52 +118,7 @@ ggplot2::ggsave(
   height = 5.4
 )
 
-# %%
-qscores_model <- peak_hour_distributions |>
-  mutate(
-    df = map(
-      distribution_forest,
-      enframe_quantile,
-      at = 1:99 / 100,
-      arg_name = "tau"
-    )
-  ) |>
-  unnest(df) |>
-  group_by(cell_id, x, y, tau) |>
-  summarise(
-    qscore_model = mean(quantile_score(
-      runoff_hourly,
-      xhat = quantile,
-      tau = tau
-    )),
-    .groups = "drop"
-  )
-
-null_model <- dat |>
-  group_by(cell_id, x, y) |>
-  summarise(runoff_hourly = list(runoff_hourly), .groups = "drop") |>
-  mutate(marginal = map(runoff_hourly, dst_empirical))
-
-null_quantiles <- null_model |>
-  mutate(
-    df = map(marginal, enframe_quantile, at = 1:99 / 100, arg_name = "tau")
-  ) |>
-  select(!marginal) |>
-  unnest(df)
-
-qscores_null <- null_quantiles |>
-  mutate(
-    qscore_null = pmap_dbl(
-      list(runoff_hourly, quantile, tau),
-      \(y, q, p) mean(quantile_score(y, xhat = q, tau = p))
-    )
-  ) |>
-  select(x, y, tau, qscore_null)
-
-qscores <- left_join(qscores_null, qscores_model, by = c("x", "y", "tau")) |>
-  mutate(skill_score = 1 - qscore_model / qscore_null)
-
-p_skill <- ggplot(qscores, aes(tau, skill_score)) +
+p_skill <- ggplot(dl_diag$skill, aes(tau, skill_score)) +
   geom_line(
     aes(group = interaction(x, y)),
     alpha = 0.33

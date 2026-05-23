@@ -44,7 +44,7 @@ single \code{dst}, the result is a bespoke list with S3 class \code{joint_rain_s
 }
 \details{
 Pseudo-observations are margin cdf scores from \code{distionary::eval_cdf()},
-scaled to fall strictly inside \eqn{(0,1)^2} so \code{bicop()} accepts them.
+interiorized away from 0 and 1 (see \code{cdf_scores_to_copula_u()}) for \code{bicop()}.
 }
 \seealso{
 \link{simulate_joint_rain_snow}

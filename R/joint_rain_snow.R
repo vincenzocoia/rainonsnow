@@ -48,7 +48,7 @@ cdf_scores_to_copula_u <- function(u, v, ..., eps = 1e-6) {
 #' single `dst`, the result is a bespoke list with S3 class `joint_rain_snow`.
 #'
 #' Pseudo-observations are margin cdf scores from `distionary::eval_cdf()`,
-#' interiorized away from 0 and 1 (see [cdf_scores_to_copula_u()]) for `bicop()`.
+#' interiorized away from 0 and 1 (see `cdf_scores_to_copula_u()`) for `bicop()`.
 #'
 #' @param rainfall_hourly,snowmelt_hourly Paired numeric vectors (same length),
 #'   typically mm/h as in `scripts/2-tablify_spatial_eo.r`.
@@ -267,6 +267,49 @@ fit_joint_rain_snow_cells <- function(
 
   nested |>
     dplyr::select(dplyr::all_of(group_cols), joint)
+}
+
+
+#' Evaluate joint rainfall–snowmelt density at paired coordinates
+#'
+#' Computes \eqn{f(\mathrm{rain}, \mathrm{snow})} from a fitted `joint_rain_snow`
+#' object. With a copula, this is the copula density times the two marginal
+#' densities; without a copula, marginals are assumed independent.
+#'
+#' @param joint A `joint_rain_snow` object from [fit_joint_rain_snow_cell()].
+#' @param rainfall_hourly,snowmelt_hourly Numeric vectors of the same length.
+#' @returns A numeric vector of joint density values.
+#' @export
+eval_joint_rain_snow_density <- function(
+  joint,
+  rainfall_hourly,
+  snowmelt_hourly
+) {
+  checkmate::assert_class(joint, "joint_rain_snow")
+  checkmate::assert_numeric(rainfall_hourly)
+  checkmate::assert_numeric(snowmelt_hourly)
+  checkmate::assert_true(length(rainfall_hourly) == length(snowmelt_hourly))
+
+  d1 <- distionary::eval_density(
+    joint$marginal_rainfall,
+    at = rainfall_hourly
+  )
+  d2 <- distionary::eval_density(
+    joint$marginal_snowmelt,
+    at = snowmelt_hourly
+  )
+
+  if (is.null(joint$bicop)) {
+    stop("No copula model found.")
+  }
+
+  u <- cdf_scores_to_copula_u(
+    distionary::eval_cdf(joint$marginal_rainfall, at = rainfall_hourly),
+    distionary::eval_cdf(joint$marginal_snowmelt, at = snowmelt_hourly)
+  )
+  bc <- joint$bicop
+  c_u <- rvinecopulib::dbicop(u, bc$family, bc$rotation, bc$parameters)
+  as.numeric(c_u) * d1 * d2
 }
 
 

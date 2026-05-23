@@ -1,6 +1,6 @@
 # POT selection explorer: hourly runoff + POT for one cell/year; pooled peak timing.
 # Run from the package root:
-#   shiny::runApp("apps/pot-explorer")
+#   shiny::runApp("apps/3-pot-explorer")
 #
 # Requires: hourly and POT RDS files from scripts 2 and 3 in derived/; optional
 #   inputs/pot_metadata.yaml (created with defaults by script 3 if missing).

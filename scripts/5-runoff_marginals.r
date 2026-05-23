@@ -1,6 +1,6 @@
 # Marginal distribution modelling: equal-weight mixture of peak-hour predictive
 # distributions per cell (forest + GP tail) and precomputed return-level table
-# for apps/return-level-explorer.
+# for apps/5-return-level-explorer and apps/5-runoff-marginals-explorer.
 # Requires: outputs of scripts/3-pot_spatial_eo.r and 4-distributional_learning.r
 # %%
 library(tidyverse)
@@ -8,7 +8,7 @@ library(logger)
 library(probaverse)
 devtools::load_all()
 
-return_periods <- rp_reporting()
+return_periods <- rp_marginal_curve()
 
 log_info("Starting 5-runoff_marginals.r")
 
