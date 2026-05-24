@@ -13,7 +13,7 @@ return_periods <- rp_marginal_curve()
 log_info("Starting 5-runoff_marginals.r")
 
 dat <- read_rds(here::here("derived", "era5_land_hourly_alps_peaks.rds"))
-peak_hour_distributions <- read_rds(
+peak_hour_distributions <- dl_read_peak_hour_predictions(
   here::here("derived", "era5_land_hourly_alps_dl_predictions.rds")
 )
 

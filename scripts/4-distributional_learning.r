@@ -1,6 +1,7 @@
 # Distributional learning (quantile regression forest per cell) on POT peak hours.
 # Model formula: inputs/distributional_learning.yaml
 # Writes: derived/era5_land_hourly_alps_dl_{rqforest_models,predictions,diagnostics}.rds
+#   (predictions RDS is compact: GPD tail stored as numeric columns, not list-column dsts)
 # Downstream: marginal mixtures + return levels — scripts/5-runoff_marginals.r;
 # joint rainfall–snowmelt — scripts/6-drivers_joint_distribution.r;
 # conditional rain–snow given runoff — scripts/7-likeliest_rain_snow.r
@@ -84,13 +85,6 @@ peak_hour_distributions <- peak_hour_distributions |>
   )
 
 # %%
-log_info("Writing hourly DL predictions (single RDS)")
-write_rds(
-  peak_hour_distributions,
-  here::here("derived", "era5_land_hourly_alps_dl_predictions.rds")
-)
-
-# %%
 log_info("Diagnostics (P-P calibration, quantile skill vs marginal)")
 dl_diag <- dl_build_diagnostics(peak_hour_distributions, dat)
 diag_path <- here::here("derived", dl_diagnostics_basename())
@@ -139,5 +133,25 @@ ggplot2::ggsave(
 
 log_info(paste("Wrote", file.path(plots_dir, "dl_pp_calibration.pdf")))
 log_info(paste("Wrote", file.path(plots_dir, "dl_quantile_skill_score.pdf")))
+
+# %%
+log_info(
+  "Writing hourly DL predictions (compact RDS; GPD tail as numeric columns)"
+)
+predictions_path <- here::here(
+  "derived",
+  "era5_land_hourly_alps_dl_predictions.rds"
+)
+encoded <- dl_encode_peak_hour_distributions(peak_hour_distributions)
+log_info(
+  paste0(
+    "Predictions RDS payload: ",
+    format(object.size(encoded), units = "auto"),
+    " in memory (",
+    nrow(encoded),
+    " rows)"
+  )
+)
+dl_write_peak_hour_predictions(encoded, predictions_path)
 
 log_info("Finished 4-distributional_learning.r")

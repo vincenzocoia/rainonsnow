@@ -265,7 +265,7 @@ dl_get_cell_model <- function(cell_id, dl_models) {
 
 dl_read_predictions_rds <- function(path) {
   tryCatch(
-    readRDS(path),
+    rainonsnow::dl_read_peak_hour_predictions(path),
     error = function(e) {
       structure(
         list(message = conditionMessage(e)),
