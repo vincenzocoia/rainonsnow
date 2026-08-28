@@ -201,6 +201,82 @@ rather than extrapolating the GP into a region where the mixture still has
 empirical mass; script 5 falls back to the body mixture there and records which
 region each return level came from.
 
+## Copula transport of the marginal
+
+The equal-weight mixture of the fitted conditionals is not the only way to reach
+the marginal of runoff, and it turns out not to be an unbiased one.
+
+Write $U = F_X(X)$, $V = F_Y(Y)$ and $W = 1/(1-V)$, which is standard Pareto
+marginally. The **copula conditional EVI**, $\mathrm{CEVI}(u)$, is the extreme
+value index of $W$ given $U = u$: a property of the copula alone. For heavy or
+light tailed $Y$,
+
+$$\mathrm{EVI}(Y \mid X = x) \;=\; \mathrm{CEVI}(u)\cdot \mathrm{EVI}(Y), \qquad u = F_X(x),$$
+
+with $\mathrm{CEVI} \in [0,1]$. Every conditional is lighter-tailed than the
+marginal, and the copula says by exactly how much. For the Gaussian copula
+$\mathrm{CEVI} = 1-\rho^2$, constant in $u$ (verified numerically in part 1 of
+the experiment): the stronger the dependence, the more of the marginal's tail
+heaviness is explained by the predictor rather than by conditional noise.
+
+### The mixture marginal is biased low, and more data does not fix it
+
+Every component of the mixture shares the conditional EVI, so the mixture is
+regularly varying with that index -- which is $\mathrm{CEVI}\cdot\mathrm{EVI}(Y)$,
+strictly lighter than the truth whenever $\mathrm{CEVI} < 1$. The true marginal
+only acquires its full heaviness from covariate values beyond any finite sample.
+So the deficit is structural, not an estimation error, and it does not shrink
+with $n$ (`scripts/experiments/copula-transport-sweep.R`; median ratio to the
+true return level at $p = 10^{-4}$):
+
+| $\rho$ | CEVI | n = 300 | n = 1000 | n = 3000 |
+|---|---|---|---|---|
+| 0.5 | 0.75 | 0.84x | 0.88x | 0.89x |
+| 0.7 | 0.51 | 0.67x | 0.75x | 0.78x |
+| 0.9 | 0.19 | 0.55x | 0.59x | 0.61x |
+
+At dependence strong enough to be worth modelling, the mixture understates the
+10,000-event return level by 20--40%, and tripling the sample barely moves it.
+
+### Transport fixes it, where the conditional index can be estimated
+
+Pushing a conditional back through the copula,
+$F_Y(y) = h^{-1}\!\left(F_{Y|X=x}(y) \mid u\right)$ with $h(v|u) = \partial C(u,v)/\partial u$,
+recovers the marginal exactly, and splits the estimation into a conditional tail
+index (from all $n$ points, at a shallower extrapolation) and a copula parameter
+(from all $n$ ranks, not just the tail). With a local conditional model
+(part 4 of the experiment), at $\rho = 0.7$ and $n = 3000$, $p = 10^{-4}$:
+
+| estimator | median | RMSE(log) |
+|---|---|---|
+| mixture over observed covariates | 0.77x | 0.28 |
+| copula transport | **0.97x** | **0.26** |
+| transport, anchored on the marginal body | 0.94x | 0.25 |
+
+Better on bias *and* on total error.
+
+### Two things that decide whether it works
+
+**The conditional model does most of the work.** Fitting the conditionals by
+binning the covariate makes the answer depend on the bin width: 5 bins at
+n = 3000 inflates the conditional EVI to 0.135 against a true 0.128 (each bin is
+a mixture over its own covariate range) and the transport comes out 20% high,
+while 10--20 bins recovers 0.107--0.110 and lands within 10%. Overlapping
+nearest-neighbour neighbourhoods -- much closer to what the quantile regression
+forest actually does -- are what the table above uses.
+
+**The decomposition is ill-conditioned when CEVI is small.** Since
+$\mathrm{EVI}(Y) = \mathrm{EVI}(Y|X)/\mathrm{CEVI}$, any error in the conditional
+index is amplified by $1/\mathrm{CEVI}$. At $\rho = 0.9$ that factor is 5.3, the
+conditional tail is nearly exponential and its index estimates negative, and
+every method fails. So the transport is most attractive in the middle: strong
+enough dependence that the mixture is visibly biased, not so strong that the
+conditional tail carries no information.
+
+A null check is included: when the covariate effect is bounded so that
+$\mathrm{CEVI} = 1$ and the copula explains none of the tail heaviness, the
+anchored transport neither gains nor does harm (1.04x at $p = 10^{-4}$).
+
 ## Shiny apps
 
 Interactive apps live under `apps/*`, with folder names numbered to

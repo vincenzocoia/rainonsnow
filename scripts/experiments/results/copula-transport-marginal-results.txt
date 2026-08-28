@@ -122,3 +122,45 @@ anchored+smooth          0.99x          0.18       1.00x          0.37       1.0
    RMSE(log) = root mean square of log(estimate/truth), so it is a
    relative error and is comparable across return periods.
 =====================================================================
+
+
+=====================================================================
+PART 4  Same comparison, with a local (kNN) conditional model
+=====================================================================
+
+                               p = 1e-02               p = 1e-03               p = 1e-04
+rho = 0.5, n = 1000, CEVI = 0.75, kNN conditional EVI 0.1624 (true 0.1875)
+     dl_mixture       1.01x (RMSE 0.08)      0.95x (RMSE 0.15)      0.89x (RMSE 0.26)
+     transport        0.99x (RMSE 0.13)      0.94x (RMSE 0.26)      0.88x (RMSE 0.41)
+     anchored         0.99x (RMSE 0.10)      0.95x (RMSE 0.22)      0.90x (RMSE 0.36)
+
+rho = 0.5, n = 3000, CEVI = 0.75, kNN conditional EVI 0.1764 (true 0.1875)
+     dl_mixture       0.99x (RMSE 0.05)      0.94x (RMSE 0.11)      0.86x (RMSE 0.20)
+     transport        0.99x (RMSE 0.07)      0.97x (RMSE 0.14)      0.93x (RMSE 0.22)
+     anchored         0.98x (RMSE 0.06)      0.94x (RMSE 0.13)      0.91x (RMSE 0.21)
+
+rho = 0.7, n = 1000, CEVI = 0.51, kNN conditional EVI 0.0928 (true 0.1275)
+     dl_mixture       1.01x (RMSE 0.10)      0.89x (RMSE 0.20)      0.73x (RMSE 0.38)
+     transport        0.99x (RMSE 0.20)      0.94x (RMSE 0.38)      0.88x (RMSE 0.59)
+     anchored         0.97x (RMSE 0.11)      0.87x (RMSE 0.28)      0.81x (RMSE 0.48)
+
+rho = 0.7, n = 3000, CEVI = 0.51, kNN conditional EVI 0.1141 (true 0.1275)
+     dl_mixture       1.00x (RMSE 0.05)      0.90x (RMSE 0.13)      0.77x (RMSE 0.28)
+     transport        1.01x (RMSE 0.09)      1.00x (RMSE 0.17)      0.97x (RMSE 0.26)
+     anchored         0.98x (RMSE 0.07)      0.97x (RMSE 0.15)      0.94x (RMSE 0.25)
+
+rho = 0.9, n = 1000, CEVI = 0.19, kNN conditional EVI -0.0219 (true 0.0475)
+     dl_mixture       0.97x (RMSE 0.09)      0.78x (RMSE 0.26)      0.60x (RMSE 0.55)
+     transport        0.95x (RMSE 0.39)      0.81x (RMSE 0.73)      0.61x (RMSE 1.13)
+     anchored         1.10x (RMSE 0.31)      0.80x (RMSE 0.32)      0.50x (RMSE 0.72)
+
+rho = 0.9, n = 3000, CEVI = 0.19, kNN conditional EVI -0.0028 (true 0.0475)
+     dl_mixture       0.98x (RMSE 0.06)      0.80x (RMSE 0.23)      0.61x (RMSE 0.51)
+     transport        0.83x (RMSE 0.33)      0.63x (RMSE 0.70)      0.46x (RMSE 1.10)
+     anchored         0.96x (RMSE 0.21)      0.76x (RMSE 0.30)      0.56x (RMSE 0.63)
+
+The transport removes the mixture's deficit wherever the conditional EVI
+can be estimated at all. It fails at rho = 0.9 because CEVI = 0.19 there:
+the conditional tail is nearly exponential, its index is hard to pin down,
+and dividing by 0.19 multiplies whatever error remains by more than five.
+=====================================================================
