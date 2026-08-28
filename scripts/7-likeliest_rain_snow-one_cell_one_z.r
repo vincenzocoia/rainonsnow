@@ -35,12 +35,19 @@ if (is.null(cfg) || !is.list(cfg)) {
   )
 }
 
-cell_id <- as.integer(cfg$cell_id %||% NA_integer_)
+cell_id <- suppressWarnings(as.integer(cfg$cell_id %||% NA_integer_))
 if (is.na(cell_id)) {
-  stop(
-    "`cell_id` must be set under likeliest_rain_snow in inputs/rain_snow_joint_model.yaml",
-    call. = FALSE
-  )
+  # cell_id: null -> auto-select the most mixed rain+snowmelt cell.
+  .peaks_all <- read_rds(here::here("derived", "era5_land_hourly_alps_peaks.rds"))
+  .mixed <- .peaks_all |>
+    filter(rainfall_hourly > 0, snowmelt_hourly > 0) |>
+    count(cell_id, sort = TRUE)
+  cell_id <- if (nrow(.mixed) > 0) {
+    .mixed$cell_id[[1]]
+  } else {
+    sort(unique(.peaks_all$cell_id))[[1]]
+  }
+  message("Focus cell auto-selected (most mixed rain+snow peaks): ", cell_id)
 }
 
 marginal_rp_model <- match.arg(

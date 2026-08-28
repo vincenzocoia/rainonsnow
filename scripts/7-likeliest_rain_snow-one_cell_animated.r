@@ -30,11 +30,28 @@
 # %%
 library(tidyverse)
 library(rvinecopulib)
+library(yaml)
 library(magick)
 devtools::load_all()
 
 # --- edit here ---
-cell_id <- 32L
+# Focus cell from inputs/rain_snow_joint_model.yaml (likeliest_rain_snow$cell_id).
+# Set that to null to auto-select the most mixed rain+snowmelt cell; or override
+# `cell_id` directly here.
+.cfg <- read_yaml(here::here("inputs", "rain_snow_joint_model.yaml"))$likeliest_rain_snow
+cell_id <- suppressWarnings(as.integer(.cfg$cell_id %||% NA_integer_))
+if (is.na(cell_id)) {
+  .peaks_all <- read_rds(here::here("derived", "era5_land_hourly_alps_peaks.rds"))
+  .avail <- sort(unique(.peaks_all$cell_id))
+  .mixed <- .peaks_all |>
+    filter(rainfall_hourly > 0, snowmelt_hourly > 0) |>
+    count(cell_id, sort = TRUE)
+  cell_id <- if (nrow(.mixed) > 0) .mixed$cell_id[[1]] else .avail[[1]]
+  message("Focus cell auto-selected (most mixed rain+snow peaks): ", cell_id)
+}
+# The old `runoff_cond_model` / `marginal_runoff_model` switches are gone: both
+# the conditional density and the T -> z marginal now come from the cell's
+# shared-shape GP tail, so there is only one coherent choice.
 grid_size <- c(45L, 45L)
 grid_mult <- c(1.3, 1.3)
 return_period_years <- exp(seq(log(2), log(200), length.out = 30))

@@ -151,7 +151,14 @@ return_levels_long <- cell_tails |>
 
         level_body <- rep(NA_real_, length(p))
         if (have_body) {
-          level_body <- distionary::eval_quantile(body, at = 1 - p)
+          # mix2() collapses a mixture of finite distributions to a single
+          # empirical one, whose quantile works. If it did not collapse, the
+          # result is a generic "Mixture" whose quantile is disabled in the
+          # installed distionary -- invert its CDF numerically instead.
+          level_body <- tryCatch(
+            distionary::eval_quantile(body, at = 1 - p),
+            error = function(e) eval_return_numeric(body, at = 1 / p)
+          )
         }
 
         level_tail <- mixture_tail_quantile(mt, p)

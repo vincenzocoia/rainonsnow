@@ -16,6 +16,23 @@ download:
   collection_id: ECMWF/ERA5_LAND/HOURLY
   first_year: 1950
   last_year: 2025
+  # Bounding box for the Earth Engine export: [lon_min, lat_min, lon_max, lat_max]
+  # in degrees. Combined with `scale` below, this defines the output grid. Box
+  # edges on 0.05-deg offsets (x.x5) align the cells to ERA5-Land's native grid
+  # (centres on 0.1-deg multiples), avoiding resampling.
+  #
+  # Full Alps (slow, ~6000 cells): [5.0, 43.0, 16.5, 48.5]
+  # Central-Alps 2x2 window: cells centred at 10.8/10.9 E x 46.8/46.9 N
+  # (high central Alps, Ortler/Val Venosta; mixed snowmelt/rain regime):
+  bbox: [10.75, 46.75, 10.95, 46.95]
+  # Output pixel size in degrees. REQUIRED: without it xee picks a coarse default
+  # that collapses a small box to a single pixel. 0.1 = ERA5-Land native res.
+  scale: 0.1
+  # Each year is a separate, network-bound Earth Engine request (~2 min each
+  # regardless of grid size), so years are downloaded concurrently. 8 workers
+  # triggered EE throttling (some years stalled for 10-16 min); 4 is a safer
+  # sweet spot. Re-running is cheap: complete year files are skipped.
+  max_workers: 4
   variables:
     - temperature_2m
     - total_precipitation_hourly

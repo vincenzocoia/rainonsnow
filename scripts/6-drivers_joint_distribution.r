@@ -25,20 +25,39 @@ log_info(
 )
 
 # %%
+# Single-cell exploration. The focus cell comes from
+# `likeliest_rain_snow$cell_id` in inputs/rain_snow_joint_model.yaml; when that is
+# null/absent or not present in the current grid, auto-select the cell with the
+# most co-occurring rain+snowmelt peak hours (the "mixed regime" cell).
+focus_cell <- suppressWarnings(as.integer(meta$likeliest_rain_snow$cell_id %||% NA_integer_))
+available_cells <- sort(unique(peaks$cell_id))
+if (is.na(focus_cell) || !(focus_cell %in% available_cells)) {
+  mixed_counts <- peaks |>
+    filter(rainfall_hourly > 0, snowmelt_hourly > 0) |>
+    count(cell_id, sort = TRUE)
+  focus_cell <- if (nrow(mixed_counts) > 0) {
+    mixed_counts$cell_id[[1]]
+  } else {
+    available_cells[[1]]
+  }
+  log_info(paste("Focus cell auto-selected (most mixed rain+snow peaks):", focus_cell))
+} else {
+  log_info(paste("Focus cell from config:", focus_cell))
+}
 
-peaks_32 <- filter(peaks, cell_id == 32)
+peaks_focus <- filter(peaks, cell_id == focus_cell)
 
-ggplot(peaks_32, aes(rainfall_hourly, snowmelt_hourly)) +
+ggplot(peaks_focus, aes(rainfall_hourly, snowmelt_hourly)) +
   geom_point() +
   geom_point(
-    data = filter(peaks_32, rainfall_hourly == 0 | snowmelt_hourly == 0),
+    data = filter(peaks_focus, rainfall_hourly == 0 | snowmelt_hourly == 0),
     colour = "green",
   ) +
   theme_bw()
 
 fit_joint_rain_snow_cell(
-  peaks_32$rainfall_hourly,
-  peaks_32$snowmelt_hourly
+  peaks_focus$rainfall_hourly,
+  peaks_focus$snowmelt_hourly
 )
 
 # %%
