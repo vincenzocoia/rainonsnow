@@ -1,0 +1,124 @@
+
+=====================================================================
+PART 1  The copula conditional EVI (CEVI) of the Gaussian copula
+=====================================================================
+
+     rho        u         CEVI    1 - rho^2
+     0.3      0.2      0.89752      0.91000
+     0.3      0.5      0.91026      0.91000
+     0.3      0.9      0.93036      0.91000
+     0.5      0.2      0.73324      0.75000
+     0.5      0.5      0.75059      0.75000
+     0.5      0.9      0.77865      0.75000
+     0.7      0.2      0.49438      0.51000
+     0.7      0.5      0.51079      0.51000
+     0.7      0.9      0.53797      0.51000
+     0.9      0.2      0.18268      0.19000
+     0.9      0.5      0.19049      0.19000
+     0.9      0.9      0.20375      0.19000
+
+CEVI is constant in u for this copula, and every conditional tail is
+lighter than the marginal by exactly this factor.
+
+
+=====================================================================
+PART 2  The tail of the mixture over OBSERVED covariates
+=====================================================================
+
+true marginal EVI 0.250, true conditional EVI 0.128 (= CEVI x marginal)
+
+local EVI at p =               1e-02   1e-03   1e-04   1e-05   1e-06   1e-07   1e-08
+true marginal                  0.444   0.330   0.289   0.271   0.261   0.256   0.253
+mixture over n = 200           0.440   0.318   0.266   0.237   0.219   0.206   0.197
+mixture over n = 2000          0.444   0.328   0.283   0.258   0.241   0.228   0.218
+mixture over n = 20000         0.444   0.330   0.288   0.267   0.254   0.244   0.235
+
+The mixture tracks the marginal for a while and then peels away toward
+the conditional EVI. Where it peels away depends on n, and at the sample
+sizes this project has, that happens inside the range of interest.
+
+
+=====================================================================
+PART 3  Estimating the marginal return level from n observations
+=====================================================================
+
+   DGP A: Gaussian copula, exactly GP marginal 50/300
+   DGP A: Gaussian copula, exactly GP marginal 100/300
+   DGP A: Gaussian copula, exactly GP marginal 150/300
+   DGP A: Gaussian copula, exactly GP marginal 200/300
+   DGP A: Gaussian copula, exactly GP marginal 250/300
+   DGP A: Gaussian copula, exactly GP marginal 300/300
+
+DGP A: Gaussian copula, exactly GP marginal
+   CEVI = 0.51, so conditionals are genuinely lighter than the marginal.
+   NOTE: the marginal here is exactly generalized Pareto, which is the
+   most favourable case direct POT could be handed.
+   true return levels: 8.6  18.5  36.0
+   fitted conditional EVI: free scales 0.055, log-linear 0.143
+
+estimator                          p = 1e-02                 p = 1e-03                 p = 1e-04
+                        median     RMSE(log)      median     RMSE(log)      median     RMSE(log)
+------------------------------------------------------------------------------------------------ 
+direct_pot               0.98x          0.16       0.96x          0.38       0.92x          0.65
+dl_mixture               1.00x          0.16       0.88x          0.29       0.70x          0.52
+transport                0.88x          0.41       0.82x          0.78       0.75x          1.16
+transport+smooth         1.07x          0.39       1.14x          0.75       1.23x          1.16
+anchored+smooth          1.03x          0.23       1.05x          0.59       1.14x          1.01
+
+   median = ratio to the true return level (1.00x is right).
+   RMSE(log) = root mean square of log(estimate/truth), so it is a
+   relative error and is comparable across return periods.
+   DGP C: Gaussian copula, marginal that is NOT close to GP 50/300
+   DGP C: Gaussian copula, marginal that is NOT close to GP 100/300
+   DGP C: Gaussian copula, marginal that is NOT close to GP 150/300
+   DGP C: Gaussian copula, marginal that is NOT close to GP 200/300
+   DGP C: Gaussian copula, marginal that is NOT close to GP 250/300
+   DGP C: Gaussian copula, marginal that is NOT close to GP 300/300
+
+DGP C: Gaussian copula, marginal that is NOT close to GP
+   Same CEVI, but the marginal is a two-component Pareto mixture whose
+   local EVI falls from 0.52 to 0.26 across the range a sample reaches,
+   approaching its asymptotic 0.25 from above. Direct POT no longer has
+   a GP target to hit.
+   true return levels: 1.7  3.7  7.4
+   fitted conditional EVI: free scales 0.201, log-linear 0.273
+
+estimator                          p = 1e-02                 p = 1e-03                 p = 1e-04
+                        median     RMSE(log)      median     RMSE(log)      median     RMSE(log)
+------------------------------------------------------------------------------------------------ 
+direct_pot               0.98x          0.20       0.94x          0.43       0.91x          0.72
+dl_mixture               1.03x          0.20       1.01x          0.32       0.95x          0.48
+transport                1.05x          0.43       1.36x          0.89       1.77x          1.42
+transport+smooth         1.36x          0.54       2.20x          1.17       3.86x          1.90
+anchored+smooth          1.35x          0.47       2.26x          1.16       4.07x          1.94
+
+   median = ratio to the true return level (1.00x is right).
+   RMSE(log) = root mean square of log(estimate/truth), so it is a
+   relative error and is comparable across return periods.
+   DGP B: conditional GP, bounded covariate effect (CEVI = 1) 50/300
+   DGP B: conditional GP, bounded covariate effect (CEVI = 1) 100/300
+   DGP B: conditional GP, bounded covariate effect (CEVI = 1) 150/300
+   DGP B: conditional GP, bounded covariate effect (CEVI = 1) 200/300
+   DGP B: conditional GP, bounded covariate effect (CEVI = 1) 250/300
+   DGP B: conditional GP, bounded covariate effect (CEVI = 1) 300/300
+
+DGP B: conditional GP, bounded covariate effect (CEVI = 1)
+   Marginal and conditional share an EVI, so the copula explains none of
+   the tail heaviness and transport has nothing to gain. This checks
+   whether it does harm when its premise fails.
+   true return levels: 9.9  21.9  43.3
+   fitted conditional EVI: free scales 0.190, log-linear 0.260
+
+estimator                          p = 1e-02                 p = 1e-03                 p = 1e-04
+                        median     RMSE(log)      median     RMSE(log)      median     RMSE(log)
+------------------------------------------------------------------------------------------------ 
+direct_pot               0.96x          0.19       0.90x          0.42       0.87x          0.72
+dl_mixture               0.96x          0.17       0.91x          0.33       0.85x          0.52
+transport                0.83x          0.30       0.77x          0.52       0.70x          0.76
+transport+smooth         0.93x          0.20       0.97x          0.39       1.02x          0.61
+anchored+smooth          0.99x          0.18       1.00x          0.37       1.04x          0.59
+
+   median = ratio to the true return level (1.00x is right).
+   RMSE(log) = root mean square of log(estimate/truth), so it is a
+   relative error and is comparable across return periods.
+=====================================================================

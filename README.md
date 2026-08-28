@@ -154,7 +154,7 @@ then evaluates the mixture in closed form.
 
 `scripts/experiments/tail-index-pooling.R` measures all of this on simulated
 cells where the truth is known (results in
-`tail-index-pooling-results.txt`). With 150 peak hours and 15 effective tail
+`scripts/experiments/results/`). With 150 peak hours and 15 effective tail
 points each, at a true $\xi$ of 0.15:
 
 | shape estimator | effective $\xi$ | T=10y | T=100y | T=1000y |
