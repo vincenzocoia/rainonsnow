@@ -135,6 +135,72 @@ Rscript scripts/5-runoff_marginals.r
 Rscript scripts/6-drivers_joint_distribution.r
 ```
 
+## Tail modelling
+
+The marginal runoff distribution for a cell is the equal-weight mixture of its
+peak-hour predictive distributions, each grafted to a generalized Pareto tail.
+That construction has a trap. If component $i$ has shape $\xi_i$, its survival
+is regularly varying with index $1/\xi_i$, so the mixture's index is
+$\min_i (1/\xi_i)$ — the cell's tail is set by $\max_i \xi_i$ alone. Each
+$\xi_i$ is fitted to the upper half of one predictive distribution, whose
+effective sample size is small, so that maximum is the maximum of a few hundred
+noisy estimates.
+
+The fix is to share the shape across a cell and let only the scale vary by hour,
+which is also the standard non-stationary POT model: covariates move the scale,
+not the index. `fit_gpd_shared_shape()` profiles the shared shape, optimising
+each component's scale by a bounded one-dimensional search. `mixture_tail()`
+then evaluates the mixture in closed form.
+
+`scripts/experiments/tail-index-pooling.R` measures all of this on simulated
+cells where the truth is known (results in
+`tail-index-pooling-results.txt`). With 150 peak hours and 15 effective tail
+points each, at a true $\xi$ of 0.15:
+
+| shape estimator | effective $\xi$ | T=10y | T=100y | T=1000y |
+|---|---|---|---|---|
+| one per hour (previous behaviour) | 0.93 | 1.00x | 1.02x | **1.64x** |
+| shared across the cell | 0.07 | 1.00x | 0.99x | 0.96x |
+| shared, shape bias-corrected | 0.17 | 1.07x | 1.16x | 1.24x |
+| true shape supplied | 0.15 | 1.01x | 1.07x | 1.10x |
+
+Columns are the median ratio to the correct return level. Two things are worth
+noting. Fitting a shape per hour is not merely noisy, it diverges as the return
+period grows, which is exactly the regime the project cares about. And the row
+with the true shape supplied does not sit at 1.00x either: each hour's *scale*
+is fitted from a handful of points and the return level is convex in those
+scales, so scale noise inflates it by 7–10% on its own. That second error is
+still open — see `?fit_gpd_shared_shape` for why the shape bias correction is
+off by default as a result.
+
+Shapes can also be smoothed between neighbouring cells
+(`smooth_tail_shape()`), by empirical-Bayes shrinkage toward the neighbourhood
+mean. Part 2 of the same experiment checks both the benefit and the risk:
+
+| true shape field | per-cell | neighbour-smoothed | single global shape |
+|---|---|---|---|
+| flat | 0.053 | 0.027 | **0.013** |
+| gentle trend | 0.058 | **0.030** | 0.033 |
+| steep trend | 0.055 | **0.041** | 0.086 |
+
+RMSE in $\xi$. Neighbour smoothing helps in every regime and never hurts,
+whereas collapsing to one global shape is best when the field is genuinely flat
+and clearly harmful when it is not.
+
+### Evaluating the mixture
+
+Above `max(graft_of)` every component is in its GP part, so the mixture survival
+is elementary in the stored `(graft_of, graft_tail_prob, gp_scale, gp_shape)`
+columns — no distribution objects are built at all. `mixture_tail_compress()`
+further bins components by scale while preserving their combined asymptotic
+contribution (5e-5 relative error at 64 bins). A 500-point return curve takes
+about 50 ms, which is what makes `scripts/7-*-animated.r` practical.
+
+Below `max(graft_of)` the closed form does not apply and evaluation returns `NA`
+rather than extrapolating the GP into a region where the mixture still has
+empirical mass; script 5 falls back to the body mixture there and records which
+region each return level came from.
+
 ## Shiny apps
 
 Interactive apps live under `apps/*`, with folder names numbered to
@@ -145,6 +211,10 @@ root** so paths such as `derived/` and `devtools::load_all()` resolve:
 ``` r
 shiny::runApp("apps/<app-folder>")
 ```
+
+The apps share a look and feel through `apps/ros_theme.R` (Bootstrap 5 via
+**bslib**, plus a common ggplot theme and palette); if bslib is not installed
+they fall back to default styling rather than failing to start.
 
 Typical dependencies include [shiny](https://shiny.posit.co/),
 **ggplot2**, **tidyverse**, **sf**, and **rnaturalearth**; individual
@@ -211,6 +281,19 @@ bundle described in the app header), or
 
 ``` r
 shiny::runApp("apps/5-return-level-explorer")
+```
+
+### Tail shape explorer (`apps/5b-tail-shape-explorer`)
+
+Map of the shared tail index per cell, how far neighbour smoothing moved each
+one, and how much the design return level actually depends on the shape.
+
+**Data:** `derived/era5_land_hourly_alps_dl_tail_summary.rds` and
+`derived/era5_land_hourly_alps_dl_mixture_tails.rds` (script 5); optionally
+`derived/era5_land_hourly_alps_dl_tail_shapes.rds` (script 4).
+
+``` r
+shiny::runApp("apps/5b-tail-shape-explorer")
 ```
 
 ### Joint rainfall–snowmelt explorer (`apps/6-joint-rain-snow-explorer`)

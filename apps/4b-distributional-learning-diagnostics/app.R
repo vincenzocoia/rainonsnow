@@ -17,6 +17,7 @@ library(distionary)
 
 repo_root <- here::here()
 devtools::load_all(repo_root, quiet = TRUE)
+source(file.path(repo_root, "apps", "ros_theme.R"))
 source(fs::path(repo_root, "apps", "dl_shared.R"))
 
 peaks_path <- fs::path(repo_root, "derived", "era5_land_hourly_alps_peaks.rds")
@@ -29,7 +30,11 @@ models_ok <- file.exists(models_path)
 diagnostics_ok <- file.exists(diag_path)
 
 ui <- fluidPage(
-  titlePanel("Distributional learning — diagnostics (script 4b)"),
+  theme = ros_bs_theme(),
+  ros_header(
+    "Distributional learning — diagnostics",
+    "Calibration, skill against the marginal, and conditional runoff CDFs per cell."
+  ),
   uiOutput("data_banner"),
   helpText(
     "Explore fitted models from script 4. Models load at startup (for CDF clicks on any cell). ",

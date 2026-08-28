@@ -99,7 +99,11 @@ test_that("bootstrap bias correction moves the estimate toward the truth", {
     })
   }
   raw <- mean(replicate(6, fit_gpd_shared_shape(make(), n_boot = 0L)$shape))
-  corrected <- mean(replicate(6, fit_gpd_shared_shape(make(), n_boot = 25L)$shape))
+  corrected <- mean(replicate(6, fit_gpd_shared_shape(
+    make(),
+    n_boot = 25L,
+    bias_correct = TRUE
+  )$shape))
   # The uncorrected pooled MLE is biased low (incidental parameters).
   expect_lt(raw, xi)
   expect_lt(abs(corrected - xi), abs(raw - xi))
@@ -119,6 +123,20 @@ test_that("degenerate input is handled without error", {
   expect_true(is.finite(
     fit_gpd_shared_shape(list(c(good, -1, NA)), n_boot = 0L)$shape
   ))
+})
+
+test_that("the shape bias correction is off by default", {
+  # Deliberate: correcting the shape alone makes return levels worse, because
+  # scale noise inflates them in the opposite direction. See the function's
+  # documentation and scripts/experiments/tail-index-pooling.R.
+  set.seed(8)
+  ex <- lapply(stats::runif(30, 1, 5), function(s) {
+    gpd_quantile_upper(stats::runif(15), s, 0.15)
+  })
+  fit <- fit_gpd_shared_shape(ex, n_boot = 10L)
+  expect_identical(fit$shape, fit$shape_raw)
+  # ... but the bootstrap still ran, because the SE is needed for smoothing.
+  expect_true(is.finite(fit$shape_se))
 })
 
 test_that("n_boot = 0 disables both the correction and the standard error", {

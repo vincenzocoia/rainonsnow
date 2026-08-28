@@ -235,8 +235,9 @@ fit_gpd_weighted <- function(y, w = NULL, shape_bounds = c(-0.45, 1)) {
 #'   `NULL` means equal weights within each component.
 #' @param shape_bounds Length-2 numeric search range for `xi`.
 #' @param tol Tolerance for the outer 1-D search over `xi`.
-#' @param bias_correct Whether to apply a parametric-bootstrap bias correction
-#'   (see Details). Strongly recommended, and cheap.
+#' @param bias_correct Whether to subtract the parametric-bootstrap estimate of
+#'   the shape's bias. Defaults to `FALSE`; see the section below before
+#'   turning it on.
 #' @param n_boot Number of bootstrap replicates used when `bias_correct` is
 #'   `TRUE`.
 #'
@@ -254,6 +255,28 @@ fit_gpd_weighted <- function(y, w = NULL, shape_bounds = c(-0.45, 1)) {
 #' A Cox--Reid adjusted profile likelihood was also tried for this and behaved
 #' badly (the adjustment term dominated and drove `xi` to the search bound), so
 #' the bootstrap is used instead.
+#'
+#' @section Why the correction is off by default:
+#' Correcting the shape in isolation makes the *return levels* worse, which is
+#' what the pipeline actually reports. There is a second, independent error:
+#' each hour's scale is fitted from a handful of points, and the mixture return
+#' level is convex in those scales, so scale noise alone inflates it (Jensen) by
+#' about 7% at T = 100 years and 10% at T = 1000 -- measured in
+#' `scripts/experiments/tail-index-pooling.R` as the `oracle_shape` row, where
+#' the true shape is supplied and the level is still too high.
+#'
+#' The uncorrected pooled shape is biased low by roughly the same amount in the
+#' opposite direction, so it lands close to correct: over T = 10, 100 and 1000
+#' years it gives 1.00x, 0.99x and 0.96x of the true return level, against
+#' 1.07x, 1.16x and 1.24x once the shape is corrected. Both are far better than
+#' fitting a shape per hour, which reaches 1.64x at T = 1000 and keeps climbing.
+#'
+#' Relying on two errors cancelling is not satisfying, and the honest fix is to
+#' correct the scale-noise inflation too -- most directly by bootstrapping the
+#' return level itself rather than the shape. Until that exists, `FALSE` is the
+#' better-calibrated default for return levels, and `TRUE` is the better choice
+#' if the shape itself is the quantity of interest. The bootstrap runs either
+#' way, because `shape_se` is needed by [smooth_tail_shape()].
 #'
 #' @returns A list with:
 #'   * `shape` -- the shared `xi` (bias-corrected when requested).
@@ -278,7 +301,7 @@ fit_gpd_shared_shape <- function(
   weight_list = NULL,
   shape_bounds = c(-0.45, 1),
   tol = 1e-4,
-  bias_correct = TRUE,
+  bias_correct = FALSE,
   n_boot = 25L
 ) {
   if (is.null(weight_list)) {

@@ -19,6 +19,7 @@ library(famish)
 
 repo_root <- here::here()
 devtools::load_all(repo_root, quiet = TRUE)
+source(file.path(repo_root, "apps", "ros_theme.R"))
 
 `%||%` <- function(x, y) if (!is.null(x)) x else y
 
@@ -219,7 +220,11 @@ td <- if (nrow(cells_ref) > 0) tile_dims(cells_ref) else c(width = 0.25, height 
 rp_years <- rp_reporting()
 
 ui <- fluidPage(
-  titlePanel("Joint rainfall–snowmelt explorer"),
+  theme = ros_bs_theme(),
+  ros_header(
+    "Joint rainfall–snowmelt",
+    "Marginal fits and the fitted copula per cell, with joint density contours."
+  ),
   uiOutput("data_banner"),
   helpText(
     "Marginals are fitted with ",

@@ -12,3 +12,39 @@ dl_rqforest:
   mtry: 1
   nodesize: 23
   nthreads: 4
+
+# Tail of each peak-hour predictive distribution (scripts/4-distributional_learning.r).
+#
+# The cell marginal is the equal-weight mixture of these predictive
+# distributions. A mixture of GP tails is regularly varying with index
+# min_i(1/xi_i), so with a shape fitted independently per hour the whole cell
+# inherits max_i(xi_i) -- the noisiest single estimate. See
+# scripts/experiments/tail-index-pooling.R.
+gp_tail:
+  # "shared" -> one shape per cell, scale per hour (recommended).
+  # "independent" -> previous behaviour, one shape per hour.
+  shape_pooling: shared
+
+  # Quantile at which the GP tail is grafted onto the forest distribution.
+  adaptive_threshold: 0.5
+
+  # Bootstrap replicates for the shape standard error (needed by the spatial
+  # smoothing below) and, if enabled, the bias correction. 0 disables both.
+  n_boot: 25
+
+  # Subtract the bootstrap estimate of the shape's bias. OFF by default: the
+  # pooled MLE is biased low, but per-hour scale noise inflates the return
+  # level by a similar amount in the other direction, and correcting only the
+  # shape leaves that exposed. Measured over T = 10/100/1000 years:
+  #   correction off -> 1.00x, 0.99x, 0.96x of the true return level
+  #   correction on  -> 1.07x, 1.16x, 1.24x
+  # See scripts/experiments/tail-index-pooling.R. Turn it on if the shape
+  # itself, rather than the return level, is what you are reporting.
+  bias_correct: false
+
+  # Borrow shape information between neighbouring cells after fitting, by
+  # empirical-Bayes shrinkage toward the neighbourhood mean. Cells with precise
+  # estimates barely move. Set radius to 0 to disable.
+  spatial_smoothing:
+    radius: 1
+    min_neighbours: 2
