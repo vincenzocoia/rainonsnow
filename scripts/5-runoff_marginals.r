@@ -74,12 +74,15 @@ return_levels <- mutate(
 )
 
 log_info("Computing marginal return levels - GP mixture")
+# The GP marginal is a mix2() of grafted GP-tail distributions -> a non-continuous
+# "Mixture" whose quantile is disabled in the installed distionary. Invert its CDF
+# numerically instead (eval_return_numeric); matches eval_return() in the tail.
 return_levels <- mutate(
   return_levels,
   levels_gp = map2(
     marginal_gp,
     num_events_per_year,
-    \(dist, num) eval_return(dist, at = return_periods * num),
+    \(dist, num) eval_return_numeric(dist, at = return_periods * num),
     .progress = TRUE
   )
 )

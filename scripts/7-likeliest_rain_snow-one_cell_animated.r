@@ -11,11 +11,25 @@
 # %%
 library(tidyverse)
 library(rvinecopulib)
+library(yaml)
 library(magick)
 devtools::load_all()
 
 # --- edit here ---
-cell_id <- 32L
+# Focus cell from inputs/rain_snow_joint_model.yaml (likeliest_rain_snow$cell_id).
+# Set that to null to auto-select the most mixed rain+snowmelt cell; or override
+# `cell_id` directly here.
+.cfg <- read_yaml(here::here("inputs", "rain_snow_joint_model.yaml"))$likeliest_rain_snow
+cell_id <- suppressWarnings(as.integer(.cfg$cell_id %||% NA_integer_))
+if (is.na(cell_id)) {
+  .peaks_all <- read_rds(here::here("derived", "era5_land_hourly_alps_peaks.rds"))
+  .avail <- sort(unique(.peaks_all$cell_id))
+  .mixed <- .peaks_all |>
+    filter(rainfall_hourly > 0, snowmelt_hourly > 0) |>
+    count(cell_id, sort = TRUE)
+  cell_id <- if (nrow(.mixed) > 0) .mixed$cell_id[[1]] else .avail[[1]]
+  message("Focus cell auto-selected (most mixed rain+snow peaks): ", cell_id)
+}
 runoff_cond_model <- "forest" # f(z | rain, snow): "forest" or "gp"
 marginal_runoff_model <- "forest" # T → z marginal mixture: "forest" or "gp"
 grid_size <- c(45L, 45L)

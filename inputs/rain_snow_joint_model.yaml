@@ -20,7 +20,11 @@ fit_joint_rain_snow_cells:
 # Combines joint model from script 6 with conditional runoff given rain/snow from script 4.
 
 likeliest_rain_snow:
-  cell_id: 32
+  # Focus grid cell for single-cell exploration (scripts 6 and 7). Cell ids are
+  # assigned in script 2 and depend on the grid extent, so a fixed number is only
+  # valid for one grid. Set to `null` to auto-select the cell with the most
+  # co-occurring rain+snowmelt peak hours (the "mixed regime" cell).
+  cell_id: null
 
   # Target runoff depth z (mm/h). Use this for a fast, explicit contour level.
   runoff_threshold_mm: 15

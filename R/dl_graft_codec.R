@@ -52,7 +52,7 @@ reconstruct_graft_gp <- function(
   distplyr::graft_right(
     distribution_forest,
     tail,
-    of = graft_of,
+    threshold = graft_of,
     include = include
   )
 }

@@ -105,5 +105,5 @@ fit_and_graft_gp <- function(dst, adaptive_threshold) {
     include = FALSE
   )
   gp <- convert_emp_to_gp(upper_empirical)
-  distplyr::graft_right(dst, gp, of = trim_point, include = FALSE)
+  distplyr::graft_right(dst, gp, threshold = trim_point, include = FALSE)
 }
