@@ -45,6 +45,12 @@ gp_tail:
   # Borrow shape information between neighbouring cells after fitting, by
   # empirical-Bayes shrinkage toward the neighbourhood mean. Cells with precise
   # estimates barely move. Set radius to 0 to disable.
+  #
+  # On a small grid (e.g. the 2x2 window in data_specifications.yaml) the
+  # between-cell variance is not identifiable from four estimates, so tau^2 comes
+  # out zero and all cells collapse to a single pooled shape. That is the
+  # intended conservative behaviour, and for a 2x2 window it is also the
+  # physically sensible answer.
   spatial_smoothing:
     radius: 1
     min_neighbours: 2
