@@ -224,6 +224,47 @@ mixture_tail_survival <- function(mt, x) {
   out
 }
 
+#' Density of a mixture tail
+#'
+#' @param mt A `mixture_tail`.
+#' @param x Numeric vector of values.
+#' @returns Numeric vector of densities; `NA` below [mixture_tail_lower()],
+#'   where the mixture still has empirical mass this object does not carry.
+#' @examples
+#' mt <- mixture_tail(c(10, 12), c(0.5, 0.5), c(2, 3), 0.15)
+#' mixture_tail_density(mt, c(20, 100))
+#' @export
+mixture_tail_density <- function(mt, x) {
+  lower <- mixture_tail_lower(mt)
+  out <- rep(NA_real_, length(x))
+  ok <- is.finite(x) & x >= lower
+  if (!any(ok)) {
+    return(out)
+  }
+  xo <- x[ok]
+
+  if (isTRUE(mt$shared_shape)) {
+    dens <- gpd_density(
+      rep(xo - mt$u0, times = length(mt$sigma0)),
+      rep(mt$sigma0, each = length(xo)),
+      mt$xi0
+    )
+    dim(dens) <- c(length(xo), length(mt$sigma0))
+    out[ok] <- as.vector(dens %*% mt$a0)
+    return(out)
+  }
+
+  ex <- outer(xo, mt$threshold, `-`)
+  dens <- gpd_density(
+    as.vector(ex),
+    rep(mt$scale, each = length(xo)),
+    rep(mt$shape, each = length(xo))
+  )
+  dim(dens) <- dim(ex)
+  out[ok] <- as.vector(dens %*% (mt$weights * mt$tail_prob))
+  out
+}
+
 #' Single-GPD approximation to a mixture tail
 #'
 #' When the shape is shared, the mixture is regularly varying with that same

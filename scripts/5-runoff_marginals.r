@@ -121,12 +121,25 @@ if ("distribution_forest" %in% names(encoded)) {
   )
 } else {
   log_warn("No distribution_forest column; body mixture unavailable.")
-  body_mixtures <- tibble(cell_id = integer(), marginal_forest = list())
+  body_mixtures <- tibble(
+    cell_id = integer(),
+    x = double(),
+    y = double(),
+    marginal_forest = list()
+  )
 }
 
 # %%
 log_info("Marginal return levels")
 
+# Two curves per cell, matching the schema apps/5-runoff-marginals-explorer
+# expects:
+#   "Random Forest"  -- the empirical (body) mixture on its own. It cannot go
+#                       past its largest outcome, which is the limitation the GP
+#                       tail exists to fix.
+#   "GP conversion"  -- the closed-form GP mixture tail, falling back to the
+#                       body for return periods below the tail region.
+# `region` records which of the two supplied each GP-conversion level.
 return_levels_long <- cell_tails |>
   left_join(body_mixtures, by = c("cell_id", "x", "y")) |>
   mutate(
@@ -134,22 +147,29 @@ return_levels_long <- cell_tails |>
       list(mixture_tail, num_events_per_year, marginal_forest),
       \(mt, nep, body) {
         p <- 1 / (return_periods * nep)
-        level_tail <- mixture_tail_quantile(mt, p)
+        have_body <- inherits(body, "dst")
 
-        # Below the tail region, fall back to the body mixture.
         level_body <- rep(NA_real_, length(p))
-        need_body <- is.na(level_tail)
-        if (any(need_body) && !is.null(body)) {
-          level_body[need_body] <- distionary::eval_quantile(
-            body,
-            at = 1 - p[need_body]
-          )
+        if (have_body) {
+          level_body <- distionary::eval_quantile(body, at = 1 - p)
         }
 
-        tibble(
-          return_period = return_periods,
-          return_level = coalesce(level_tail, level_body),
-          region = if_else(is.na(level_tail), "body", "tail")
+        level_tail <- mixture_tail_quantile(mt, p)
+        need_body <- is.na(level_tail)
+
+        dplyr::bind_rows(
+          tibble(
+            return_period = return_periods,
+            model = "Random Forest",
+            return_level = level_body,
+            region = "body"
+          ),
+          tibble(
+            return_period = return_periods,
+            model = "GP conversion",
+            return_level = coalesce(level_tail, level_body),
+            region = if_else(need_body, "body", "tail")
+          )
         )
       },
       .progress = TRUE
@@ -158,10 +178,11 @@ return_levels_long <- cell_tails |>
   select(cell_id, x, y, num_events_per_year, curve) |>
   unnest(curve)
 
+gp_rows <- filter(return_levels_long, model == "GP conversion")
 log_info(sprintf(
-  "Return levels: %.1f%% from the closed-form tail, %.1f%% from the body mixture",
-  100 * mean(return_levels_long$region == "tail"),
-  100 * mean(return_levels_long$region == "body")
+  "GP-conversion levels: %.1f%% from the closed-form tail, %.1f%% from the body mixture",
+  100 * mean(gp_rows$region == "tail"),
+  100 * mean(gp_rows$region == "body")
 ))
 
 log_info("Writing marginal return levels to file")

@@ -158,3 +158,18 @@ test_that("compression is a no-op below the bin count and needs a shared shape",
   mixed <- mixture_tail(c(10, 11), c(0.5, 0.5), c(2, 3), c(0.1, 0.5))
   expect_error(mixture_tail_compress(mixed, 1L))
 })
+
+test_that("the density integrates to the survival difference", {
+  cmp <- make_components()
+  mt <- mixture_tail(cmp$threshold, cmp$tail_prob, cmp$scale, 0.17, cmp$weights)
+  lo <- mixture_tail_lower(mt)
+  num <- stats::integrate(
+    function(u) mixture_tail_density(mt, u),
+    lo,
+    lo + 400,
+    subdivisions = 500L
+  )$value
+  ana <- mixture_tail_survival(mt, lo) - mixture_tail_survival(mt, lo + 400)
+  expect_equal(num, ana, tolerance = 1e-6)
+  expect_true(is.na(mixture_tail_density(mt, lo - 1)))
+})
