@@ -1,0 +1,183 @@
+
+=====================================================================
+Copula transport against a generalized Pareto fitted to Y alone
+=====================================================================
+
+X ~ Pareto(4); Y | X = x ~ GP(scale = x, shape = xi). The marginal is
+derived by quadrature and has asymptotic tail index 0.25 throughout, so
+sweeping xi sweeps CEVI against a fixed target. Kernel bandwidth follows
+one fixed rule and is never tuned. Paired samples, 60 replicates each.
+  ... n =  1000, CEVI = 0.1 done
+  ... n =  1000, CEVI = 0.2 done
+  ... n =  1000, CEVI = 0.4 done
+  ... n =  1000, CEVI = 0.6 done
+  ... n =  1000, CEVI = 0.8 done
+  ... n =  3000, CEVI = 0.1 done
+  ... n =  3000, CEVI = 0.2 done
+  ... n =  3000, CEVI = 0.4 done
+  ... n =  3000, CEVI = 0.6 done
+  ... n =  3000, CEVI = 0.8 done
+  ... n = 10000, CEVI = 0.1 done
+  ... n = 10000, CEVI = 0.2 done
+  ... n = 10000, CEVI = 0.4 done
+  ... n = 10000, CEVI = 0.6 done
+  ... n = 10000, CEVI = 0.8 done
+
+
+=====================================================================
+MEDIAN RATIO TO THE TRUE RETURN LEVEL   (1.00 is unbiased)
+=====================================================================
+
+median ratio, n = 1000, target P(Y > y) = 1e-04
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      0.92    0.80    0.82    0.88    0.94 
+  transport, fitted Gaussian copula         0.54    0.53    0.57    0.65    0.74 
+  transport, fitted survival Clayton        0.61    0.59    0.68    0.79    0.91 
+  mixture over covariate values             0.73    0.71    0.80    0.79    0.86 
+  GP on Y alone, 90% threshold              0.83    0.83    0.95    0.86    0.93 
+  GP on Y alone, oracle threshold           0.93    0.92    0.97    1.00    0.97 
+
+median ratio, n = 1000, target P(Y > y) = 1e-05
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      0.89    0.67    0.74    0.83    0.91 
+  transport, fitted Gaussian copula         0.39    0.38    0.44    0.54    0.66 
+  transport, fitted survival Clayton        0.44    0.43    0.53    0.69    0.89 
+  mixture over covariate values             0.56    0.55    0.65    0.66    0.78 
+  GP on Y alone, 90% threshold              0.70    0.68    0.86    0.77    0.88 
+  GP on Y alone, oracle threshold           0.87    0.87    0.91    0.95    0.99 
+
+median ratio, n = 3000, target P(Y > y) = 1e-04
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      1.05    0.98    0.93    0.94    0.95 
+  transport, fitted Gaussian copula         0.57    0.58    0.63    0.68    0.74 
+  transport, fitted survival Clayton        0.66    0.68    0.75    0.84    0.94 
+  mixture over covariate values             0.78    0.76    0.80    0.81    0.86 
+  GP on Y alone, 90% threshold              1.01    0.91    0.96    0.93    0.99 
+  GP on Y alone, oracle threshold           1.00    0.98    0.98    0.97    0.99 
+
+median ratio, n = 3000, target P(Y > y) = 1e-05
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      1.07    0.95    0.89    0.92    0.92 
+  transport, fitted Gaussian copula         0.42    0.43    0.49    0.59    0.66 
+  transport, fitted survival Clayton        0.50    0.51    0.61    0.75    0.90 
+  mixture over covariate values             0.61    0.60    0.67    0.71    0.79 
+  GP on Y alone, 90% threshold              0.93    0.80    0.88    0.88    0.96 
+  GP on Y alone, oracle threshold           0.97    0.94    0.97    0.96    0.96 
+
+median ratio, n = 10000, target P(Y > y) = 1e-04
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      1.00    1.01    1.01    0.99    1.00 
+  transport, fitted Gaussian copula         0.55    0.58    0.65    0.71    0.77 
+  transport, fitted survival Clayton        0.64    0.68    0.79    0.88    0.98 
+  mixture over covariate values             0.76    0.77    0.80    0.84    0.87 
+  GP on Y alone, 90% threshold              0.94    0.91    0.97    0.97    1.00 
+  GP on Y alone, oracle threshold           0.98    0.95    0.99    0.99    1.00 
+
+median ratio, n = 10000, target P(Y > y) = 1e-05
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      1.00    1.00    1.00    0.98    0.99 
+  transport, fitted Gaussian copula         0.40    0.43    0.53    0.61    0.71 
+  transport, fitted survival Clayton        0.47    0.53    0.66    0.81    0.97 
+  mixture over covariate values             0.59    0.61    0.67    0.74    0.80 
+  GP on Y alone, 90% threshold              0.83    0.79    0.91    0.94    1.02 
+  GP on Y alone, oracle threshold           0.92    0.88    0.96    0.98    1.00 
+
+
+=====================================================================
+ROOT MEAN SQUARE LOG RATIO   (total error; lower is better)
+=====================================================================
+
+rms log ratio, n = 1000, target P(Y > y) = 1e-04
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      0.32    0.38    0.33    0.34    0.32 
+  transport, fitted Gaussian copula         0.64    0.66    0.57    0.49    0.41 
+  transport, fitted survival Clayton        0.53    0.55    0.44    0.39    0.34 
+  mixture over covariate values             0.37    0.39    0.32    0.30    0.25 
+  GP on Y alone, 90% threshold              0.39    0.39    0.38    0.38    0.40 
+  GP on Y alone, oracle threshold           0.26    0.29    0.27    0.25    0.23 
+
+rms log ratio, n = 1000, target P(Y > y) = 1e-05
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      0.55    0.62    0.51    0.50    0.46 
+  transport, fitted Gaussian copula         0.99    0.99    0.83    0.70    0.56 
+  transport, fitted survival Clayton        0.86    0.87    0.67    0.56    0.48 
+  mixture over covariate values             0.64    0.66    0.52    0.47    0.37 
+  GP on Y alone, 90% threshold              0.64    0.62    0.59    0.59    0.63 
+  GP on Y alone, oracle threshold           0.41    0.45    0.40    0.35    0.33 
+
+rms log ratio, n = 3000, target P(Y > y) = 1e-04
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      0.21    0.20    0.20    0.18    0.18 
+  transport, fitted Gaussian copula         0.58    0.57    0.46    0.41    0.32 
+  transport, fitted survival Clayton        0.44    0.43    0.31    0.23    0.18 
+  mixture over covariate values             0.26    0.31    0.26    0.25    0.20 
+  GP on Y alone, 90% threshold              0.21    0.24    0.23    0.24    0.25 
+  GP on Y alone, oracle threshold           0.15    0.19    0.15    0.16    0.14 
+
+rms log ratio, n = 3000, target P(Y > y) = 1e-05
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      0.38    0.33    0.32    0.26    0.26 
+  transport, fitted Gaussian copula         0.90    0.87    0.69    0.59    0.44 
+  transport, fitted survival Clayton        0.73    0.70    0.50    0.36    0.26 
+  mixture over covariate values             0.51    0.54    0.44    0.40    0.30 
+  GP on Y alone, 90% threshold              0.35    0.40    0.36    0.38    0.39 
+  GP on Y alone, oracle threshold           0.24    0.30    0.22    0.24    0.20 
+
+rms log ratio, n = 10000, target P(Y > y) = 1e-04
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      0.12    0.11    0.09    0.11    0.12 
+  transport, fitted Gaussian copula         0.60    0.55    0.44    0.36    0.28 
+  transport, fitted survival Clayton        0.46    0.39    0.25    0.16    0.12 
+  mixture over covariate values             0.29    0.27    0.22    0.20    0.17 
+  GP on Y alone, 90% threshold              0.12    0.15    0.12    0.10    0.15 
+  GP on Y alone, oracle threshold           0.08    0.11    0.08    0.06    0.10 
+
+rms log ratio, n = 10000, target P(Y > y) = 1e-05
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      0.21    0.18    0.14    0.16    0.18 
+  transport, fitted Gaussian copula         0.92    0.83    0.65    0.51    0.37 
+  transport, fitted survival Clayton        0.76    0.65    0.42    0.26    0.18 
+  mixture over covariate values             0.54    0.50    0.39    0.33    0.25 
+  GP on Y alone, 90% threshold              0.25    0.29    0.21    0.17    0.22 
+  GP on Y alone, oracle threshold           0.16    0.21    0.13    0.10    0.15 
+
+
+=====================================================================
+SHARE OF REPLICATES RETURNING NOTHING
+=====================================================================
+
+A transport row fails when the fitted conditional shape is negative
+enough that its transported survival never reaches the target: the
+estimator declines to extrapolate rather than guessing. That is a
+property worth seeing, not a defect to hide, but it also means the rows
+above are summarised over the replicates that did return something.
+
+failure rate, n = 1000, target P(Y > y) = 1e-05
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      0.00    0.00    0.00    0.00    0.00 
+  transport, fitted Gaussian copula         0.00    0.00    0.00    0.00    0.00 
+  transport, fitted survival Clayton        0.00    0.00    0.00    0.00    0.00 
+  mixture over covariate values             0.00    0.00    0.00    0.00    0.00 
+  GP on Y alone, 90% threshold              0.00    0.00    0.00    0.00    0.00 
+  GP on Y alone, oracle threshold           0.00    0.00    0.00    0.00    0.00 
+
+failure rate, n = 3000, target P(Y > y) = 1e-05
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      0.00    0.00    0.00    0.00    0.00 
+  transport, fitted Gaussian copula         0.00    0.00    0.00    0.00    0.00 
+  transport, fitted survival Clayton        0.00    0.00    0.00    0.00    0.00 
+  mixture over covariate values             0.00    0.00    0.00    0.00    0.00 
+  GP on Y alone, 90% threshold              0.00    0.00    0.00    0.00    0.00 
+  GP on Y alone, oracle threshold           0.00    0.00    0.00    0.00    0.00 
+
+failure rate, n = 10000, target P(Y > y) = 1e-05
+  CEVI                                       0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)      0.00    0.00    0.00    0.00    0.00 
+  transport, fitted Gaussian copula         0.00    0.00    0.00    0.00    0.00 
+  transport, fitted survival Clayton        0.00    0.00    0.00    0.00    0.00 
+  mixture over covariate values             0.00    0.00    0.00    0.00    0.00 
+  GP on Y alone, 90% threshold              0.00    0.00    0.00    0.00    0.00 
+  GP on Y alone, oracle threshold           0.00    0.00    0.00    0.00    0.00 
+
+=====================================================================
+EXIT 0
