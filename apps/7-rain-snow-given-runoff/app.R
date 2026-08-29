@@ -102,8 +102,9 @@ ui <- fluidPage(
       ros_note(
         "The surface is proportional to f(runoff | rain, snow) x f(rain, snow), ",
         "normalised by its own grid mean so the contour bands mean the same ",
-        "thing at every T. The conditional density uses the cell's shared tail ",
-        "shape, so the surface does not jump between neighbouring grid points."
+        "thing at every T. The conditional density uses one tail shape for the ",
+        "whole cell, so the surface does not jump between neighbouring grid ",
+        "points. That shape is fitted from this cell's own peak hours only."
       ),
       verbatimTextOutput("cell_meta")
     ),
@@ -117,14 +118,30 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   output$banner <- renderUI({
-    if (!length(missing_files)) {
+    if (length(missing_files)) {
+      return(div(
+        class = "ros-note",
+        "Missing derived files: ",
+        paste(missing_files, collapse = ", "),
+        ". Run the pipeline through script 6."
+      ))
+    }
+    s <- tryCatch(surface_base(), error = function(e) NULL)
+    if (is.null(s) || isTRUE(s$shared_ok)) {
       return(NULL)
     }
     div(
       class = "ros-note",
-      "Missing derived files: ",
-      paste(missing_files, collapse = ", "),
-      ". Run the pipeline through script 6."
+      tags$b("Running on per-hour tail shapes."),
+      sprintf(
+        " This cell has %d distinct shapes, so the surface uses their median (%.3f).",
+        s$n_shapes,
+        s$shape
+      ),
+      " The marginal that converts T into a runoff level still inherits the",
+      " largest of them, so the two panels are not on quite the same footing.",
+      " Rerun script 4 from this branch (gp_tail.shape_pooling: shared) for a",
+      " single shape per cell."
     )
   })
 
@@ -170,11 +187,17 @@ server <- function(input, output, session) {
       gr$snowmelt_hourly
     )
 
-    shape <- unique(round(b$mt$shape, 10))
-    validate(need(
-      length(shape) == 1L,
-      "This cell's tail shapes are not shared; set gp_tail.shape_pooling: shared and rerun script 4."
-    ))
+    # The grid's conditional tails use the CELL's tail shape, so the surface does
+    # not jump between neighbouring grid points. When script 4 was run without
+    # shape pooling every peak hour has its own shape, and there is no single
+    # cell shape to use -- fall back to the median rather than refusing to run,
+    # and say so, because in that case the marginal that sets z still inherits
+    # max(xi) and the two are on slightly different footings.
+    shape_vec <- b$mt$shape[is.finite(b$mt$shape)]
+    validate(need(length(shape_vec) > 0, "This cell has no usable tail shape."))
+    shape_all <- unique(round(shape_vec, 10))
+    shared_ok <- length(shape_all) == 1L
+    shape <- if (shared_ok) shape_all[[1]] else stats::median(shape_vec)
 
     withProgress(message = "Fitting predictive tails on the grid", value = 0.5, {
       forecast <- predict(b$model, newdata = gr)
@@ -182,7 +205,16 @@ server <- function(input, output, session) {
     })
     usable <- is.finite(gt$graft_of) & is.finite(gt$gp_scale)
 
-    list(gr = gr, f_xy = f_xy, gt = gt, usable = usable, shape = shape, bits = b)
+    list(
+      gr = gr,
+      f_xy = f_xy,
+      gt = gt,
+      usable = usable,
+      shape = shape,
+      shared_ok = shared_ok,
+      n_shapes = length(shape_all),
+      bits = b
+    )
   })
 
   runoff_level <- reactive({
@@ -238,9 +270,11 @@ server <- function(input, output, session) {
       labs(
         title = sprintf("T = %.1f-year runoff, cell %s", rl$rp, input$cell_id),
         subtitle = sprintf(
-          "runoff level %.4g mm/h  |  shared tail shape xi = %.3f",
+          "runoff level %.4g mm/h  |  tail shape xi = %.3f%s",
           rl$z,
-          s$shape
+          s$shape,
+          if (s$shared_ok) " (shared across the cell)" else
+            sprintf(" (MEDIAN of %d per-hour shapes)", s$n_shapes)
         ),
         x = "Rainfall (mm/h)",
         y = "Snowmelt (mm/h)",

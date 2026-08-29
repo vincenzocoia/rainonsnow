@@ -57,9 +57,11 @@ has_shared_shape <- encoded |>
 
 if (!has_shared_shape) {
   log_warn(paste(
-    "Tail shapes vary within cells, so each marginal inherits max_i(xi_i) --",
-    "the noisiest single hour. Set gp_tail.shape_pooling: shared in",
-    "inputs/distributional_learning.yaml and rerun script 4."
+    "Tail shapes vary WITHIN cells (a separate shape per peak hour), so each",
+    "cell's marginal inherits max_i(xi_i) -- the noisiest single hour. Set",
+    "gp_tail.shape_pooling: shared in inputs/distributional_learning.yaml and",
+    "rerun script 4. That pools across a cell's peak hours only; every cell is",
+    "still fitted on its own data."
   ))
 }
 

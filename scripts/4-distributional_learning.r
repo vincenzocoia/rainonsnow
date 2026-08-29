@@ -75,6 +75,16 @@ shape_pooling <- tail_cfg$shape_pooling %||% "shared"
 adaptive_threshold <- as.numeric(tail_cfg$adaptive_threshold %||% 0.5)
 n_boot <- as.integer(tail_cfg$n_boot %||% 25L)
 bias_correct <- isTRUE(tail_cfg$bias_correct %||% FALSE)
+smooth_cfg <- tail_cfg$spatial_smoothing %||% list()
+smooth_radius <- as.integer(smooth_cfg$radius %||% 0L)
+
+# The bootstrap only produces the shape's standard error and, optionally, its
+# bias correction. The standard error is consumed by the spatial smoothing and
+# nothing else, so when smoothing is off and the correction is off there is
+# nothing for 25 extra fits per cell to do.
+if (!bias_correct && smooth_radius <= 0L) {
+  n_boot <- 0L
+}
 
 log_info(paste("GP tail: shape_pooling =", shape_pooling))
 
@@ -95,9 +105,8 @@ if (identical(shape_pooling, "shared")) {
     )
 
   # Borrow shape between neighbouring cells, then refit each hour's scale under
-  # the smoothed shape. A cell with a precise estimate barely moves.
-  smooth_cfg <- tail_cfg$spatial_smoothing %||% list()
-  smooth_radius <- as.integer(smooth_cfg$radius %||% 1L)
+  # the smoothed shape. A cell with a precise estimate barely moves. This is the
+  # only step that lets one cell influence another, and it is off by default.
   if (smooth_radius > 0L && nrow(cell_tails) > 2L) {
     raw_shape <- map_dbl(cell_tails$tail_fit, "gp_shape")
     raw_se <- map_dbl(cell_tails$tail_fit, "gp_shape_se")
