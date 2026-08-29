@@ -73,3 +73,39 @@ gp_tail:
   # See scripts/experiments/tail-index-pooling.R. Turn it on if the shape
   # itself, rather than the return level, is what you are reporting.
   bias_correct: false
+
+# Copula transport of the cell marginal (scripts/5-runoff_marginals.r).
+#
+# The mixture above is the law of total probability over the covariate values
+# the sample happens to contain, so every component carries the CONDITIONAL tail
+# index and the mixture does too. The marginal's own index is heavier by the
+# factor CEVI, and the shortfall comes from covariate values beyond any sample:
+# it is structural, not an estimation error, and it does not shrink with n.
+#
+# The transport recovers it. Each peak hour's tail is pushed back through the
+# copula, giving that hour's estimate of the WHOLE marginal, and the hours are
+# combined as repeated estimates of one quantity rather than mixed -- by the
+# pointwise median, so a single heavy hour cannot set the answer.
+#
+# OFF by default, and written to its own files, because it rests on one
+# approximation the mixture does not need: with several predictors there is no
+# scalar F_X(x), so the rank of the forest's own predictive summary (`graft_of`)
+# stands in for it. Read the transported marginal alongside the mixture, and
+# check `transport_spread` before believing a cell -- every hour estimates the
+# same curve, so disagreement between them is a direct consistency check.
+# See R/dl_transport_marginal.R and scripts/experiments/median-of-marginals.R.
+transport:
+  enabled: false
+
+  # "survival_clayton" (upper tail dependence, the relevant kind when the
+  # predictors and the response are extreme together), "gaussian", or "clayton".
+  family: survival_clayton
+
+  # "median" (recommended), "mean" or "weighted_mean". With a shape shared
+  # across a cell the three are close; where shapes vary, the mean is dragged up
+  # by the heaviest hour -- 2.1x the true 1e-5 level in simulation against 0.90x
+  # for the median.
+  combine: median
+
+  # Exceedance probability at which the between-hour spread is reported.
+  spread_at: 1.0e-4

@@ -33,7 +33,8 @@ ros_model_colours <- c(
   "Forest mixture" = ros_palette$accent,
   "Forest mixture + GP tail" = ros_palette$warm,
   "Empirical" = ros_palette$muted,
-  "Naive POT" = ros_palette$good
+  "Naive POT" = ros_palette$good,
+  "Copula transport" = ros_palette$good
 )
 
 #' Bootstrap theme for the apps. Returns NULL when bslib is unavailable, which

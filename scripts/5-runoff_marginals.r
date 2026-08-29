@@ -26,9 +26,17 @@
 # exact tail region.
 # %%
 library(tidyverse)
+library(rlang)
 library(logger)
+library(yaml)
 library(probaverse)
 devtools::load_all()
+
+# The response the transport step fits its copula against, read from the same
+# config the forest was fitted with so the two cannot drift apart.
+transport_response <- read_yaml(
+  here::here("inputs", "distributional_learning.yaml")
+)$dl_rqforest$yname
 
 return_periods <- rp_marginal_curve()
 
@@ -221,4 +229,89 @@ cell_tails |>
     here::here("derived", "era5_land_hourly_alps_dl_tail_summary.rds")
   )
 
+# %%
+# Copula transport of the marginal, as an alternative to the mixture.
+#
+# Off unless inputs/distributional_learning.yaml turns it on, and written to its
+# own files either way, so nothing above changes shape. The mixture is the law
+# of total probability over the covariate values in the sample and therefore
+# carries the conditional tail index; the transport pushes each hour's tail back
+# through the copula so that every hour estimates the whole marginal, and takes
+# the pointwise median of those estimates. See R/dl_transport_marginal.R for the
+# one approximation it rests on.
+transport_cfg <- read_yaml(
+  here::here("inputs", "distributional_learning.yaml")
+)$transport
+
+if (isTRUE(transport_cfg$enabled)) {
+  family <- transport_cfg$family %||% "survival_clayton"
+  combine <- transport_cfg$combine %||% "median"
+  spread_at <- as.numeric(transport_cfg$spread_at %||% 1e-4)
+  log_info(paste("Copula transport of the marginal: family =", family))
+
+  transported <- encoded |>
+    nest(rows = !c(cell_id, x, y)) |>
+    left_join(num_pot_events, by = c("cell_id", "x", "y")) |>
+    mutate(
+      ensemble = map(
+        rows,
+        \(df) tryCatch(
+          dl_cell_transport_ensemble(
+            df,
+            observed = df[[transport_response]],
+            family = family
+          ),
+          error = function(e) NULL
+        ),
+        .progress = TRUE
+      )
+    ) |>
+    filter(!map_lgl(ensemble, is.null))
+
+  log_info(sprintf(
+    "%d of %d cells produced a transported marginal",
+    nrow(transported),
+    n_distinct(encoded$cell_id)
+  ))
+
+  transported |>
+    mutate(
+      copula_par = map_dbl(ensemble, "par"),
+      n_hours = map_int(ensemble, \(me) length(me$u)),
+      transport_spread = map_dbl(ensemble, dl_transport_spread, p = spread_at)
+    ) |>
+    select(cell_id, x, y, num_events_per_year, copula_par, n_hours,
+           transport_spread, ensemble) |>
+    write_rds(here::here(
+      "derived",
+      "era5_land_hourly_alps_dl_transport_marginals.rds"
+    ))
+
+  transported |>
+    mutate(
+      curve = map2(
+        ensemble,
+        num_events_per_year,
+        \(me, nep) dl_transport_return_levels(
+          me,
+          return_periods,
+          events_per_year = nep,
+          combine = combine
+        )
+      )
+    ) |>
+    select(cell_id, x, y, num_events_per_year, curve) |>
+    unnest(curve) |>
+    mutate(model = "Copula transport", region = "tail") |>
+    write_rds(here::here(
+      "derived",
+      "era5_land_hourly_alps_dl_transport_return_levels.rds"
+    ))
+
+  log_info("Wrote transported marginals and return levels")
+} else {
+  log_info("Copula transport is off (inputs/distributional_learning.yaml)")
+}
+
+# %%
 log_info("Finished 5-runoff_marginals.r")

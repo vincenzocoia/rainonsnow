@@ -275,27 +275,92 @@ index (from all $n$ points, at a shallower extrapolation) and a copula parameter
 
 Better on bias *and* on total error.
 
-### Two things that decide whether it works
+### One estimate per covariate value, combined by the median
 
-**The conditional model does most of the work.** Fitting the conditionals by
-binning the covariate makes the answer depend on the bin width: 5 bins at
-n = 3000 inflates the conditional EVI to 0.135 against a true 0.128 (each bin is
-a mixture over its own covariate range) and the transport comes out 20% high,
-while 10--20 bins recovers 0.107--0.110 and lands within 10%. Overlapping
-nearest-neighbour neighbourhoods -- much closer to what the quantile regression
-forest actually does -- are what the table above uses.
+The estimate of $\mathrm{EVI}(Y)$ is *not* $\hat\xi_{\text{cond}}/\mathrm{CEVI}$.
+That shortcut throws the distribution away and keeps one number. The estimate is
+the transported **distribution**: apply $h^{-1}$ to the whole conditional
+survival curve, and read whatever you want off the result. Done that way there
+is one estimate of the entire marginal *per covariate value*, which is the point
+-- the covariate is not integrated out, it is carried through.
 
-**The decomposition is ill-conditioned when CEVI is small.** Since
-$\mathrm{EVI}(Y) = \mathrm{EVI}(Y|X)/\mathrm{CEVI}$, any error in the conditional
-index is amplified by $1/\mathrm{CEVI}$. At $\rho = 0.9$ that factor is 5.3, the
-conditional tail is nearly exponential and its index estimates negative, and
-every method fails. So the transport is most attractive in the middle: strong
-enough dependence that the mixture is visibly biased, not so strong that the
-conditional tail carries no information.
+Combining them is an **averaging** problem, not a mixing one, and that
+distinction decides which operations are legal. Mixing conditionals is the law
+of total probability and admits only the weighted mean; a median there would be
+meaningless. Once each curve is already an estimate of the *same* marginal, the
+pointwise median is available -- and it is well defined as a distribution, since
+a pointwise median of monotone survival curves is itself a monotone survival
+curve. That is the "middle distribution": robust to whichever covariate value
+produced the heaviest path, which is the same domination that makes an unpooled
+mixture inherit $\max_i \xi_i$, reappearing one level up.
 
-A null check is included: when the covariate effect is bounded so that
-$\mathrm{CEVI} = 1$ and the copula explains none of the tail heaviness, the
-anchored transport neither gains nor does harm (1.04x at $p = 10^{-4}$).
+`scripts/experiments/median-of-marginals.R` measures it on a process where
+$F_X$ and $Y|X$ are chosen and the marginal is **derived** from them, so the
+truth is known exactly and belongs to no canned family. Ratio to the true return
+level, $n = 3000$:
+
+| combination | $10^{-3}$ | $10^{-4}$ | $10^{-5}$ |
+|---|---|---|---|
+| median, one shape across $x$ | 0.97x | 0.94x | 0.89x |
+| median, a shape per $x$ | 0.97x | 0.93x | 0.90x |
+| mean, a shape per $x$ | 1.08x | 1.39x | **2.10x** |
+| generalized Pareto fitted to $Y$ alone | 0.99x | 0.94x | 0.85x |
+
+With one shape per cell the three rules are close, because the paths differ only
+in threshold and scale. Let the shapes vary and they separate: the mean is 2.1x
+the truth where the median is 0.90x. At $n = 1000$ the mean reaches 3.8x.
+
+`apps/8-copula-transport-lab` is this experiment made interactive.
+
+### Why a canned fit is the wrong comparison to lose to
+
+The process in that experiment is $Y = X\cdot W$ with $W$ generalized Pareto and
+$X$ Pareto: every conditional is *exactly* generalized Pareto, and the derived
+marginal is not, at any level a sample reaches. Its local tail index
+$-\mathrm{d}\log S/\mathrm{d}\log y$ runs 0.52 at $S = 10^{-1}$ and 0.32 at
+$10^{-2}$ against an asymptote of 0.25 -- so a generalized Pareto fitted in the
+top few percent reads a slope that has not settled and then extrapolates it as
+if it had. That error is in the *shape of the curve*, not in how precisely it
+was measured, and more data does not remove it. This is the decomposition
+argument in arithmetic: the part is a clean parametric object where the whole is
+not.
+
+### What decides whether it works
+
+**CEVI sets the price of getting the conditional slightly wrong.** Not
+through $\xi_Y = \xi_{\text{cond}}/\mathrm{CEVI}$ -- that shortcut is not how
+the marginal is estimated here -- but through how far each conditional has to be
+extrapolated. Reaching a $10^{-5}$ marginal event needs a conditional event
+5 to 8 orders of magnitude past the conditional's own body when
+$\mathrm{CEVI} = 0.4$, and 5 to 13 when $\mathrm{CEVI} = 1$. Since the estimate
+is $y \propto s^{-\xi}$ across that span, part 4a of
+`median-of-marginals.R` holds the conditionals exact and shifts only the shape:
+
+| shape error | CEVI = 0.4, at $10^{-5}$ | CEVI = 1, at $10^{-5}$ |
+|---|---|---|
+| 0 | 1.00x | 1.00x |
+| +0.005 | 1.06x | 1.08x |
+| +0.010 | 1.12x | 1.17x |
+| +0.020 | 1.25x | 1.37x |
+
+Zero error returns exactly 1.00, which is the identity the whole method rests
+on. Past that the same error costs about half as much again where the span is
+wider -- and at $\mathrm{CEVI} = 1$ there is no tail heaviness for the
+decomposition to explain in the first place.
+
+**How well the conditional is learned matters more.** A kernel or forest
+neighbourhood spans a range of covariate values, so each learned conditional is
+itself a small scale mixture and comes out too heavy: the same domination again,
+now *inside* one conditional. Widening the neighbourhood from 0.015 to 0.12 on
+the rank scale moves the fitted conditional shape from 19% low to 15% high, and
+the $10^{-5}$ level from 0.84x to 1.16x of the truth (and, where the conditional
+scale moves faster with the rank, from 0.80x to 3.41x). Binning shows it more
+crudely still -- 5 bins at $n = 3000$ inflates the conditional EVI to 0.135
+against a true 0.128, because each bin is a mixture over its own covariate
+range, and the transport comes out 20% high, while 10--20 bins recovers
+0.107--0.110 and lands within 10%. Overlapping neighbourhoods, much closer to
+what the quantile regression forest actually does, are what the tables above
+use. This is the thing to spend effort on.
 
 ## Shiny apps
 
@@ -440,6 +505,38 @@ model (script 6).
 ``` r
 shiny::runApp("apps/7-rain-snow-given-runoff")
 ```
+
+### Copula transport lab (`apps/8-copula-transport-lab`)
+
+Needs no derived data: everything on screen is simulated from a process chosen
+in the sidebar, so the truth is known exactly and every estimate is scored
+against it. $F_X$ and $Y|X$ are chosen and the marginal is derived from them by
+quadrature, which is what makes the "generalized Pareto fitted to $Y$ alone"
+comparison a fair fight rather than a rigged one.
+
+Shows one transported survival curve per covariate value against the derived
+truth, the combined curve under each of the three rules, the per-covariate
+estimates of a single return level, and how many log units each conditional has
+to be extrapolated to get there. Turning off the shared shape is the quickest
+way to see why the median is the combination rule.
+
+```r
+shiny::runApp("apps/8-copula-transport-lab")
+```
+
+### In the pipeline
+
+`scripts/5-runoff_marginals.r` will write a transported marginal alongside the
+mixture when `transport.enabled` is set in
+`inputs/distributional_learning.yaml`. It is off by default because it rests on
+one approximation the mixture does not need: with two predictors there is no
+scalar $F_X(x)$, so the rank of the forest's own predictive summary
+(`graft_of`) stands in for it, and the fitted copula absorbs whatever that
+summary loses. The outputs go to their own files, and each cell carries a
+`transport_spread` -- the ratio of the 90th to the 10th percentile of its hours'
+estimates of the same probability. Every hour estimates the same curve, so that
+number is a free consistency check on the whole construction, and a cell whose
+hours disagree by an order of magnitude is telling you not to believe it.
 
 ## R Package Demonstration
 
