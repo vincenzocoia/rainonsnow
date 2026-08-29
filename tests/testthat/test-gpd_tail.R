@@ -135,7 +135,7 @@ test_that("the shape bias correction is off by default", {
   })
   fit <- fit_gpd_shared_shape(ex, n_boot = 10L)
   expect_identical(fit$shape, fit$shape_raw)
-  # ... but the bootstrap still ran, because the SE is needed for smoothing.
+  # ... and with n_boot > 0 the bootstrap still reports a standard error.
   expect_true(is.finite(fit$shape_se))
 })
 

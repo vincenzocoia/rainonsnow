@@ -275,8 +275,7 @@ fit_gpd_weighted <- function(y, w = NULL, shape_bounds = c(-0.45, 1)) {
 #' correct the scale-noise inflation too -- most directly by bootstrapping the
 #' return level itself rather than the shape. Until that exists, `FALSE` is the
 #' better-calibrated default for return levels, and `TRUE` is the better choice
-#' if the shape itself is the quantity of interest. The bootstrap runs either
-#' way, because `shape_se` is needed by [smooth_tail_shape()].
+#' if the shape itself is the quantity of interest.
 #'
 #' @returns A list with:
 #'   * `shape` -- the shared `xi` (bias-corrected when requested).
@@ -284,9 +283,8 @@ fit_gpd_weighted <- function(y, w = NULL, shape_bounds = c(-0.45, 1)) {
 #'   * `scale` -- numeric vector of per-component scales.
 #'   * `nllh` -- the pooled negative log-likelihood at the optimum.
 #'   * `n_eff` -- per-component effective sample sizes.
-#'   * `shape_se` -- standard error of `xi` from the profile likelihood (the
-#'     half-width at which the profile deviance rises by `1`), or `NA` when it
-#'     cannot be bracketed.
+#'   * `shape_se` -- bootstrap standard error of `xi`, or `NA` when `n_boot` is
+#'     zero. Reported for diagnostics; nothing in the pipeline consumes it.
 #'   * `converged` -- `TRUE` when the optimum is interior to `shape_bounds`.
 #' @examples
 #' set.seed(1)

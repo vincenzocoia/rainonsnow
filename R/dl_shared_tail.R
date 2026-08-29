@@ -86,9 +86,9 @@ dl_tail_pieces <- function(dst, adaptive_threshold = 0.5) {
 #' @param bias_correct Whether to bias-correct the shape. Off by default --
 #'   see the \dQuote{Why the correction is off by default} section of
 #'   [fit_gpd_shared_shape()].
-#' @param shape Optionally fix the shape instead of estimating it -- used to
-#'   apply a spatially smoothed shape from [smooth_tail_shape()] while still
-#'   refitting each hour's scale.
+#' @param shape Optionally fix the shape instead of estimating it, while still
+#'   refitting each component's scale. Used to apply one cell's fitted shape to a
+#'   grid of covariate values, as `apps/7-rain-snow-given-runoff` does.
 #' @returns A list with per-hour vectors `graft_of`, `graft_tail_prob`,
 #'   `gp_scale`, and the scalars `gp_shape`, `gp_shape_se`, `n_hours_used`,
 #'   `n_eff_median`.
@@ -133,7 +133,7 @@ dl_fit_cell_shared_tail <- function(
     xi_se <- fit$shape_se
     scale_ok <- fit$scale
   } else {
-    # Shape supplied (e.g. smoothed across neighbours): only the scales are free.
+    # Shape supplied by the caller: only the scales are free.
     xi <- shape
     xi_se <- NA_real_
     scale_ok <- vapply(

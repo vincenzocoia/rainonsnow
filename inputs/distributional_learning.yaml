@@ -46,19 +46,3 @@ gp_tail:
   # See scripts/experiments/tail-index-pooling.R. Turn it on if the shape
   # itself, rather than the return level, is what you are reporting.
   bias_correct: false
-
-  # THIS is the only setting that crosses cells: empirical-Bayes shrinkage of
-  # each cell's shape toward its neighbours. OFF by default (radius 0), so each
-  # cell is estimated entirely on its own.
-  #
-  # On a small grid it does not degrade gracefully into mild smoothing: with only
-  # a handful of cells the between-cell variance is not identifiable, tau^2 comes
-  # out zero, and every cell collapses to one common shape. On the 2x2 window
-  # that means all four cells get the same tail index.
-  #
-  # It is worth turning on for a large grid: on a 7x7 field it cut the RMSE of
-  # the shape by 27-49% whether the true field was flat, gently or steeply
-  # varying, and never hurt (scripts/experiments/tail-index-pooling.R, part 2).
-  spatial_smoothing:
-    radius: 0
-    min_neighbours: 2

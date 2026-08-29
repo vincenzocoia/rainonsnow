@@ -75,14 +75,11 @@ shape_pooling <- tail_cfg$shape_pooling %||% "shared"
 adaptive_threshold <- as.numeric(tail_cfg$adaptive_threshold %||% 0.5)
 n_boot <- as.integer(tail_cfg$n_boot %||% 25L)
 bias_correct <- isTRUE(tail_cfg$bias_correct %||% FALSE)
-smooth_cfg <- tail_cfg$spatial_smoothing %||% list()
-smooth_radius <- as.integer(smooth_cfg$radius %||% 0L)
 
-# The bootstrap only produces the shape's standard error and, optionally, its
-# bias correction. The standard error is consumed by the spatial smoothing and
-# nothing else, so when smoothing is off and the correction is off there is
-# nothing for 25 extra fits per cell to do.
-if (!bias_correct && smooth_radius <= 0L) {
+# The bootstrap exists to produce the bias correction. Without it there is
+# nothing for 25 extra fits per cell to do (it also returns a standard error for
+# the shape, which nothing downstream consumes).
+if (!bias_correct) {
   n_boot <- 0L
 }
 
@@ -103,46 +100,6 @@ if (identical(shape_pooling, "shared")) {
         .progress = TRUE
       )
     )
-
-  # Borrow shape between neighbouring cells, then refit each hour's scale under
-  # the smoothed shape. A cell with a precise estimate barely moves. This is the
-  # only step that lets one cell influence another, and it is off by default.
-  if (smooth_radius > 0L && nrow(cell_tails) > 2L) {
-    raw_shape <- map_dbl(cell_tails$tail_fit, "gp_shape")
-    raw_se <- map_dbl(cell_tails$tail_fit, "gp_shape_se")
-    smoothed <- smooth_tail_shape(
-      raw_shape,
-      raw_se,
-      cell_tails$x,
-      cell_tails$y,
-      radius = smooth_radius,
-      min_neighbours = as.integer(smooth_cfg$min_neighbours %||% 2L)
-    )
-    log_info(sprintf(
-      "Spatial shape smoothing: between-cell sd = %.4f; mean weight on own estimate = %.2f",
-      smoothed$tau,
-      mean(smoothed$weight, na.rm = TRUE)
-    ))
-    cell_tails <- cell_tails |>
-      mutate(
-        shape_raw = raw_shape,
-        shape_smoothed = smoothed$shape,
-        tail_fit = map2(
-          cell_rows,
-          smoothed$shape,
-          \(df, xi) dl_fit_cell_shared_tail(
-            df$distribution_forest,
-            adaptive_threshold = adaptive_threshold,
-            shape = xi
-          ),
-          .progress = TRUE
-        )
-      )
-    write_rds(
-      select(cell_tails, cell_id, x, y, shape_raw, shape_smoothed),
-      here::here("derived", "era5_land_hourly_alps_dl_tail_shapes.rds")
-    )
-  }
 
   peak_hour_distributions <- cell_tails |>
     mutate(

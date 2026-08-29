@@ -13,8 +13,9 @@
 #
 # WHAT THIS SCRIPT DOES
 #
-# Part 1 measures the damage and compares five estimators within a single cell.
-# Part 2 asks whether shapes should also be smoothed across neighbouring cells.
+# It measures the damage and compares five estimators, all within a single cell.
+# Every cell in this project is fitted on its own data; nothing here or in the
+# pipeline shares tail information between cells.
 #
 # Runs on base R alone -- no probaverse, no tidyverse -- so it can be checked
 # quickly and in isolation from the pipeline. A few minutes at the defaults.
@@ -32,7 +33,6 @@ if (!file.exists(file.path(repo, "DESCRIPTION"))) {
 }
 source(file.path(repo, "R", "gpd_tail.R"))
 source(file.path(repo, "R", "mixture_tail.R"))
-source(file.path(repo, "R", "tail_shape_field.R"))
 
 set.seed(20240828)
 
@@ -231,63 +231,3 @@ cat("\n  Note how `independent` looks respectable at T=10 and falls apart as T\n
 cat("  grows. That is not accuracy: its typical shape is biased low, which\n")
 cat("  offsets the scale inflation, while max_i(xi_i) takes over further out.\n")
 cat("  Two large errors cancelling at one return period is not a method.\n")
-
-# ---------------------------------------------------------------------------
-# Part 2: should shapes be smoothed across neighbouring cells?
-#
-# The shape is now one number per cell, but that number is still noisy, and the
-# true shape varies smoothly over terrain. This asks whether borrowing from
-# neighbours beats treating each cell on its own -- and whether it is safe when
-# the field varies more sharply than assumed.
-# ---------------------------------------------------------------------------
-cat("\n\n=====================================================================\n")
-cat("PART 2  Smoothing the per-cell shape across neighbours\n")
-cat("=====================================================================\n\n")
-
-GRID <- 5L # GRID x GRID cells
-N_FIELD <- 6L # replicate fields
-
-field_experiment <- function(gradient, label) {
-  g <- expand.grid(x = seq_len(GRID), y = seq_len(GRID))
-  # A smooth underlying shape field: a linear trend across the grid.
-  truth <- XI_TRUE + gradient * (g$x - mean(g$x))
-
-  err_raw <- err_smooth <- err_global <- numeric(N_FIELD)
-  for (r in seq_len(N_FIELD)) {
-    est <- se <- numeric(nrow(g))
-    for (i in seq_len(nrow(g))) {
-      cell <- simulate_cell(k = 40L, xi = truth[i])
-      fit <- fit_gpd_shared_shape(cell$excess, n_boot = 10L)
-      est[i] <- fit$shape
-      se[i] <- fit$shape_se
-    }
-    sm <- smooth_tail_shape(est, se, g$x, g$y, radius = 1)
-    err_raw[r] <- mean((est - truth)^2)
-    err_smooth[r] <- mean((sm$shape - truth)^2)
-    err_global[r] <- mean((mean(est) - truth)^2)
-  }
-
-  flush_cat(sprintf("%s (shape ranges %.2f to %.2f across the grid)\n",
-    label, min(truth), max(truth)))
-  cat(sprintf(
-    "   RMSE  per-cell %.4f   neighbour-smoothed %.4f   single global %.4f\n",
-    sqrt(mean(err_raw)),
-    sqrt(mean(err_smooth)),
-    sqrt(mean(err_global))
-  ))
-  cat(sprintf(
-    "   smoothing changes RMSE by %+.1f%%, pooling everything by %+.1f%%\n\n",
-    100 * (sqrt(mean(err_smooth)) / sqrt(mean(err_raw)) - 1),
-    100 * (sqrt(mean(err_global)) / sqrt(mean(err_raw)) - 1)
-  ))
-}
-
-field_experiment(0.00, "Flat field   -- shape genuinely constant")
-field_experiment(0.02, "Gentle trend -- shape varies slowly")
-field_experiment(0.06, "Steep trend  -- shape varies sharply")
-
-cat("=====================================================================\n")
-cat("Part 2 checks the risk as well as the benefit: if the true field is\n")
-cat("steep, over-smoothing would show up as smoothing losing to per-cell\n")
-cat("estimates, and pooling to a single global shape losing badly.\n")
-cat("=====================================================================\n")

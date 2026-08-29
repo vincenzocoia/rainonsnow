@@ -173,27 +173,9 @@ scales, so scale noise inflates it by 7–10% on its own. That second error is
 still open — see `?fit_gpd_shared_shape` for why the shape bias correction is
 off by default as a result.
 
-The shape is shared **within** a cell, across that cell's peak hours; every
-cell is still fitted on its own data.
-
-Shapes can *optionally* also be smoothed between neighbouring cells
-(`smooth_tail_shape()`), by empirical-Bayes shrinkage toward the neighbourhood
-mean. This is the only step that lets one cell influence another and it is
-**off by default** (`gp_tail.spatial_smoothing.radius: 0`), because on a small
-grid it does not degrade into mild smoothing -- with few cells the between-cell
-variance is unidentifiable, `tau^2` estimates to zero, and every cell collapses
-to one common shape. It is worth enabling on a large grid; part 2 of the same
-experiment checks both the benefit and the risk:
-
-| true shape field | per-cell | neighbour-smoothed | single global shape |
-|---|---|---|---|
-| flat | 0.053 | 0.027 | **0.013** |
-| gentle trend | 0.058 | **0.030** | 0.033 |
-| steep trend | 0.055 | **0.041** | 0.086 |
-
-RMSE in $\xi$. Neighbour smoothing helps in every regime and never hurts,
-whereas collapsing to one global shape is best when the field is genuinely flat
-and clearly harmful when it is not.
+The shape is shared **within** a cell, across that cell's peak hours. Every
+cell is fitted entirely on its own data -- nothing in the pipeline shares tail
+information between cells.
 
 ### Evaluating the mixture
 
