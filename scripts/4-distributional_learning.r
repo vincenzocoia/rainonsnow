@@ -75,6 +75,12 @@ shape_pooling <- tail_cfg$shape_pooling %||% "shared"
 adaptive_threshold <- as.numeric(tail_cfg$adaptive_threshold %||% 0.5)
 n_boot <- as.integer(tail_cfg$n_boot %||% 25L)
 bias_correct <- isTRUE(tail_cfg$bias_correct %||% FALSE)
+shape_method <- tail_cfg$shape_method %||% "standardise"
+std_args <- list(
+  p_location = as.numeric(tail_cfg$p_location %||% 0.5),
+  p_scale = as.numeric(tail_cfg$p_scale %||% 0.9),
+  threshold_prob = as.numeric(tail_cfg$threshold_prob %||% 0.7)
+)
 
 # The bootstrap exists to produce the bias correction. Without it there is
 # nothing for 25 extra fits per cell to do (it also returns a standard error for
@@ -83,7 +89,10 @@ if (!bias_correct) {
   n_boot <- 0L
 }
 
-log_info(paste("GP tail: shape_pooling =", shape_pooling))
+log_info(paste(
+  "GP tail: shape_pooling =", shape_pooling,
+  "| shape_method =", shape_method
+))
 
 if (identical(shape_pooling, "shared")) {
   cell_tails <- forest_models |>
@@ -91,11 +100,21 @@ if (identical(shape_pooling, "shared")) {
     mutate(
       tail_fit = map(
         cell_rows,
-        \(df) dl_fit_cell_shared_tail(
-          df$distribution_forest,
-          adaptive_threshold = adaptive_threshold,
-          n_boot = n_boot,
-          bias_correct = bias_correct
+        \(df) do.call(
+          dl_fit_cell_shared_tail,
+          c(
+            list(
+              df$distribution_forest,
+              adaptive_threshold = adaptive_threshold,
+              n_boot = n_boot,
+              bias_correct = bias_correct,
+              method = shape_method,
+              # The standardised route needs the response actually observed at
+              # each peak hour, not just its predictive distribution.
+              observed = df[[rq$yname]]
+            ),
+            if (identical(shape_method, "standardise")) std_args else list()
+          )
         ),
         .progress = TRUE
       )

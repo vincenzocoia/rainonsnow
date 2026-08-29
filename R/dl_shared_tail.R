@@ -70,6 +70,111 @@ dl_tail_pieces <- function(dst, adaptive_threshold = 0.5) {
   )
 }
 
+#' Shared tail from standardised observations
+#'
+#' Estimates one tail shape for a cell by standardising each observed response
+#' by its OWN predicted location and scale, pooling the standardised values, and
+#' fitting a single generalized Pareto tail to their exceedances.
+#'
+#' Two things make this different from pooling the predictive distributions
+#' themselves ([fit_gpd_shared_shape()]).
+#'
+#' It removes the incidental-parameter problem. There is no per-hour scale left
+#' free in the likelihood: each hour's scale comes from a wide, well-determined
+#' gap between two central quantiles of its predictive distribution, which the
+#' whole forest informs, rather than from the handful of points in that hour's
+#' tail.
+#'
+#' And it is a real likelihood. A forest's predictive distributions at different
+#' hours are re-weightings of the same training responses, so pooling them counts
+#' every observation many times over -- the point estimate survives that, but
+#' nothing derived from the likelihood's curvature does. The standardised values
+#' here are one per observation, so standard errors, likelihood-ratio intervals
+#' and likelihood-ratio tests all mean what they usually mean.
+#'
+#' @section Choosing the quantiles:
+#' `p_location` and `p_scale` must straddle a gap wide enough to be well
+#' determined but near enough the tail to be relevant to it. In simulation the
+#' 70th and 95th percentiles beat both a lower pair (50th/90th) and a higher one
+#' (80th/98th); the higher pair is worst, because it makes the normaliser itself
+#' a tail estimate, which is the thing being avoided. The POT threshold is set
+#' separately on the standardised scale via `threshold_prob`, and raising it
+#' costs a lot of variance for no reliable gain in bias.
+#'
+#' @param distributions List of predictive distributions for one cell.
+#' @param observed Numeric vector of the responses actually observed at those
+#'   same rows, one per distribution.
+#' @param p_location,p_scale Probabilities defining each hour's location and
+#'   scale: location is the `p_location` quantile, scale is the gap between the
+#'   `p_scale` and `p_location` quantiles.
+#' @param threshold_prob Quantile of the pooled standardised values at which the
+#'   generalized Pareto tail starts.
+#' @returns A list with per-hour `graft_of` and `gp_scale`, and the scalars
+#'   `gp_shape`, `gp_shape_se` (from the pooled fit's own likelihood) and
+#'   `n_exceedances`.
+#' @seealso [dl_fit_cell_shared_tail()]
+#' @export
+fit_shared_tail_standardised <- function(
+  distributions,
+  observed,
+  p_location = 0.7,
+  p_scale = 0.95,
+  threshold_prob = 0.6
+) {
+  n <- length(distributions)
+  empty <- list(
+    graft_of = rep(NA_real_, n),
+    gp_scale = rep(NA_real_, n),
+    gp_shape = NA_real_,
+    gp_shape_se = NA_real_,
+    n_exceedances = 0L
+  )
+  if (length(observed) != n) {
+    stop("`observed` must have one value per distribution.", call. = FALSE)
+  }
+
+  q_at <- function(dst, p) {
+    if (is.null(dst) || !inherits(dst, "dst")) {
+      return(NA_real_)
+    }
+    v <- try(distionary::eval_quantile(dst, at = p), silent = TRUE)
+    if (inherits(v, "try-error") || length(v) != 1L) NA_real_ else as.numeric(v)
+  }
+
+  loc <- vapply(distributions, q_at, numeric(1L), p_location)
+  hi <- vapply(distributions, q_at, numeric(1L), p_scale)
+  sc <- hi - loc
+
+  ok <- is.finite(loc) & is.finite(sc) & sc > 0 & is.finite(observed)
+  if (sum(ok) < 20L) {
+    return(empty)
+  }
+
+  z <- (observed[ok] - loc[ok]) / sc[ok]
+  t0 <- stats::quantile(z, threshold_prob, names = FALSE)
+  excess <- z[z > t0] - t0
+  if (length(excess) < 10L) {
+    return(empty)
+  }
+
+  fit <- fit_gpd_weighted(excess, rep(1, length(excess)))
+  if (!is.finite(fit$shape) || !is.finite(fit$scale)) {
+    return(empty)
+  }
+
+  # Back to the original scale. y = loc + sc * z, so an excess in z maps to
+  # sc * excess in y: the shape is unchanged and the scale is multiplied by sc.
+  out <- empty
+  out$graft_of[ok] <- loc[ok] + t0 * sc[ok]
+  out$gp_scale[ok] <- sc[ok] * fit$scale
+  out$gp_shape <- fit$shape
+  # A genuine likelihood over independent exceedances, so the usual asymptotic
+  # standard error applies: sqrt((1 + xi)^2 / k).
+  out$gp_shape_se <- sqrt((1 + fit$shape)^2 / length(excess))
+  out$n_exceedances <- length(excess)
+  out
+}
+
 #' Fit one shared GP tail shape across a cell's peak hours
 #'
 #' Replaces the per-hour independent fits of [fit_and_graft_gp()] with a single
@@ -89,6 +194,14 @@ dl_tail_pieces <- function(dst, adaptive_threshold = 0.5) {
 #' @param shape Optionally fix the shape instead of estimating it, while still
 #'   refitting each component's scale. Used to apply one cell's fitted shape to a
 #'   grid of covariate values, as `apps/7-rain-snow-given-runoff` does.
+#' @param method How to estimate the shared shape. `"standardise"` (recommended)
+#'   standardises each observed response by its own predicted location and scale
+#'   and fits one generalized Pareto to the pooled exceedances -- see
+#'   [fit_shared_tail_standardised()]; it requires `observed`. `"pool_predictive"`
+#'   pools the predictive distributions themselves with a free scale each.
+#' @param observed Numeric vector of observed responses, one per distribution.
+#'   Required by `method = "standardise"`.
+#' @param ... Passed to [fit_shared_tail_standardised()].
 #' @returns A list with per-hour vectors `graft_of`, `graft_tail_prob`,
 #'   `gp_scale`, and the scalars `gp_shape`, `gp_shape_se`, `n_hours_used`,
 #'   `n_eff_median`.
@@ -99,8 +212,52 @@ dl_fit_cell_shared_tail <- function(
   adaptive_threshold = 0.5,
   n_boot = 25L,
   shape = NULL,
-  bias_correct = FALSE
+  bias_correct = FALSE,
+  method = c("pool_predictive", "standardise"),
+  observed = NULL,
+  ...
 ) {
+  method <- match.arg(method)
+
+  # The standardised route needs the observed responses, and only estimates the
+  # shape; a caller supplying `shape` wants the other branch, which refits each
+  # component's scale under a shape it already has.
+  if (identical(method, "standardise") && is.null(shape)) {
+    if (is.null(observed)) {
+      stop(
+        "`method = \"standardise\"` needs `observed`, the response actually ",
+        "seen at each row.",
+        call. = FALSE
+      )
+    }
+    std <- fit_shared_tail_standardised(distributions, observed, ...)
+    if (is.finite(std$gp_shape)) {
+      keep <- is.finite(std$graft_of) & is.finite(std$gp_scale)
+      tp <- rep(NA_real_, length(distributions))
+      tp[keep] <- vapply(
+        which(keep),
+        function(i) {
+          v <- try(
+            distionary::eval_survival(distributions[[i]], at = std$graft_of[i]),
+            silent = TRUE
+          )
+          if (inherits(v, "try-error") || length(v) != 1L) NA_real_ else as.numeric(v)
+        },
+        numeric(1L)
+      )
+      return(list(
+        graft_of = std$graft_of,
+        graft_tail_prob = tp,
+        gp_scale = std$gp_scale,
+        gp_shape = std$gp_shape,
+        gp_shape_se = std$gp_shape_se,
+        n_hours_used = sum(keep),
+        n_eff_median = std$n_exceedances
+      ))
+    }
+    # Fall through to the pooled route if the standardised fit failed.
+  }
+
   pieces <- lapply(distributions, dl_tail_pieces, adaptive_threshold)
   usable <- !vapply(pieces, is.null, logical(1L))
   n <- length(distributions)

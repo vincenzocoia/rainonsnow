@@ -149,6 +149,36 @@ The shape is shared **within** a cell, across that cell's peak hours. Every
 cell is fitted entirely on its own data -- nothing in the pipeline shares tail
 information between cells.
 
+### Estimating the shared shape
+
+Two ways to get one tail shape for a cell, selected by
+`gp_tail.shape_method` in `inputs/distributional_learning.yaml`:
+
+* `pool_predictive` pools the peak-hour predictive distributions with a free
+  scale each. That leaves one nuisance scale per hour, each informed only by the
+  points in that hour's tail, which biases the shared shape low as cells get
+  thin.
+* `standardise` (default) divides each *observed* response by its own predicted
+  location and scale, pools the standardised values, and fits one generalized
+  Pareto to their exceedances. No free scale survives into the likelihood.
+
+On RMSE they are close and the ordering moves with sample size
+(`scripts/experiments/shared-shape-standardised.R`). The reason to prefer the
+second is inference: a forest's predictive distributions at different hours are
+re-weightings of the *same* training responses, so pooling them counts every
+observation many times over. The point estimate survives that; nothing derived
+from the likelihood's curvature does, which is why the pooled fit needs a
+bootstrap for its standard error. The standardised values are one per
+observation, so the ordinary standard error, likelihood-ratio intervals and
+tests all apply.
+
+Its own failure mode is the mirror image: it has to estimate each hour's
+normalising quantiles, and when those are noisy the error propagates into the
+standardised values and inflates the shape. Hence the defaults --- location and
+scale from the 70th and 95th percentiles, which beat both a lower and a higher
+pair, and a threshold at the 60th percentile of the standardised values, since
+raising it buys no reliable gain in bias and costs a lot of variance.
+
 ### Evaluating the mixture
 
 Above `max(graft_of)` every component is in its GP part, so the mixture survival

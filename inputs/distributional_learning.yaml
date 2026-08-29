@@ -30,7 +30,34 @@ gp_tail:
   #                  makes the cell's marginal inherit max_i(xi_i).
   shape_pooling: shared
 
+  # How the shared shape is estimated.
+  #
+  # "standardise" (recommended): divide each OBSERVED response by its own
+  #   predicted location and scale, pool the standardised values, and fit one GP
+  #   to their exceedances. No per-hour scale is left free in the likelihood, so
+  #   the incidental-parameter bias goes away, and because the pooled values are
+  #   one per observation rather than a re-weighting of the same responses many
+  #   times over, the fit is a real likelihood -- its standard errors and
+  #   likelihood-ratio intervals mean what they usually mean.
+  #
+  # "pool_predictive": pool the predictive distributions themselves, with a free
+  #   scale per hour. Comparable RMSE at large samples, biased low when each
+  #   hour's tail is thin.
+  shape_method: standardise
+
+  # For shape_method: standardise. Each hour's location is its p_location
+  # quantile and its scale the gap up to p_scale. The gap has to be wide enough
+  # to be well determined but near enough the tail to be relevant to it: in
+  # simulation 0.70/0.95 beat both 0.50/0.90 and 0.80/0.98, the last being worst
+  # because the normaliser becomes a tail estimate itself. The POT threshold is
+  # set separately on the standardised scale, and raising it costs a lot of
+  # variance for no reliable gain in bias.
+  p_location: 0.7
+  p_scale: 0.95
+  threshold_prob: 0.6
+
   # Quantile at which the GP tail is grafted onto the forest distribution.
+  # Used by shape_method: pool_predictive.
   adaptive_threshold: 0.5
 
   # Bootstrap replicates for the shape standard error (needed by the spatial
