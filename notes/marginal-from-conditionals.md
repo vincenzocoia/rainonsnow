@@ -98,80 +98,119 @@ the curve*, not in how precisely it was measured, and more data does not remove
 it. This is the decomposition argument in arithmetic: the part is a clean
 parametric object where the whole is not.
 
-## 4. What is **not** established
+## 4. The head-to-head, and the failure it exposes
 
-The head-to-head against the obvious alternative — one generalized Pareto fitted
-to $Y$ alone, ignoring the covariate — is currently a tie where it matters.
-Ratio to truth on the process above:
+The comparison the whole argument stands on is not against the mixture — that
+one is settled — but against the obvious alternative: ignore the covariate and
+fit one generalized Pareto to $Y$. `transport-vs-marginal-fit.R` runs it on the
+same process with $X \sim \text{Pareto}(4)$, sweeping CEVI from 0.1 to 0.8 by
+moving the conditional shape while the marginal's asymptotic index stays at
+0.25. Six estimators on the same sample, paired; the kernel bandwidth follows
+one fixed rule and is never tuned per setting.
 
-| | $10^{-3}$ | $10^{-4}$ | $10^{-5}$ |
-|---|---|---|---|
-| transport, median, $n = 1000$ | 0.91x | 0.84x | 0.74x |
-| GP fitted to $Y$ alone, $n = 1000$ | 0.91x | 0.81x | 0.69x |
-| transport, median, $n = 3000$ | 0.97x | 0.94x | 0.89x |
-| GP fitted to $Y$ alone, $n = 3000$ | 0.99x | 0.94x | 0.85x |
-| transport, median, $n = 10000$ | 1.00x | 0.99x | 0.99x |
-| GP fitted to $Y$ alone, $n = 10000$ | 0.99x | 0.96x | 0.90x |
+Median ratio to the true $10^{-5}$ level, $n = 10{,}000$:
 
-The separation only becomes clear at $n = 10{,}000$, and this is a process built
-to favour the decomposition. Three reasons to be careful:
+| CEVI | 0.1 | 0.2 | 0.4 | 0.6 | 0.8 |
+|---|---|---|---|---|---|
+| transport, **true** copula | 1.00 | 1.00 | 1.00 | 0.98 | 0.99 |
+| transport, fitted Gaussian | 0.40 | 0.43 | 0.53 | 0.61 | 0.71 |
+| transport, fitted survival Clayton | 0.47 | 0.53 | 0.66 | 0.81 | 0.97 |
+| mixture over covariate values | 0.59 | 0.61 | 0.67 | 0.74 | 0.80 |
+| GP on $Y$ alone, 90% threshold | 0.83 | 0.79 | 0.91 | 0.94 | 1.02 |
 
-**The transport relocates an extrapolation rather than removing it.** It trades
-extrapolating the marginal tail under a generalized Pareto assumption for
-extrapolating a conditional tail (shallower, better determined) *plus* the
-copula's corner under a family assumption. Body data discriminates between
-copula families in the corner about as poorly as it discriminates between
-tail families.
+Three readings, none of them comfortable.
 
-**The advantage and the ill-conditioning grow together.** Where the covariate
-explains much of the tail heaviness (small CEVI), the conditional tail is nearly
-exponential and carries little information about its own shape — at $\rho = 0.9$,
-$\mathrm{CEVI} = 0.19$, every method tested failed. Where the conditional tail is
-well determined, the covariate was not explaining much. There is a middle band,
-and its boundaries are not yet mapped.
+**The machinery is right and the model risk is the whole story.** Given the true
+copula the transport is exact — 1.00 bias, rms log error 0.14 to 0.21. Given a
+copula fitted from the sample by Kendall's tau it is the *worst* estimator in
+the table: worse than the mixture it was designed to replace, and worse than
+ignoring the covariate entirely. Everything between those two rows is copula
+misspecification.
 
-**Accuracy is governed by the conditional model, not by the transport.** Holding
-the conditionals exact and shifting only the shape by $+0.02$ costs a factor 1.25
-at $10^{-5}$ when the extrapolation spans 8 log units and 1.37 when it spans 13 —
-that amplification is what CEVI measures. But estimation error swamps it: a
-kernel neighbourhood is itself a small scale mixture and comes out too heavy, and
-widening it from 0.015 to 0.12 on the rank scale moves the fitted conditional
-shape from 19% low to 15% high and the $10^{-5}$ level from 0.84x to 1.16x.
+**It is model error, not estimation error.** The fitted-Gaussian bias at
+$n = 10{,}000$ is 0.40; at $n = 1000$ it is 0.39. More data does not touch it.
 
-The decomposition does not add information about the far tail. Thirty years of
-data is thirty years of data. What it can do is put the parametric assumption
-where it is more nearly true, and make it checkable.
+**The direction inverts the hoped-for story.** The transport gets *worse* as
+CEVI falls. The more of the tail heaviness the covariate could explain, the more
+of the answer is supplied by the corner of the copula — and Kendall's tau is a
+statistic of the body.
 
-## 5. What the decomposition buys that a marginal fit cannot
+*(A correction to how this was presented earlier: the transport rows in
+`median-of-marginals.R` all use the process's own copula. They are the
+upper-bound row above, not an achievable method.)*
 
-1. **The assumption goes where it holds.** Demonstrated above: the conditional is
-   exactly generalized Pareto, the marginal is not.
+## 5. The repair: choose the copula by making the covariate values agree
 
-2. **A built-in consistency check.** Every covariate value estimates the *same*
-   marginal, so disagreement between them is a detectable internal
-   contradiction. A generalized Pareto fitted to the marginal has no such thing —
-   it cannot tell you it is wrong. A deliberately misspecified copula shows a
-   between-value spread of 5.77 against 1.32 for the correct one.
+The transport supplies a criterion a marginal fit does not have. Every covariate
+value transports to an estimate of the **same** marginal, so under the right
+copula they must agree, and disagreement is computable *without the truth*. Take
+the standard deviation of $\log S$ across covariate values, summed over three
+reference levels read off the sample itself, and minimise it over a grid of
+families and parameters. This targets the corner directly instead of inheriting
+it from a body statistic. Results (`copula-by-agreement.R`, 60 replicates):
 
-3. **It answers the question actually being asked.** For compound extremes the
-   question is not only what the 200-year runoff is, but which combination of
-   rainfall and snowmelt produces it. The marginal return level is close to a
-   by-product.
+**It detects the misspecification.** Median disagreement at $n = 10{,}000$:
 
-## 6. Open questions
+| CEVI | 0.1 | 0.2 | 0.4 | 0.6 | 0.8 |
+|---|---|---|---|---|---|
+| under the true copula | 0.65 | 0.65 | 0.68 | 0.66 | 0.64 |
+| under the Kendall tau copula | 4.07 | 3.10 | 2.25 | 1.69 | 1.34 |
 
-- Which comparison is the one worth winning: against the mixture (settled), or
-  against a direct marginal fit (not settled)?
-- Is there reason to trust a copula family in its corner more than an
-  extreme-value family in its tail? If not, is claim 2 above the real
-  contribution rather than a better point estimate?
-- If the true copula has non-constant CEVI, transporting under a fitted Gaussian
-  (constant CEVI) should make the per-covariate disagreement *systematic in $u$*
-  rather than random. That would turn the spread diagnostic into an empirical
-  test for non-constant CEVI — worth pursuing?
-- The pipeline uses two predictors, so there is no scalar $F_X(x)$; the rank of
-  the forest's own predictive summary stands in for it and the fitted copula
-  absorbs what that loses. Is there a better one-dimensional reduction?
+and, replicate by replicate, Spearman correlation between log disagreement and
+$\lvert\log(\text{error})\rvert$ runs 0.53 to 0.74. The ensemble knows when it
+is wrong.
+
+**And it repairs the estimate — up to a point.** Root mean square log ratio at
+$10^{-5}$, $n = 10{,}000$:
+
+| CEVI | 0.1 | 0.2 | 0.4 | 0.6 | 0.8 |
+|---|---|---|---|---|---|
+| transport, true copula (bound) | 0.19 | 0.21 | 0.14 | 0.15 | 0.14 |
+| transport, copula from Kendall tau | 0.92 | 0.83 | 0.67 | 0.47 | 0.36 |
+| **transport, copula by min. disagreement** | 0.42 | 0.38 | **0.17** | **0.15** | **0.16** |
+| GP on $Y$ alone, 90% threshold | 0.29 | 0.24 | 0.23 | 0.20 | 0.21 |
+
+For $\mathrm{CEVI} \geq 0.4$ the criterion recovers essentially all of the gap:
+it attains the known-copula bound and beats a direct marginal fit. For
+$\mathrm{CEVI} \leq 0.2$ it does not — it overshoots (median ratio 1.29 at
+CEVI 0.1) and is more variable than simply fitting the marginal. That is the
+ill-conditioned regime, and the boundary is now measured rather than asserted.
+
+Two honest caveats. The chosen copula's disagreement sometimes falls *below* the
+true copula's, so the criterion can reconcile the estimated conditionals better
+than the truth does — visible as a consistent few-percent overshoot. And the
+candidate set is Gaussian and the two Clayton rotations only; no extreme-value
+copula (Gumbel, Hüsler–Reiss) was offered, and survival Clayton was chosen in
+every single cell, which suggests the corner shape matters more than the family
+label.
+
+## 6. What the decomposition buys that a marginal fit cannot
+
+1. **The assumption goes where it holds.** The conditional is exactly
+   generalized Pareto; the marginal is not, anywhere reachable.
+
+2. **A built-in consistency check, and it has teeth.** Disagreement between
+   covariate values is a detectable internal contradiction with no analogue in a
+   marginal fit, it correlates 0.53–0.74 with the actual error, and minimising
+   it is enough to recover the known-copula bound where the problem is well
+   conditioned. This is now the strongest claim in the file.
+
+3. **It answers the question actually being asked.** For compound extremes: not
+   only what the 200-year runoff is, but which combination of rainfall and
+   snowmelt produces it.
+
+## 7. Open questions
+
+- The candidate set needs extreme-value copulas. Survival Clayton won every
+  cell, which is suspicious — is the criterion selecting a corner or a family?
+- Can the overshoot be removed? The criterion is minimised at a copula that
+  over-reconciles noisy conditionals; some penalty or held-out version may fix it.
+- Below $\mathrm{CEVI} = 0.4$ nothing works. Is that a fundamental limit, or an
+  artefact of estimating the conditional shape freely when the conditional tail
+  is nearly exponential?
+- Two predictors means no scalar $F_X(x)$; the rank of the forest's predictive
+  summary stands in. Is there a better one-dimensional reduction — and does the
+  agreement criterion detect a bad one?
 
 ---
 
@@ -182,5 +221,7 @@ where it is more nearly true, and make it checkable.
 | transport, ensembles, combination rules | `R/copula_transport.R` |
 | the derived-marginal process | `R/transport_lab.R` |
 | pipeline integration (off by default) | `R/dl_transport_marginal.R`, `scripts/5-runoff_marginals.r` |
-| experiments | `scripts/experiments/{median-of-marginals,copula-transport-sweep,copula-transport-by-x}.R` |
+| head-to-head against a direct fit | `scripts/experiments/transport-vs-marginal-fit.R` |
+| choosing the copula by agreement | `scripts/experiments/copula-by-agreement.R` |
+| earlier experiments | `scripts/experiments/{median-of-marginals,copula-transport-sweep,copula-transport-by-x}.R` |
 | interactive version of the experiments | `apps/8-copula-transport-lab` |
