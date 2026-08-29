@@ -156,16 +156,40 @@ cdf_scores_to_copula_u <- function(u, v, ..., eps = 1e-6) {
   do.call(cbind, processed)
 }
 
-copula_density_on_normal_grid <- function(bc, ngrid = 60L) {
+# Contour levels for a density that varies over orders of magnitude.
+#
+# A copula density has an integrable singularity in one or both corners, so
+# equally spaced breaks put every level inside the tiny high-density corner and
+# nothing is drawn anywhere else -- which looks like the density has been
+# squeezed into a small square. Breaks at quantiles of the density values put
+# roughly equal grid area between contours instead.
+density_breaks <- function(d, n = 8L) {
+  d <- d[is.finite(d) & d > 0]
+  if (length(d) < 2L) {
+    return(NULL)
+  }
+  br <- unique(stats::quantile(d, probs = seq(0.35, 0.995, length.out = n), names = FALSE))
+  if (length(br) < 2L) NULL else br
+}
+
+copula_density_on_normal_grid <- function(bc, ngrid = 60L, zlim = NULL) {
   if (is.null(bc)) {
     return(NULL)
   }
-  eps <- 0.02
-  z <- seq(qnorm(eps), qnorm(1 - eps), length.out = ngrid)
+  # Cover the plotted point cloud. A fixed 2nd-98th percentile box (about
+  # +/- 2.05) is much smaller than the range of n normal scores, so the contours
+  # would occupy only a central patch of the panel.
+  if (is.null(zlim)) {
+    zlim <- c(qnorm(0.02), qnorm(0.98))
+  }
+  z <- seq(zlim[1], zlim[2], length.out = ngrid)
   gu <- expand.grid(z1 = z, z2 = z)
-  u1 <- pnorm(gu$z1)
-  u2 <- pnorm(gu$z2)
+  # Keep u away from 0 and 1: a tail-dependent copula density diverges in the
+  # corner, and now that the grid follows the data it can reach much further out.
+  u1 <- pmin(pmax(pnorm(gu$z1), 1e-5), 1 - 1e-5)
+  u2 <- pmin(pmax(pnorm(gu$z2), 1e-5), 1 - 1e-5)
   d <- rvinecopulib::dbicop(cbind(u1, u2), bc$family, bc$rotation, bc$parameters)
+  d[!is.finite(d)] <- NA_real_
   gu$d <- d
   gu
 }
@@ -174,8 +198,11 @@ joint_density_original_grid <- function(joint, rain, sm, n = 45L) {
   if (is.null(joint$bicop)) {
     return(NULL)
   }
-  rq <- seq(quantile(rain, 0.02, na.rm = TRUE), quantile(rain, 0.98, na.rm = TRUE), length.out = n)
-  sq <- seq(quantile(sm, 0.02, na.rm = TRUE), quantile(sm, 0.98, na.rm = TRUE), length.out = n)
+  # Span the full data range. Rain and snowmelt are heavy tailed, so the 98th
+  # percentile sits far below the maximum and a grid built on it covers only the
+  # lower-left corner of a panel whose axes are set by the points.
+  rq <- seq(min(rain, na.rm = TRUE), max(rain, na.rm = TRUE), length.out = n)
+  sq <- seq(min(sm, na.rm = TRUE), max(sm, na.rm = TRUE), length.out = n)
   gr <- expand.grid(rainfall_hourly = rq, snowmelt_hourly = sq)
   u1 <- distionary::eval_cdf(joint$marginal_rainfall, at = gr$rainfall_hourly)
   u2 <- distionary::eval_cdf(joint$marginal_snowmelt, at = gr$snowmelt_hourly)
@@ -433,11 +460,15 @@ server <- function(input, output, session) {
   output$map_tiles <- renderPlot({
     req(!is.null(world_map), nrow(cells_ref) > 0)
     ggplot(cells_ref, aes(y, x)) +
+      # Country borders are context, not data. At the 2x2-cell extent a single
+      # border runs straight through the panel, and at linewidth 1 in the
+      # default black it reads as a mystery curve drawn over the cells.
       geom_sf(
         data = world_map,
         inherit.aes = FALSE,
         fill = NA,
-        linewidth = 1
+        colour = "grey70",
+        linewidth = 0.3
       ) +
       geom_tile(
         aes(fill = cell_id == as.integer(input$cell_id)),
@@ -474,7 +505,7 @@ server <- function(input, output, session) {
       z2 <- famish::nscore(sm)
       xlab <- "Rank-based normal score (rain)"
       ylab <- "Rank-based normal score (snowmelt)"
-      gu <- copula_density_on_normal_grid(bc)
+      gu <- NULL
     } else {
       u_scores <- cdf_scores_to_copula_u(
         distionary::eval_cdf(j$marginal_rainfall, at = rain),
@@ -484,8 +515,12 @@ server <- function(input, output, session) {
       z2 <- qnorm(u_scores[, 2])
       xlab <- "Gaussian scores (Phi^-1(u)), rain — marginal eval_cdf"
       ylab <- "Gaussian scores (Phi^-1(u)), snow — marginal eval_cdf"
-      gu <- copula_density_on_normal_grid(bc)
+      gu <- NULL
     }
+
+    # Build the contour grid over the range the points actually occupy.
+    zr <- range(c(z1, z2)[is.finite(c(z1, z2))])
+    gu <- copula_density_on_normal_grid(bc, zlim = zr)
 
     pt <- tibble(z1 = z1, z2 = z2)
     ggplot(pt, aes(z1, z2)) +
@@ -496,9 +531,9 @@ server <- function(input, output, session) {
         inherit.aes = FALSE,
         colour = "#d94801",
         linewidth = 0.6,
-        bins = 8
+        breaks = density_breaks(gu$d, 8L)
       ) +
-      coord_cartesian(expand = FALSE) +
+      coord_cartesian(xlim = zr, ylim = zr, expand = FALSE) +
       theme_bw() +
       labs(
         title = "Gaussian scores vs copula density contours",
@@ -532,10 +567,14 @@ server <- function(input, output, session) {
         aes(rainfall_hourly, snowmelt_hourly, z = d),
         inherit.aes = FALSE,
         alpha = 0.55,
-        bins = 10
+        breaks = density_breaks(gr$d, 10L)
       ) +
       scale_fill_viridis_d(option = "C", guide = guide_legend(title = "Joint\ndensity")) +
-      coord_cartesian(expand = FALSE) +
+      coord_cartesian(
+        xlim = range(gr$rainfall_hourly),
+        ylim = range(gr$snowmelt_hourly),
+        expand = FALSE
+      ) +
       theme_bw() +
       labs(
         title = "Rainfall vs snowmelt (original scale)",

@@ -332,6 +332,22 @@ Side-by-side frequency–magnitude curves: distributional-learning marginals (Ra
 shiny::runApp("apps/5-runoff-marginals-explorer")
 ```
 
+### Rain and snowmelt given extreme runoff (`apps/7-rain-snow-given-runoff`)
+
+Interactive version of `scripts/7-likeliest_rain_snow-one_cell_animated.r`: the
+return period is a slider with a play button, so T can be scrubbed as well as
+animated. Each grid point's predictive tail is fitted once per cell and every
+frame is one vectorised density evaluation, which is what makes it interactive
+at all.
+
+**Data:** peaks (script 3), fitted models (script 4),
+`derived/era5_land_hourly_alps_dl_mixture_tails.rds` (script 5) and the joint
+model (script 6).
+
+``` r
+shiny::runApp("apps/7-rain-snow-given-runoff")
+```
+
 ## R Package Demonstration
 
 ```{r}
