@@ -4,18 +4,18 @@
 # Run from the package root:
 #   shiny::runApp("apps/5b-tail-shape-explorer")
 #
-# Requires (all from scripts/4 and 5):
+# Requires:
 #   - derived/era5_land_hourly_alps_dl_tail_summary.rds   (script 5)
 #   - derived/era5_land_hourly_alps_dl_mixture_tails.rds  (script 5)
-#   - derived/era5_land_hourly_alps_dl_tail_shapes.rds    (script 4, when
-#     spatial smoothing is on -- optional)
 #
 # Why this app exists. The cell marginal is an equal-weight mixture of per-hour
 # predictive distributions, so its tail index is max_i(xi_i) unless the shape is
-# shared. Sharing it fixes that, but then the single shape per cell carries a
-# lot of weight, and it is worth being able to see it: whether it varies
-# smoothly over the map, how far smoothing moved it, and how much the design
-# return level actually depends on it.
+# shared across that cell's peak hours. Sharing it fixes that, but then the one
+# shape per cell carries a lot of weight, and it is worth being able to see what
+# it implies.
+#
+# EVERY PANEL IS WITHIN ONE CELL. The map is only there to pick a cell; nothing
+# here compares a cell to its neighbours or borrows anything from them.
 #
 # Suggests: shiny, tidyverse, fs
 
@@ -29,13 +29,11 @@ source(file.path(repo_root, "apps", "ros_theme.R"))
 
 summary_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_tail_summary.rds")
 tails_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_mixture_tails.rds")
-shapes_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_tail_shapes.rds")
 
 read_or_null <- function(p) if (file.exists(p)) readRDS(p) else NULL
 
 tail_summary <- read_or_null(summary_path)
 mixture_tails <- read_or_null(tails_path)
-shape_pairs <- read_or_null(shapes_path)
 
 have_summary <- is.data.frame(tail_summary) && nrow(tail_summary) > 0
 cells_ref <- if (have_summary) {
@@ -66,7 +64,7 @@ ui <- fluidPage(
   theme = ros_bs_theme(),
   ros_header(
     "Tail shape",
-    "The shared generalized-Pareto shape per cell: where it varies, how much smoothing moved it, and what it costs to get wrong."
+    "The generalized-Pareto shape fitted to each cell's own peak hours, and what it costs to get wrong."
   ),
   uiOutput("banner"),
   sidebarLayout(
@@ -104,11 +102,11 @@ ui <- fluidPage(
       width = 9,
       fluidRow(
         column(7, plotOutput("map", height = "420px", click = "map_click")),
-        column(5, plotOutput("shrinkage", height = "420px"))
+        column(5, plotOutput("return_curve", height = "420px"))
       ),
       fluidRow(
         column(6, plotOutput("sensitivity", height = "360px")),
-        column(6, plotOutput("neighbours", height = "360px"))
+        column(6, plotOutput("scale_spread", height = "360px"))
       )
     )
   )
@@ -120,13 +118,6 @@ server <- function(input, output, session) {
     if (!have_summary) {
       msgs <- c(msgs, paste(
         "Missing", basename(summary_path), "- run scripts/5-runoff_marginals.r."
-      ))
-    }
-    if (is.null(shape_pairs)) {
-      msgs <- c(msgs, paste(
-        "No", basename(shapes_path),
-        "- spatial smoothing is off in inputs/distributional_learning.yaml,",
-        "so the raw-vs-smoothed panel is empty."
       ))
     }
     if (!length(msgs)) {
@@ -180,41 +171,47 @@ server <- function(input, output, session) {
         } else {
           "Tail scale by cell"
         },
-        subtitle = "Click a cell to select it",
+        subtitle = "Each cell fitted on its own data; click to select",
         fill = NULL
       ) +
       ros_ggtheme_map()
   })
 
-  output$shrinkage <- renderPlot({
-    if (is.null(shape_pairs)) {
+  # The selected cell's own frequency-magnitude curve, straight off its mixture
+  # tail. Nothing here involves any other cell.
+  output$return_curve <- renderPlot({
+    st <- selected_tail()
+    if (is.null(st)) {
       return(
         ggplot() +
           annotate(
             "text",
             x = 0,
             y = 0,
-            label = "Spatial smoothing not enabled",
+            label = "No mixture tail for this cell",
             colour = ros_palette$muted
           ) +
           theme_void()
       )
     }
-    sel <- as.integer(input$cell_id)
-    d <- mutate(shape_pairs, selected = cell_id == sel)
-    ggplot(d, aes(shape_raw, shape_smoothed)) +
-      geom_abline(slope = 1, intercept = 0, linetype = "dashed", colour = ros_palette$muted) +
-      geom_point(colour = ros_palette$accent, alpha = 0.6, size = 1.8) +
-      geom_point(
-        data = filter(d, selected),
-        colour = ros_palette$warm,
-        size = 3.4
-      ) +
+    rp <- exp(seq(log(2), log(500), length.out = 200))
+    lvl <- mixture_tail_return_level(st$mt, rp * st$nep)
+    d <- tibble(return_period = rp, level = lvl) |> filter(is.finite(level))
+    validate(need(nrow(d) > 1, "This cell's tail region does not cover these return periods."))
+
+    marks <- tibble(return_period = rp_reporting()) |>
+      mutate(level = mixture_tail_return_level(st$mt, return_period * st$nep)) |>
+      filter(is.finite(level))
+
+    ggplot(d, aes(return_period, level)) +
+      geom_line(colour = ros_palette$accent, linewidth = 0.9) +
+      geom_point(data = marks, colour = ros_palette$warm, size = 2) +
+      scale_x_log10() +
       labs(
-        title = "How far smoothing moved each cell",
-        subtitle = "Points on the dashed line kept their own estimate",
-        x = "Shape before smoothing",
-        y = "Shape after smoothing"
+        title = "This cell's runoff marginal",
+        subtitle = "Closed-form mixture tail; dots are the reporting return periods",
+        x = "Return period (years)",
+        y = "Runoff (mm/h)"
       )
   })
 
@@ -268,42 +265,54 @@ server <- function(input, output, session) {
       )
   })
 
-  output$neighbours <- renderPlot({
-    req(have_summary)
-    sel <- as.integer(input$cell_id)
+  # What the shared shape is riding on: how much this cell's own peak hours
+  # differ in tail scale. A wide spread means the covariates are doing real work
+  # within the cell; a narrow one means the hours look alike.
+  output$scale_spread <- renderPlot({
+    st <- selected_tail()
     row <- selected_row()
-    req(nrow(row) == 1L)
-
-    nb <- grid_neighbours(tail_summary$x, tail_summary$y, radius = 1)
-    i <- which(tail_summary$cell_id == sel)
-    idx <- nb[[i]]
-
+    if (is.null(st) || nrow(row) != 1L) {
+      return(
+        ggplot() +
+          annotate(
+            "text",
+            x = 0,
+            y = 0,
+            label = "No mixture tail for this cell",
+            colour = ros_palette$muted
+          ) +
+          theme_void()
+      )
+    }
     d <- tibble(
-      what = c("this cell", rep("neighbours", length(idx))),
-      shape = c(row$tail_shape, tail_summary$tail_shape[idx])
-    )
-    ggplot(d, aes(what, shape)) +
-      geom_hline(
-        yintercept = stats::median(tail_summary$tail_shape, na.rm = TRUE),
-        linetype = "dotted",
-        colour = ros_palette$muted
+      scale = st$mt$scale,
+      weight = st$mt$weights * st$mt$tail_prob
+    ) |>
+      filter(is.finite(scale), scale > 0, is.finite(weight), weight > 0)
+    validate(need(nrow(d) > 1, "Only one tail component in this cell."))
+
+    ggplot(d, aes(scale, weight = weight)) +
+      geom_histogram(
+        bins = 25,
+        fill = ros_palette$accent_soft,
+        colour = ros_palette$accent,
+        linewidth = 0.25
       ) +
-      geom_point(
-        aes(colour = what),
-        size = 3,
-        alpha = 0.8,
-        position = position_jitter(width = 0.08, height = 0)
-      ) +
-      scale_colour_manual(
-        values = c("this cell" = ros_palette$warm, "neighbours" = ros_palette$accent)
+      geom_vline(
+        xintercept = row$tail_scale,
+        colour = ros_palette$warm,
+        linewidth = 1
       ) +
       labs(
-        title = "This cell against its neighbours",
-        subtitle = "Dotted line is the grid-wide median shape",
-        x = NULL,
-        y = "Tail shape xi"
-      ) +
-      theme(legend.position = "none")
+        title = "Spread of tail scale within this cell",
+        subtitle = sprintf(
+          "%d components; the line is the single GP scale that matches the cell in the limit (%.3g)",
+          nrow(d),
+          row$tail_scale
+        ),
+        x = "GP scale of a component",
+        y = "Weight"
+      )
   })
 
   output$cell_meta <- renderText({

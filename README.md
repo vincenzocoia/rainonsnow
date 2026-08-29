@@ -369,12 +369,13 @@ shiny::runApp("apps/5-return-level-explorer")
 
 ### Tail shape explorer (`apps/5b-tail-shape-explorer`)
 
-Map of the shared tail index per cell, how far neighbour smoothing moved each
-one, and how much the design return level actually depends on the shape.
+Map of the tail index per cell, that cell's own frequency-magnitude curve, how
+much the design return level depends on the shape, and the spread of tail scale
+across the cell's peak hours. Every panel is within one cell; the map is only
+there to pick one.
 
 **Data:** `derived/era5_land_hourly_alps_dl_tail_summary.rds` and
-`derived/era5_land_hourly_alps_dl_mixture_tails.rds` (script 5); optionally
-`derived/era5_land_hourly_alps_dl_tail_shapes.rds` (script 4).
+`derived/era5_land_hourly_alps_dl_mixture_tails.rds` (script 5).
 
 ``` r
 shiny::runApp("apps/5b-tail-shape-explorer")
