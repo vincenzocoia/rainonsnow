@@ -265,9 +265,13 @@ server <- function(input, output, session) {
       )
   })
 
-  # What the shared shape is riding on: how much this cell's own peak hours
-  # differ in tail scale. A wide spread means the covariates are doing real work
-  # within the cell; a narrow one means the hours look alike.
+  # What the shared shape is riding on. Each peak hour gets its OWN GP tail, so a
+  # cell with K peak hours has K scale parameters sigma_1..sigma_K (one apiece --
+  # a GP has a single scale). This is the spread of those across hours: wide
+  # means the covariates are doing real work within the cell, narrow means the
+  # hours look alike. Note the components here are the compressed representatives
+  # from mixture_tail_compress(), so this is a weighted summary of the sigma_i
+  # rather than one bar per hour.
   output$scale_spread <- renderPlot({
     st <- selected_tail()
     row <- selected_row()
@@ -304,13 +308,13 @@ server <- function(input, output, session) {
         linewidth = 1
       ) +
       labs(
-        title = "Spread of tail scale within this cell",
+        title = "Tail scale across this cell's peak hours",
         subtitle = sprintf(
-          "%d components; the line is the single GP scale that matches the cell in the limit (%.3g)",
+          "One GP scale per peak hour (%d weighted components); line = the single GP scale matching the cell in the limit (%.3g)",
           nrow(d),
           row$tail_scale
         ),
-        x = "GP scale of a component",
+        x = "GP scale of a peak hour",
         y = "Weight"
       )
   })
