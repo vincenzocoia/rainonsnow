@@ -35,6 +35,14 @@ Pareto marginal (`copula-transport-sweep.R`):
 Tripling the sample barely moves it. The deficit is structural, not estimation
 error.
 
+**But read the return period before reading the table.** Those figures are at
+$p = 10^{-4}$ — a 10,000-year event. At the levels hydrology actually asks
+about, the 20- to 200-year event, the same comparison on the process of
+section 8 puts the two within about ten percent of each other; the truncation
+only takes over past a factor of roughly $10^5$ in survival probability. The
+structural bias is real and the mechanism is exactly as described, but it is
+not what is wrong with a design flood estimate.
+
 ## 2. What fixes it, and how the pieces are combined
 
 With $h(v \mid u) = \partial C(u,v)/\partial u$, the conditional and the marginal
