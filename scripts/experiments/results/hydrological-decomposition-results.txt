@@ -1,0 +1,18 @@
+
+=====================================================================
+Decomposition at hydrological sample sizes and return periods
+=====================================================================
+
+<two_process_dgp>
+  A (snowmelt-driven) ~ GP(1, -0.25), bounded above by 4.000
+  X (rainfall)        ~ GP(1, 0.25)
+  B | X = x           ~ GP(0.5 * x, 0.1)
+  Y = max(A, B); marginal tail index 0.250
+
+True return levels, T = 20 / 50 / 100 / 200 years: 3.12  5.27  7.53  10.40
+Local tail index there: 0.483 0.549 0.488 0.444 (asymptotically 0.25)
+
+200 replicates per sample size.
+  ... n =    50 done
+  ... n =   100 done
+  ... n =   200 done
