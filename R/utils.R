@@ -78,7 +78,8 @@ rp_marginal_curve <- function() {
 #'   `scripts/5-runoff_marginals.r`).
 #' @param lower Lower bracket for the root search (default `0`, appropriate for
 #'   non-negative runoff).
-#' @param tol Root-finding tolerance.
+#' @param n_grid Number of grid points used to tabulate the CDF before
+#'   inverting it by interpolation.
 #' @returns A numeric vector of return levels, one per element of `at`.
 #' @seealso [rp_marginal_curve()]
 #' @export

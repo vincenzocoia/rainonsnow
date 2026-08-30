@@ -18,6 +18,7 @@ library(famish)
 
 repo_root <- here::here()
 devtools::load_all(repo_root, quiet = TRUE)
+source(file.path(repo_root, "apps", "ros_theme.R"))
 
 peaks_path <- path(repo_root, "derived", "era5_land_hourly_alps_peaks.rds")
 marginal_levels_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_return_levels.rds")
@@ -132,7 +133,11 @@ map_rp_default <- if (200 %in% map_rp_choices) 200 else max(map_rp_choices)
 map_fill_pal <- rev(c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
 
 ui <- fluidPage(
-  titlePanel("Runoff marginals explorer"),
+  theme = ros_bs_theme(),
+  ros_header(
+    "Runoff marginals",
+    "Frequency–magnitude curves for the distributional-learning mixture against naive POT-only fits."
+  ),
   uiOutput("data_banner"),
   helpText(
     "The map colours cells by the DL ",

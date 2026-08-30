@@ -12,3 +12,100 @@ dl_rqforest:
   mtry: 1
   nodesize: 23
   nthreads: 4
+
+# Tail of each peak-hour predictive distribution (scripts/4-distributional_learning.r).
+#
+# The cell marginal is the equal-weight mixture of these predictive
+# distributions. A mixture of GP tails is regularly varying with index
+# min_i(1/xi_i), so with a shape fitted independently per hour the whole cell
+# inherits max_i(xi_i) -- the noisiest single estimate. See
+# scripts/experiments/tail-index-pooling.R.
+gp_tail:
+  # WHICH POOLING IS THIS? Within a cell, across that cell's peak hours. Every
+  # grid cell is still fitted entirely on its own data. Nothing here shares
+  # information between cells except `spatial_smoothing` below, which is off.
+  #
+  # "shared" -> one shape for the cell, a scale per peak hour (recommended).
+  # "independent" -> previous behaviour, a separate shape per peak hour, which
+  #                  makes the cell's marginal inherit max_i(xi_i).
+  shape_pooling: shared
+
+  # How the shared shape is estimated.
+  #
+  # "standardise" (recommended): divide each OBSERVED response by its own
+  #   predicted location and scale, pool the standardised values, and fit one GP
+  #   to their exceedances. No per-hour scale is left free in the likelihood, so
+  #   the incidental-parameter bias goes away, and because the pooled values are
+  #   one per observation rather than a re-weighting of the same responses many
+  #   times over, the fit is a real likelihood -- its standard errors and
+  #   likelihood-ratio intervals mean what they usually mean.
+  #
+  # "pool_predictive": pool the predictive distributions themselves, with a free
+  #   scale per hour. Comparable RMSE at large samples, biased low when each
+  #   hour's tail is thin.
+  shape_method: standardise
+
+  # For shape_method: standardise. Each hour's location is its p_location
+  # quantile and its scale the gap up to p_scale. The gap has to be wide enough
+  # to be well determined but near enough the tail to be relevant to it: in
+  # simulation 0.70/0.95 beat both 0.50/0.90 and 0.80/0.98, the last being worst
+  # because the normaliser becomes a tail estimate itself. The POT threshold is
+  # set separately on the standardised scale, and raising it costs a lot of
+  # variance for no reliable gain in bias.
+  p_location: 0.7
+  p_scale: 0.95
+  threshold_prob: 0.6
+
+  # Quantile at which the GP tail is grafted onto the forest distribution.
+  # Used by shape_method: pool_predictive.
+  adaptive_threshold: 0.5
+
+  # Bootstrap replicates for the shape standard error (needed by the spatial
+  # smoothing below) and, if enabled, the bias correction. 0 disables both.
+  n_boot: 25
+
+  # Subtract the bootstrap estimate of the shape's bias. OFF by default: the
+  # pooled MLE is biased low, but per-hour scale noise inflates the return
+  # level by a similar amount in the other direction, and correcting only the
+  # shape leaves that exposed. Measured over T = 10/100/1000 years:
+  #   correction off -> 1.00x, 0.99x, 0.96x of the true return level
+  #   correction on  -> 1.07x, 1.16x, 1.24x
+  # See scripts/experiments/tail-index-pooling.R. Turn it on if the shape
+  # itself, rather than the return level, is what you are reporting.
+  bias_correct: false
+
+# Copula transport of the cell marginal (scripts/5-runoff_marginals.r).
+#
+# The mixture above is the law of total probability over the covariate values
+# the sample happens to contain, so every component carries the CONDITIONAL tail
+# index and the mixture does too. The marginal's own index is heavier by the
+# factor CEVI, and the shortfall comes from covariate values beyond any sample:
+# it is structural, not an estimation error, and it does not shrink with n.
+#
+# The transport recovers it. Each peak hour's tail is pushed back through the
+# copula, giving that hour's estimate of the WHOLE marginal, and the hours are
+# combined as repeated estimates of one quantity rather than mixed -- by the
+# pointwise median, so a single heavy hour cannot set the answer.
+#
+# OFF by default, and written to its own files, because it rests on one
+# approximation the mixture does not need: with several predictors there is no
+# scalar F_X(x), so the rank of the forest's own predictive summary (`graft_of`)
+# stands in for it. Read the transported marginal alongside the mixture, and
+# check `transport_spread` before believing a cell -- every hour estimates the
+# same curve, so disagreement between them is a direct consistency check.
+# See R/dl_transport_marginal.R and scripts/experiments/median-of-marginals.R.
+transport:
+  enabled: false
+
+  # "survival_clayton" (upper tail dependence, the relevant kind when the
+  # predictors and the response are extreme together), "gaussian", or "clayton".
+  family: survival_clayton
+
+  # "median" (recommended), "mean" or "weighted_mean". With a shape shared
+  # across a cell the three are close; where shapes vary, the mean is dragged up
+  # by the heaviest hour -- 2.1x the true 1e-5 level in simulation against 0.90x
+  # for the median.
+  combine: median
+
+  # Exceedance probability at which the between-hour spread is reported.
+  spread_at: 1.0e-4

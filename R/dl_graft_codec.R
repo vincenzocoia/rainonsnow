@@ -20,10 +20,22 @@
 NULL
 
 graft_gp_parameters <- function(dst) {
-  checkmate::assert_class(dst, "dst")
+  na_row <- list(
+    graft_of = NA_real_,
+    gp_scale = NA_real_,
+    gp_shape = NA_real_
+  )
+  if (is.null(dst) || !inherits(dst, "dst")) {
+    return(na_row)
+  }
   pars <- distionary::parameters(dst)
   dists <- pars$distributions
-  checkmate::assert_list(dists, len = 2L, types = "dst")
+  # A tail fit can fail for a single hour, in which case the un-grafted forest
+  # distribution is carried through. Encode that as missing rather than
+  # stopping the whole run.
+  if (!is.list(dists) || length(dists) != 2L) {
+    return(na_row)
+  }
 
   tail_pars <- distionary::parameters(dists[[2L]])
   gp_pars <- distionary::parameters(tail_pars$distribution)
@@ -59,8 +71,14 @@ reconstruct_graft_gp <- function(
 
 #' Encode peak-hour distributional-learning predictions (in memory)
 #'
-#' Drops `distribution_gp` and adds `graft_of`, `gp_scale`, and `gp_shape`. Prefer
-#' [dl_write_peak_hour_predictions()] when writing to disk.
+#' Drops `distribution_gp` and adds `graft_of`, `graft_tail_prob`, `gp_scale`,
+#' and `gp_shape`. Prefer [dl_write_peak_hour_predictions()] when writing to
+#' disk.
+#'
+#' `graft_tail_prob` is `P(X > graft_of)` under `distribution_forest`, i.e. the
+#' mass the graft hands to the GP tail. Storing it lets the marginal be
+#' evaluated in closed form by [dl_cell_mixture_tail()] without rebuilding any
+#' distribution objects.
 #'
 #' @param peak_hour_distributions Tibble with `distribution_gp` (and
 #'   `distribution_forest`).
@@ -73,12 +91,41 @@ dl_encode_peak_hour_distributions <- function(peak_hour_distributions) {
     names(peak_hour_distributions),
     must.include = "distribution_gp"
   )
+  # When the tail was fitted with a shared shape the parameters are already
+  # columns; reuse them rather than reading them back out of the objects.
+  already <- c("graft_of", "graft_tail_prob", "gp_scale", "gp_shape")
+  if (all(already %in% names(peak_hour_distributions))) {
+    return(dplyr::select(peak_hour_distributions, -"distribution_gp"))
+  }
+
   gp_enc <- purrr::map_dfr(
     peak_hour_distributions$distribution_gp,
     graft_gp_parameters
   )
+
+  if ("distribution_forest" %in% names(peak_hour_distributions)) {
+    gp_enc$graft_tail_prob <- purrr::map2_dbl(
+      peak_hour_distributions$distribution_forest,
+      gp_enc$graft_of,
+      function(d, u) {
+        if (is.null(d) || !is.finite(u)) {
+          return(NA_real_)
+        }
+        v <- try(distionary::eval_survival(d, at = u), silent = TRUE)
+        if (inherits(v, "try-error") || length(v) != 1L || !is.finite(v)) {
+          NA_real_
+        } else {
+          v
+        }
+      }
+    )
+  }
+
   peak_hour_distributions |>
     dplyr::select(-"distribution_gp") |>
+    # Drop any stale encoding so re-encoding a decoded tibble does not duplicate
+    # these columns.
+    dplyr::select(!dplyr::any_of(names(gp_enc))) |>
     dplyr::bind_cols(gp_enc)
 }
 

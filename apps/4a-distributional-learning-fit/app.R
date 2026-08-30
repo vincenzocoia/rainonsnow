@@ -14,6 +14,7 @@ library(distionary)
 
 repo_root <- here::here()
 devtools::load_all(repo_root, quiet = TRUE)
+source(file.path(repo_root, "apps", "ros_theme.R"))
 source(fs::path(repo_root, "apps", "dl_shared.R"))
 
 meta_path <- fs::path(repo_root, "inputs", "distributional_learning.yaml")
@@ -38,6 +39,7 @@ empty_preview_plot <- function(message) {
 }
 
 ui <- fluidPage(
+  theme = ros_bs_theme(),
   tags$head(
     tags$style(HTML("
       @keyframes dl-fit-spin { to { transform: rotate(360deg); } }
@@ -48,7 +50,10 @@ ui <- fluidPage(
       }
     "))
   ),
-  titlePanel("Distributional learning — fit (script 4a)"),
+  ros_header(
+    "Distributional learning — fit",
+    "Tune the quantile regression forest, preview one cell, then run script 4 for all cells."
+  ),
   uiOutput("data_banner"),
   helpText(
     "Tune ",

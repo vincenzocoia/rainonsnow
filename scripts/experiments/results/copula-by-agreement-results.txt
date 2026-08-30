@@ -1,0 +1,68 @@
+
+=====================================================================
+Choosing the copula by making the covariate values agree
+=====================================================================
+
+Same process as transport-vs-marginal-fit.R: X ~ Pareto(4),
+Y | X = x generalized Pareto with scale x, marginal index 0.25 throughout,
+CEVI swept by the conditional shape. The disagreement statistic uses only
+the sample. 60 replicates per cell.
+  ... n =  3000, CEVI = 0.1 done
+  ... n =  3000, CEVI = 0.2 done
+  ... n =  3000, CEVI = 0.4 done
+  ... n =  3000, CEVI = 0.6 done
+  ... n =  3000, CEVI = 0.8 done
+
+MEDIAN RATIO TO TRUTH, n = 3000, target P(Y > y) = 1e-05
+  CEVI                                             0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)            1.06    1.00    0.91    0.96    0.92 
+  transport, copula from Kendall tau              0.41    0.44    0.49    0.60    0.66 
+  transport, copula by minimum disagreement       1.12    1.12    1.06    1.19    1.11 
+  GP on Y alone, 90% threshold                    0.84    0.82    0.83    0.83    0.92 
+
+ROOT MEAN SQUARE LOG RATIO, n = 3000, target P(Y > y) = 1e-05
+  CEVI                                             0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)            0.35    0.31    0.26    0.33    0.27 
+  transport, copula from Kendall tau              0.91    0.83    0.71    0.55    0.44 
+  transport, copula by minimum disagreement       0.41    0.35    0.29    0.30    0.27 
+  GP on Y alone, 90% threshold                    0.38    0.37    0.34    0.36    0.32 
+
+DISAGREEMENT BETWEEN COVARIATE VALUES (median; 0 is perfect), n = 3000, target P(Y > y) = 1e-05
+  CEVI                                             0.1     0.2     0.4     0.6     0.8 
+  under the true copula                           0.93    0.93    1.02    1.10    1.00 
+  under the Kendall tau copula                    3.73    3.18    2.50    2.02    1.70 
+  under the chosen copula                         1.20    1.08    1.06    0.99    0.92 
+
+  Spearman corr(log disagreement, |log error|)    0.57    0.61    0.74    0.66    0.61 
+  family most often chosen                     surviva surviva surviva surviva surviva 
+  ... n = 10000, CEVI = 0.1 done
+  ... n = 10000, CEVI = 0.2 done
+  ... n = 10000, CEVI = 0.4 done
+  ... n = 10000, CEVI = 0.6 done
+  ... n = 10000, CEVI = 0.8 done
+
+MEDIAN RATIO TO TRUTH, n = 10000, target P(Y > y) = 1e-05
+  CEVI                                             0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)            1.00    0.99    0.98    1.03    0.97 
+  transport, copula from Kendall tau              0.40    0.43    0.51    0.63    0.70 
+  transport, copula by minimum disagreement       1.29    1.11    1.07    1.04    1.09 
+  GP on Y alone, 90% threshold                    0.78    0.86    0.83    0.94    0.97 
+
+ROOT MEAN SQUARE LOG RATIO, n = 10000, target P(Y > y) = 1e-05
+  CEVI                                             0.1     0.2     0.4     0.6     0.8 
+  transport, true copula (upper bound)            0.19    0.21    0.14    0.15    0.14 
+  transport, copula from Kendall tau              0.92    0.83    0.67    0.47    0.36 
+  transport, copula by minimum disagreement       0.42    0.38    0.17    0.15    0.16 
+  GP on Y alone, 90% threshold                    0.29    0.24    0.23    0.20    0.21 
+
+DISAGREEMENT BETWEEN COVARIATE VALUES (median; 0 is perfect), n = 10000, target P(Y > y) = 1e-05
+  CEVI                                             0.1     0.2     0.4     0.6     0.8 
+  under the true copula                           0.65    0.65    0.68    0.66    0.64 
+  under the Kendall tau copula                    4.07    3.10    2.25    1.69    1.34 
+  under the chosen copula                         1.14    0.95    0.79    0.67    0.61 
+
+  Spearman corr(log disagreement, |log error|)    0.73    0.61    0.70    0.61    0.53 
+  family most often chosen                     surviva surviva surviva surviva surviva 
+
+=====================================================================
+EXIT 0

@@ -14,6 +14,7 @@ library(rnaturalearth)
 library(yaml)
 
 repo_root <- here::here()
+source(file.path(repo_root, "apps", "ros_theme.R"))
 
 # Hourly timestamps are built as Jan 1 + hours; non-leap annual files spill a few
 # rows into the next calendar year. That inflates max(year(date)) by 1. Here we tag
@@ -139,7 +140,11 @@ td <- tile_dims(cells_ref)
 years_avail <- sort(unique(hourly_all$explorer_year))
 
 ui <- fluidPage(
-  titlePanel("Peaks over threshold (POT) explorer"),
+  theme = ros_bs_theme(),
+  ros_header(
+    "Peaks over threshold",
+    "How POT events are extracted from the hourly runoff series, one cell at a time."
+  ),
   helpText(
     "Threshold comes from ",
     code("get_pot_events()"),

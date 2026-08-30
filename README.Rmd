@@ -107,6 +107,168 @@ Rscript scripts/5-runoff_marginals.r
 Rscript scripts/6-drivers_joint_distribution.r
 ```
 
+## Tail modelling
+
+The marginal runoff distribution for a cell is the equal-weight mixture of its
+peak-hour predictive distributions, each grafted to a generalized Pareto tail.
+That construction has a trap. If component $i$ has shape $\xi_i$, its survival
+is regularly varying with index $1/\xi_i$, so the mixture's index is
+$\min_i (1/\xi_i)$ — the cell's tail is set by $\max_i \xi_i$ alone. Each
+$\xi_i$ is fitted to the upper half of one predictive distribution, whose
+effective sample size is small, so that maximum is the maximum of a few hundred
+noisy estimates.
+
+The fix is to share the shape across a cell and let only the scale vary by hour,
+which is also the standard non-stationary POT model: covariates move the scale,
+not the index. `fit_gpd_shared_shape()` profiles the shared shape, optimising
+each component's scale by a bounded one-dimensional search. `mixture_tail()`
+then evaluates the mixture in closed form.
+
+`scripts/experiments/tail-index-pooling.R` measures all of this on simulated
+cells where the truth is known (results in
+`scripts/experiments/results/`). With 150 peak hours and 15 effective tail
+points each, at a true $\xi$ of 0.15:
+
+| shape estimator | effective $\xi$ | T=10y | T=100y | T=1000y |
+|---|---|---|---|---|
+| one per hour (previous behaviour) | 0.93 | 1.00x | 1.02x | **1.64x** |
+| shared across the cell | 0.07 | 1.00x | 0.99x | 0.96x |
+| shared, shape bias-corrected | 0.17 | 1.07x | 1.16x | 1.24x |
+| true shape supplied | 0.15 | 1.01x | 1.07x | 1.10x |
+
+Columns are the median ratio to the correct return level. Two things are worth
+noting. Fitting a shape per hour is not merely noisy, it diverges as the return
+period grows, which is exactly the regime the project cares about. And the row
+with the true shape supplied does not sit at 1.00x either: each hour's *scale*
+is fitted from a handful of points and the return level is convex in those
+scales, so scale noise inflates it by 7–10% on its own. That second error is
+still open — see `?fit_gpd_shared_shape` for why the shape bias correction is
+off by default as a result.
+
+The shape is shared **within** a cell, across that cell's peak hours. Every
+cell is fitted entirely on its own data -- nothing in the pipeline shares tail
+information between cells.
+
+### Estimating the shared shape
+
+Two ways to get one tail shape for a cell, selected by
+`gp_tail.shape_method` in `inputs/distributional_learning.yaml`:
+
+* `pool_predictive` pools the peak-hour predictive distributions with a free
+  scale each. That leaves one nuisance scale per hour, each informed only by the
+  points in that hour's tail, which biases the shared shape low as cells get
+  thin.
+* `standardise` (default) divides each *observed* response by its own predicted
+  location and scale, pools the standardised values, and fits one generalized
+  Pareto to their exceedances. No free scale survives into the likelihood.
+
+On RMSE they are close and the ordering moves with sample size
+(`scripts/experiments/shared-shape-standardised.R`). The reason to prefer the
+second is inference: a forest's predictive distributions at different hours are
+re-weightings of the *same* training responses, so pooling them counts every
+observation many times over. The point estimate survives that; nothing derived
+from the likelihood's curvature does, which is why the pooled fit needs a
+bootstrap for its standard error. The standardised values are one per
+observation, so the ordinary standard error, likelihood-ratio intervals and
+tests all apply.
+
+Its own failure mode is the mirror image: it has to estimate each hour's
+normalising quantiles, and when those are noisy the error propagates into the
+standardised values and inflates the shape. Hence the defaults --- location and
+scale from the 70th and 95th percentiles, which beat both a lower and a higher
+pair, and a threshold at the 60th percentile of the standardised values, since
+raising it buys no reliable gain in bias and costs a lot of variance.
+
+### Evaluating the mixture
+
+Above `max(graft_of)` every component is in its GP part, so the mixture survival
+is elementary in the stored `(graft_of, graft_tail_prob, gp_scale, gp_shape)`
+columns — no distribution objects are built at all. `mixture_tail_compress()`
+further bins components by scale while preserving their combined asymptotic
+contribution (5e-5 relative error at 64 bins). A 500-point return curve takes
+about 50 ms, which is what makes `scripts/7-*-animated.r` practical.
+
+Below `max(graft_of)` the closed form does not apply and evaluation returns `NA`
+rather than extrapolating the GP into a region where the mixture still has
+empirical mass; script 5 falls back to the body mixture there and records which
+region each return level came from.
+
+## Copula transport of the marginal
+
+The equal-weight mixture of the fitted conditionals is not the only way to reach
+the marginal of runoff, and it turns out not to be an unbiased one.
+
+Write $U = F_X(X)$, $V = F_Y(Y)$ and $W = 1/(1-V)$, which is standard Pareto
+marginally. The **copula conditional EVI**, $\mathrm{CEVI}(u)$, is the extreme
+value index of $W$ given $U = u$: a property of the copula alone. For heavy or
+light tailed $Y$,
+
+$$\mathrm{EVI}(Y \mid X = x) \;=\; \mathrm{CEVI}(u)\cdot \mathrm{EVI}(Y), \qquad u = F_X(x),$$
+
+with $\mathrm{CEVI} \in [0,1]$. Every conditional is lighter-tailed than the
+marginal, and the copula says by exactly how much. For the Gaussian copula
+$\mathrm{CEVI} = 1-\rho^2$, constant in $u$ (verified numerically in part 1 of
+the experiment): the stronger the dependence, the more of the marginal's tail
+heaviness is explained by the predictor rather than by conditional noise.
+
+### The mixture marginal is biased low, and more data does not fix it
+
+Every component of the mixture shares the conditional EVI, so the mixture is
+regularly varying with that index -- which is $\mathrm{CEVI}\cdot\mathrm{EVI}(Y)$,
+strictly lighter than the truth whenever $\mathrm{CEVI} < 1$. The true marginal
+only acquires its full heaviness from covariate values beyond any finite sample.
+So the deficit is structural, not an estimation error, and it does not shrink
+with $n$ (`scripts/experiments/copula-transport-sweep.R`; median ratio to the
+true return level at $p = 10^{-4}$):
+
+| $\rho$ | CEVI | n = 300 | n = 1000 | n = 3000 |
+|---|---|---|---|---|
+| 0.5 | 0.75 | 0.84x | 0.88x | 0.89x |
+| 0.7 | 0.51 | 0.67x | 0.75x | 0.78x |
+| 0.9 | 0.19 | 0.55x | 0.59x | 0.61x |
+
+At dependence strong enough to be worth modelling, the mixture understates the
+10,000-event return level by 20--40%, and tripling the sample barely moves it.
+
+### Transport fixes it, where the conditional index can be estimated
+
+Pushing a conditional back through the copula,
+$F_Y(y) = h^{-1}\!\left(F_{Y|X=x}(y) \mid u\right)$ with $h(v|u) = \partial C(u,v)/\partial u$,
+recovers the marginal exactly, and splits the estimation into a conditional tail
+index (from all $n$ points, at a shallower extrapolation) and a copula parameter
+(from all $n$ ranks, not just the tail). With a local conditional model
+(part 4 of the experiment), at $\rho = 0.7$ and $n = 3000$, $p = 10^{-4}$:
+
+| estimator | median | RMSE(log) |
+|---|---|---|
+| mixture over observed covariates | 0.77x | 0.28 |
+| copula transport | **0.97x** | **0.26** |
+| transport, anchored on the marginal body | 0.94x | 0.25 |
+
+Better on bias *and* on total error.
+
+### Two things that decide whether it works
+
+**The conditional model does most of the work.** Fitting the conditionals by
+binning the covariate makes the answer depend on the bin width: 5 bins at
+n = 3000 inflates the conditional EVI to 0.135 against a true 0.128 (each bin is
+a mixture over its own covariate range) and the transport comes out 20% high,
+while 10--20 bins recovers 0.107--0.110 and lands within 10%. Overlapping
+nearest-neighbour neighbourhoods -- much closer to what the quantile regression
+forest actually does -- are what the table above uses.
+
+**The decomposition is ill-conditioned when CEVI is small.** Since
+$\mathrm{EVI}(Y) = \mathrm{EVI}(Y|X)/\mathrm{CEVI}$, any error in the conditional
+index is amplified by $1/\mathrm{CEVI}$. At $\rho = 0.9$ that factor is 5.3, the
+conditional tail is nearly exponential and its index estimates negative, and
+every method fails. So the transport is most attractive in the middle: strong
+enough dependence that the mixture is visibly biased, not so strong that the
+conditional tail carries no information.
+
+A null check is included: when the covariate effect is bounded so that
+$\mathrm{CEVI} = 1$ and the copula explains none of the tail heaviness, the
+anchored transport neither gains nor does harm (1.04x at $p = 10^{-4}$).
+
 ## Shiny apps
 
 Interactive apps live under `apps/*`, with folder names numbered to match the scripts they support. Run them from the **repository root** so paths such as `derived/` and `devtools::load_all()` resolve:
@@ -114,6 +276,10 @@ Interactive apps live under `apps/*`, with folder names numbered to match the sc
 ```r
 shiny::runApp("apps/<app-folder>")
 ```
+
+The apps share a look and feel through `apps/ros_theme.R` (Bootstrap 5 via
+**bslib**, plus a common ggplot theme and palette); if bslib is not installed
+they fall back to default styling rather than failing to start.
 
 Typical dependencies include [shiny](https://shiny.posit.co/), **ggplot2**, **tidyverse**, **sf**, and **rnaturalearth**; individual apps may need **yaml**, **probaverse**, **distionary**, **famish**, **rvinecopulib**, and others used in the analysis scripts.
 
@@ -153,6 +319,20 @@ Map of marginal runoff return levels by cell, frequency–magnitude curves (fore
 shiny::runApp("apps/5-return-level-explorer")
 ```
 
+### Tail shape explorer (`apps/5b-tail-shape-explorer`)
+
+Map of the tail index per cell, that cell's own frequency-magnitude curve, how
+much the design return level depends on the shape, and the spread of tail scale
+across the cell's peak hours. Every panel is within one cell; the map is only
+there to pick one.
+
+**Data:** `derived/era5_land_hourly_alps_dl_tail_summary.rds` and
+`derived/era5_land_hourly_alps_dl_mixture_tails.rds` (script 5).
+
+``` r
+shiny::runApp("apps/5b-tail-shape-explorer")
+```
+
 ### Joint rainfall–snowmelt explorer (`apps/6-joint-rain-snow-explorer`)
 
 Marginal fits and copula per cell: Gaussian-score diagnostics, joint density contours, marginal histograms, and frequency–magnitude curves for rainfall and snowmelt. Optional re-run of joint fitting from the sidebar (writes `inputs/rain_snow_joint_model.yaml` and runs `scripts/6-drivers_joint_distribution.r`).
@@ -171,6 +351,22 @@ Side-by-side frequency–magnitude curves: distributional-learning marginals (Ra
 
 ```r
 shiny::runApp("apps/5-runoff-marginals-explorer")
+```
+
+### Rain and snowmelt given extreme runoff (`apps/7-rain-snow-given-runoff`)
+
+Interactive version of `scripts/7-likeliest_rain_snow-one_cell_animated.r`: the
+return period is a slider with a play button, so T can be scrubbed as well as
+animated. Each grid point's predictive tail is fitted once per cell and every
+frame is one vectorised density evaluation, which is what makes it interactive
+at all.
+
+**Data:** peaks (script 3), fitted models (script 4),
+`derived/era5_land_hourly_alps_dl_mixture_tails.rds` (script 5) and the joint
+model (script 6).
+
+``` r
+shiny::runApp("apps/7-rain-snow-given-runoff")
 ```
 
 ## R Package Demonstration

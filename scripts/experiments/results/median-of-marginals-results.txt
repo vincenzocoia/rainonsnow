@@ -1,0 +1,160 @@
+
+=====================================================================
+PART 1  The DGP, and why a canned fit cannot work on it
+=====================================================================
+
+<transport_dgp>
+  X ~ Pareto(alpha = 4, scale = 1)
+  Y | X = x ~ GP(scale = x, shape = 0.1)
+  marginal EVI: 0.25 asymptotically, CEVI 0.4
+
+X ~ Pareto(4) is heavier than the conditional generalized Pareto, so
+Breiman's lemma gives the marginal the covariate's index, 1/4, while every
+conditional keeps 0.1. The ratio is the copula conditional EVI.
+
+      S_Y(y)            y  local EVI
+       1e-01         3.45      0.518
+       1e-02         8.51      0.317
+       1e-03        16.45      0.266
+       1e-04        29.77      0.253
+       1e-05        53.07      0.250
+       1e-06        94.38      0.250
+       1e-07       167.84      0.250
+       1e-08       298.47      0.250
+
+A generalized Pareto fit lives in the top few percent of the sample, where
+the local slope is 0.317 to 0.518 against an asymptote of 0.250. It reads that
+slope and then extrapolates it as if it had settled, so the error is in
+the shape of the curve rather than in how precisely it was measured, and
+more data does not remove it.
+
+
+=====================================================================
+PART 2  One sample: the ensemble of per-x marginals
+=====================================================================
+
+n = 3000, 30 covariate values. True 1e-4 level: 29.77
+
+Per-x estimates of the 1e-4 level:
+  one shape across x (0.127):  min 30.4  median 36.0  max 46.5
+  a shape per x (-0.063 to 0.286): min 15.0  median 34.5  max 133.9
+
+That spread is free diagnostic information: every x estimates the SAME
+marginal, so disagreement between them measures how far the conditional
+model and the copula are from being mutually consistent.
+
+
+=====================================================================
+PART 3  The three combination rules, over repeated samples
+        ratio of the estimate to the truth, at S = 1e-3, 1e-4, 1e-5
+=====================================================================
+
+n =  1000, one shape across x
+   median                     0.91   0.84   0.74
+   mean                       0.95   0.89   0.80
+   weighted mean              0.95   0.88   0.80
+   canned GP on Y alone       0.91   0.81   0.69
+
+n =  1000, a shape per x
+   median                     0.80   0.66   0.51
+   mean                       1.10   1.80   3.80
+   weighted mean              1.10   1.82   3.85
+   canned GP on Y alone       0.95   0.89   0.83
+
+n =  3000, one shape across x
+   median                     0.97   0.94   0.89
+   mean                       0.99   0.97   0.93
+   weighted mean              0.98   0.97   0.93
+   canned GP on Y alone       0.99   0.94   0.85
+
+n =  3000, a shape per x
+   median                     0.97   0.93   0.90
+   mean                       1.08   1.39   2.10
+   weighted mean              1.07   1.39   2.07
+   canned GP on Y alone       1.00   0.95   0.91
+
+n = 10000, one shape across x
+   median                     1.00   0.99   0.99
+   mean                       1.00   1.01   1.01
+   weighted mean              1.00   1.00   1.01
+   canned GP on Y alone       0.99   0.96   0.90
+
+n = 10000, a shape per x
+   median                     0.99   0.98   0.97
+   mean                       1.03   1.10   1.30
+   weighted mean              1.03   1.10   1.30
+   canned GP on Y alone       0.99   0.94   0.87
+
+With one shape across x the three rules are close, because the paths
+differ only through their thresholds and scales. Let each x have its own
+shape and they separate: the mean is dragged up by whichever x drew the
+heaviest shape, which is the same domination that makes a mixture of
+conditionals inherit max(xi_i), reappearing one level up. The median is
+not, because a single heavy path moves it by one rank position.
+
+The canned fit degrades monotonically with how far it is extrapolated,
+and more data does not rescue it -- it is fitting the wrong shape of curve,
+not the right one imprecisely.
+
+
+=====================================================================
+PART 4  What decides whether the transport works
+=====================================================================
+
+4a. How hard the conditional shape error is amplified.
+    Exact conditionals, true copula, shape shifted by delta. Nothing is
+    estimated here, so what is left is the amplification alone.
+
+    X ~ Pareto(4), CEVI = 0.40. For the 1e-5 event each conditional is pushed
+    5.1 to 8.0 log units past its own body.
+      delta = +0.000     1.00   1.00   1.00
+      delta = +0.005     1.03   1.04   1.06
+      delta = +0.010     1.05   1.08   1.12
+      delta = +0.020     1.11   1.17   1.25
+
+    X ~ LogNormal(0, 1), CEVI = 1.00. For the 1e-5 event each conditional is pushed
+    5.0 to 12.9 log units past its own body.
+      delta = +0.000     1.00   1.00   1.00
+      delta = +0.005     1.05   1.06   1.08
+      delta = +0.010     1.09   1.13   1.17
+      delta = +0.020     1.20   1.28   1.37
+
+    delta = 0 returns exactly 1.00 everywhere, which is the identity the
+    method rests on. Past that, the same shape error costs about half as
+    much again where the span is wider. That span is what CEVI measures:
+    at CEVI = 1 conditioning has not made the event any less extreme, so
+    reaching a 1e-5 marginal event still needs a conditional event out at
+    1e-13, and the estimate is y proportional to s^-xi the whole way.
+
+
+4b. How well the conditional is learned, which matters more.
+    The same ensemble, now with conditionals learned from the sample at
+    four kernel bandwidths. n = 3000.
+
+    X ~ Pareto(4), CEVI = 0.40, true conditional shape 0.100
+      bandwidth 0.015   shape 0.081     0.94   0.89   0.84
+      bandwidth 0.030   shape 0.095     0.98   0.97   0.96
+      bandwidth 0.060   shape 0.106     1.00   1.01   1.03
+      bandwidth 0.120   shape 0.115     1.06   1.11   1.16
+
+    X ~ LogNormal(0, 1), CEVI = 1.00, true conditional shape 0.200
+      bandwidth 0.015   shape 0.184     0.89   0.84   0.80
+      bandwidth 0.030   shape 0.204     1.02   1.03   1.04
+      bandwidth 0.060   shape 0.226     1.27   1.39   1.52
+      bandwidth 0.120   shape 0.277     1.97   2.63   3.41
+
+    A kernel window on the rank scale spans a range of covariate values,
+    so each learned conditional is itself a small scale mixture and comes
+    out too heavy -- the same domination as everywhere else in this file,
+    now inside a single conditional. How badly depends on how fast the
+    conditional scale moves with the rank, which is much faster for the
+    lognormal covariate: at bandwidth 0.12 its shape is 39% high against
+    15% for the Pareto one, and the two effects compound.
+
+    So the transport's accuracy is governed by the conditional model,
+    and CEVI sets the price of getting it slightly wrong. Both regimes
+    work at a bandwidth narrow enough to keep the conditional honest; at
+    CEVI = 1 the margin for error is much thinner, and there is no tail
+    heaviness for the decomposition to explain in the first place.
+=====================================================================
+EXIT 0
