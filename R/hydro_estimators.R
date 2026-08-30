@@ -320,3 +320,132 @@ fit_scaled_gp <- function(x, b) {
   }
   list(b_coef = exp(o$par[1]), shape = o$par[2])
 }
+
+#' Non-stationary peaks-over-threshold regression
+#'
+#' The model a hydrologist would fit without knowing how the peak is put
+#' together: a constant threshold, an exceedance probability and a generalized
+#' Pareto scale that both move with the covariate, and a shape that either
+#' moves with it or does not.
+#'
+#' The covariate enters as `z = qnorm(F_X(x))` for a fitted `F_X`, which does
+#' two things. It bounds the covariate's influence in a way a raw value would
+#' not, and it makes the marginal a Gaussian average: if `F_X` is right then `z`
+#' is standard normal, so removing the covariate is an integral over that rather
+#' than over the observed values. See [tpf_marginal_survival()] for why the
+#' distinction matters.
+#'
+#' `varying_shape` is the question this repository currently answers with
+#' `gp_tail.shape_pooling: shared`. Sharing one shape is right when the
+#' covariate moves the scale only. It is wrong when the covariate selects which
+#' process is producing the peak, because then the shape has to move too --
+#' under [two_process_dgp()] the best-fitting conditional shape runs from
+#' -0.26 at the tenth percentile of rainfall to +0.17 at the ninetieth, so a
+#' single shared value is fitted near zero and is wrong at both ends.
+#'
+#' @param x,y Numeric vectors: covariate and response.
+#' @param fit_x A [fit_gp_ml()] result for the covariate, used to form `z`.
+#' @param p_thresh Fraction of the response kept as exceedances.
+#' @param varying_shape Let the generalized Pareto shape depend on the
+#'   covariate.
+#' @returns A list of coefficients with the threshold and `converged`.
+#' @examples
+#' set.seed(1)
+#' d <- tp_simulate(two_process_dgp(), 400)
+#' fit_pot_regression(d$x, d$y, fit_gp_ml(d$x))$converged
+#' @export
+fit_pot_regression <- function(
+  x,
+  y,
+  fit_x,
+  p_thresh = 0.5,
+  varying_shape = TRUE
+) {
+  ok <- is.finite(x) & is.finite(y) & x > 0
+  x <- x[ok]
+  y <- y[ok]
+  if (!is.finite(fit_x$shape)) {
+    return(list(converged = FALSE))
+  }
+  z <- stats::qnorm(pmin(pmax(
+    1 - gpd_survival(x, fit_x$scale, fit_x$shape),
+    1e-6
+  ), 1 - 1e-6))
+  u0 <- stats::quantile(y, 1 - p_thresh, names = FALSE)
+  over <- y > u0
+  if (sum(over) < 8L) {
+    return(list(converged = FALSE))
+  }
+
+  npar <- if (varying_shape) 6L else 5L
+  nllh <- function(p) {
+    lp <- p[1] + p[2] * z
+    prob <- 1 / (1 + exp(-lp))
+    if (any(!is.finite(prob)) || any(prob <= 0) || any(prob >= 1)) {
+      return(1e10)
+    }
+    sig <- exp(p[3] + p[4] * z[over])
+    xi <- if (varying_shape) p[5] + p[6] * z[over] else rep(p[5], sum(over))
+    d <- gpd_density(y[over] - u0, sig, xi)
+    if (any(!is.finite(d)) || any(d <= 0)) {
+      return(1e10)
+    }
+    # Bernoulli for crossing the threshold, generalized Pareto for the excess.
+    -sum(base::log(ifelse(over, prob, 1 - prob))) - sum(base::log(d))
+  }
+  start <- c(0, 0.5, base::log(stats::sd(y[over] - u0) + 1e-6), 0.2,
+             0.1, if (varying_shape) 0.1 else NULL)[seq_len(npar)]
+  o <- try(
+    stats::optim(start, nllh, control = list(maxit = 6000, reltol = 1e-11)),
+    silent = TRUE
+  )
+  if (inherits(o, "try-error") || o$value >= 1e10) {
+    return(list(converged = FALSE))
+  }
+  list(
+    threshold = u0,
+    logit = o$par[1:2],
+    log_scale = o$par[3:4],
+    shape = if (varying_shape) o$par[5:6] else c(o$par[5], 0),
+    fit_x = fit_x,
+    converged = o$convergence == 0
+  )
+}
+
+#' Marginal survival from a non-stationary peaks-over-threshold fit
+#'
+#' Integrates the fitted conditional over the standard normal that `z` follows
+#' when the covariate distribution is right, by Gauss-Hermite-style quadrature
+#' on a fixed grid. Only defined above the fitted threshold.
+#'
+#' @param fit A [fit_pot_regression()] result.
+#' @param y Numeric vector.
+#' @param ngrid Quadrature points.
+#' @returns A numeric vector, `NA` at or below the threshold.
+#' @examples
+#' set.seed(1)
+#' d <- tp_simulate(two_process_dgp(), 400)
+#' f <- fit_pot_regression(d$x, d$y, fit_gp_ml(d$x))
+#' potr_marginal_survival(f, c(5, 10))
+#' @export
+potr_marginal_survival <- function(fit, y, ngrid = 401L) {
+  if (!isTRUE(fit$converged)) {
+    return(rep(NA_real_, length(y)))
+  }
+  z <- seq(-6, 6, length.out = ngrid)
+  w <- stats::dnorm(z)
+  w <- w / sum(w)
+  prob <- 1 / (1 + exp(-(fit$logit[1] + fit$logit[2] * z)))
+  sig <- exp(fit$log_scale[1] + fit$log_scale[2] * z)
+  xi <- fit$shape[1] + fit$shape[2] * z
+  vapply(
+    y,
+    function(yy) {
+      if (yy <= fit$threshold) {
+        return(NA_real_)
+      }
+      sum(w * prob * gpd_survival(yy - fit$threshold, sig, xi))
+    },
+    numeric(1L)
+  )
+}

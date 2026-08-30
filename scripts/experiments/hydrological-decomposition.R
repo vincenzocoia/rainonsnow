@@ -65,15 +65,19 @@ TRUTH <- tp_marginal_quantile(dgp, PS)
 METHODS <- c(
   "GEV on the peak (standard practice)",
   "GP-POT on the peak, top 50%",
-  "drivers observed, each fitted marginally",
-  "drivers observed, rain driver fitted on rainfall",
+  "POT regression on rainfall, shape varies",
+  "POT regression on rainfall, one shared shape",
   "structure fitted, integrated over fitted F_X",
   "structure fitted, averaged over observed x",
+  "drivers observed, each fitted marginally",
+  "drivers observed, rain driver fitted on rainfall",
   "transport, true copula",
   "transport, Gaussian from Kendall tau",
   "transport, Gaussian from the upper half",
   "transport, survival Clayton, upper half"
 )
+# Assign by name so adding a row cannot silently shift another one.
+ROW <- stats::setNames(seq_along(METHODS), METHODS)
 
 # A monotone interpolator for the TRUE conditional at one x, so the true-copula
 # transport does not need a bisection per evaluation.
@@ -107,7 +111,8 @@ one_rep <- function(n) {
   out <- matrix(NA_real_, length(METHODS), length(PS))
 
   # 1. GEV on the peak.
-  out[1, ] <- gev_return_level(fit_gev(d$y), PS)
+  out[ROW[["GEV on the peak (standard practice)"]], ] <-
+    gev_return_level(fit_gev(d$y), PS)
 
   # 2. Generalized Pareto above the top half of the peaks.
   thr <- stats::quantile(d$y, 1 - POT_FRAC, names = FALSE)
@@ -115,7 +120,8 @@ one_rep <- function(n) {
   if (length(e) >= 5L) {
     g <- fit_gpd_weighted(e, rep(1, length(e)))
     if (is.finite(g$shape)) {
-      out[2, ] <- thr + gpd_quantile_upper(PS / POT_FRAC, g$scale, g$shape)
+      out[ROW[["GP-POT on the peak, top 50%"]], ] <-
+        thr + gpd_quantile_upper(PS / POT_FRAC, g$scale, g$shape)
     }
   }
 
@@ -124,7 +130,7 @@ one_rep <- function(n) {
   fa <- fit_gp_ml(d$a)
   fb <- fit_gp_ml(d$b)
   if (is.finite(fa$shape) && is.finite(fb$shape)) {
-    out[3, ] <- invert_survival(
+    out[ROW[["drivers observed, each fitted marginally"]], ] <- invert_survival(
       function(y) {
         sa <- gpd_survival(y, fa$scale, fa$shape)
         sb <- gpd_survival(y, fb$scale, fb$shape)
@@ -134,7 +140,23 @@ one_rep <- function(n) {
     )
   }
 
-  # 4. Both drivers observed AND correctly specified: A on its own, the rain
+  # A generic covariate model: no knowledge of how the peak is assembled, just a
+  # non-stationary peaks-over-threshold regression on rainfall, removed over the
+  # fitted rainfall distribution. The two variants are the shared-shape question
+  # this repository currently answers with gp_tail.shape_pooling.
+  fxr <- fit_gp_ml(d$x)
+  for (vs in c(TRUE, FALSE)) {
+    pr <- fit_pot_regression(d$x, d$y, fxr, varying_shape = vs)
+    if (isTRUE(pr$converged)) {
+      out[ROW[[if (vs) {
+        "POT regression on rainfall, shape varies"
+      } else {
+        "POT regression on rainfall, one shared shape"
+      }]], ] <- invert_survival(function(y) potr_marginal_survival(pr, y), PS)
+    }
+  }
+
+  # Both drivers observed AND correctly specified: A on its own, the rain
   #    driver on the rainfall that scaled it. The upper bound for a
   #    decomposition, and the thing row 3 falls short of.
   fbx <- fit_scaled_gp(d$x, d$b)
@@ -144,9 +166,8 @@ one_rep <- function(n) {
       scale_a = fa$scale, shape_a = fa$shape,
       b_coef = fbx$b_coef, shape_b = fbx$shape
     )
-    out[4, ] <- invert_survival(
-      function(y) tpf_marginal_survival(ftrue_form, fx0, y), PS
-    )
+    out[ROW[["drivers observed, rain driver fitted on rainfall"]], ] <-
+      invert_survival(function(y) tpf_marginal_survival(ftrue_form, fx0, y), PS)
   }
 
   # The structure fitted from (x, y) alone. Everything below shares it.
@@ -158,8 +179,10 @@ one_rep <- function(n) {
 
   # 4/5. Integrate over the fitted rainfall distribution, or average over the
   #      observed rainfall values.
-  out[5, ] <- invert_survival(function(y) tpf_marginal_survival(f, fx, y), PS)
-  out[6, ] <- invert_survival(function(y) tpf_mixture_survival(f, d$x, y), PS)
+  out[ROW[["structure fitted, integrated over fitted F_X"]], ] <-
+    invert_survival(function(y) tpf_marginal_survival(f, fx, y), PS)
+  out[ROW[["structure fitted, averaged over observed x"]], ] <-
+    invert_survival(function(y) tpf_mixture_survival(f, d$x, y), PS)
 
   # 6-9. The same conditionals, transported instead of integrated.
   u <- rank(d$x) / (n + 1)
@@ -182,22 +205,22 @@ one_rep <- function(n) {
     },
     numeric(1L)
   )
-  out[7, ] <- interp_return(ygrid, true_curve, PS)
+  out[ROW[["transport, true copula"]], ] <- interp_return(ygrid, true_curve, PS)
 
   tau <- stats::cor(u, v, method = "kendall")
   rho_tau <- sin(pi / 2 * tau)
-  out[8, ] <- interp_return(
+  out[ROW[["transport, Gaussian from Kendall tau"]], ] <- interp_return(
     ygrid, transport_curve(s_cond, u, "gaussian", rho_tau, ygrid), PS
   )
   rho_up <- fit_copula_upper(u, v, "gaussian", 0.5)
   if (is.finite(rho_up)) {
-    out[9, ] <- interp_return(
+    out[ROW[["transport, Gaussian from the upper half"]], ] <- interp_return(
       ygrid, transport_curve(s_cond, u, "gaussian", rho_up, ygrid), PS
     )
   }
   th_up <- fit_copula_upper(u, v, "survival_clayton", 0.5)
   if (is.finite(th_up)) {
-    out[10, ] <- interp_return(
+    out[ROW[["transport, survival Clayton, upper half"]], ] <- interp_return(
       ygrid, transport_curve(s_cond, u, "survival_clayton", th_up, ygrid), PS
     )
   }
@@ -261,10 +284,10 @@ show <- function(stat, label, fmt) {
   cat("=====================================================================\n")
   for (ni in seq_along(N_GRID)) {
     cat(sprintf("\nn = %d years\n", N_GRID[ni]))
-    cat(sprintf("  %-46s", "T (years)"))
+    cat(sprintf("  %-48s", "T (years)"))
     cat(paste(sprintf("%8d", TT), collapse = ""), "\n")
     for (m in seq_along(METHODS)) {
-      cat(sprintf("  %-46s", METHODS[m]))
+      cat(sprintf("  %-48s", METHODS[m]))
       cat(paste(sprintf(fmt, store[m, , ni, stat]), collapse = ""), "\n")
     }
   }
