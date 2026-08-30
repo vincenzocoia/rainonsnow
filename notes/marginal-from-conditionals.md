@@ -1,5 +1,17 @@
 # Recovering a marginal tail from conditional ones
 
+**Summary.** Mixing learned conditional distributions to recover a marginal
+tail is structurally biased, and the copula transport fixes it exactly given
+the copula — but a copula fitted from data makes the transport the worst
+estimator tested, and at hydrological sample sizes it is far worse than doing
+nothing clever. Where the decomposition does pay is different from where this
+note started looking: **the gain comes from observing the drivers, not from
+conditioning on a covariate.** With the two drivers observed and each fitted in
+a family that actually fits it, the error at the 200-year level falls by about
+a third against a generalized extreme value fit. With only a covariate observed
+it falls by nothing at 50 years of record. Section 8 has the numbers; sections
+1 to 7 are the copula-transport line of work that led there.
+
 *Working note, August 2026. Code and reproducible experiments referenced
 throughout; every number below is printed by a script in
 `scripts/experiments/` with its output kept in `scripts/experiments/results/`.*
@@ -223,6 +235,97 @@ label.
 
 ---
 
+## 8. At hydrological sample sizes and return periods
+
+Sections 1 to 7 ran at `n` of 1000 to 10000 and targeted exceedance
+probabilities of $10^{-4}$ to $10^{-5}$. Hydrology has 50 to 100 years of
+record and asks about the 20- to 200-year event. Both choices were wrong for
+the question, and the second badly so: $10^{-5}$ is a 100,000-year event.
+
+**The process.** An annual peak is the larger of two drivers
+(`R/two_process_dgp.R`): a snowmelt-driven one that is *bounded above*, because
+a snowpack is finite, and a rain-driven one whose scale is set by the observed
+rainfall and which is heavy-tailed. The marginal kinks at the bounded driver's
+endpoint and belongs to no standard family. Each conditional is a single clean
+process, because the covariate selects the **regime** — the best-fitting
+conditional shape runs from $-0.26$ at the tenth percentile of rainfall to
+$+0.17$ at the ninetieth, crossing zero. That is something a generic copula
+cannot encode, which is why the specified-copula construction was abandoned:
+under it the conditionals come out *less* clean than the marginal, since the
+$h$-function contributes curvature of its own.
+
+**Results.** 200 replicates; the peaks are annual maxima so the $T$-year level
+is the $1/T$ quantile. At $T = 200$:
+
+| | bias, n=50 | rms, n=50 | bias, n=200 | rms, n=200 |
+|---|---|---|---|---|
+| GEV on the peak (standard practice) | 0.91 | 0.55 | 0.92 | 0.28 |
+| **drivers observed, each fitted on what scales it** | **0.93** | **0.40** | **1.00** | **0.19** |
+| drivers observed, each fitted marginally | 2.59 | 1.26 | 2.42 | 1.07 |
+| structure inferred from (rainfall, peak) only | 0.92 | 0.55 | 0.97 | 0.26 |
+| POT regression on rainfall, shared shape | 0.62 | 0.66 | 0.69 | 0.46 |
+| POT regression on rainfall, shape varies | 0.62 | 0.83 | 0.65 | 0.49 |
+| transport, true copula | 0.48 | 1.14 | 0.75 | 0.75 |
+| transport, copula fitted on the upper half | 0.35 | 1.09 | 0.37 | 0.96 |
+
+Four things follow, and only the first is good news.
+
+**The decomposition works, and the working part is observing the drivers.**
+Total error at the 200-year level falls from 0.55 to 0.40 at 50 years of record
+and from 0.28 to 0.19 at 200 — roughly a third, at every sample size. This is
+the max(A, B) result reproduced and quantified. It is worth noting *where* it
+comes from: not from a smaller bias (0.93 against 0.91 at n = 50) but from a
+smaller variance, because two clean two-parameter fits are better determined
+than one three-parameter fit to their mixture.
+
+**It only works if the components are genuinely clean.** Fitting a generalized
+Pareto to the rain driver's *marginal* gives 2.59× the true 200-year level,
+because its scale is random and so that marginal is itself a scale mixture.
+Decomposing into pieces that are still mixtures is far worse than not
+decomposing at all — worse than every other row in the table.
+
+**A covariate alone does not substitute for observing the drivers.** Inferring
+the same structure from (rainfall, peak) pairs recovers nothing at 50 years
+(0.55, tied with the GEV) and only a little at 200 (0.26 against 0.28). A
+generic non-stationary POT regression on rainfall — what one would fit without
+knowing the structure — is *worse than ignoring the covariate*: 0.66 against
+0.55 at n = 50, and biased low by a third.
+
+**The copula transport is the wrong vehicle here.** Even given the true copula
+it reaches 1.14 at n = 50, against 0.55 for the GEV. The transport amplifies
+conditional model error where integrating over a fitted covariate distribution
+averages it out — with the true conditional the transport is exact to four
+decimal places, so this is entirely error amplification, not an implementation
+fault. Fitting the copula on the upper half rather than from Kendall's tau
+helps consistently (1.09 against 1.16 at n = 50) but nowhere near enough.
+
+**A correction to something asserted earlier in this note.** The
+varying-versus-shared shape comparison does *not* favour letting the shape
+move: shared is better on total error at every sample size (0.66 against 0.83
+at n = 50). The conditional shape genuinely does cross zero, so a shared shape
+is the wrong *parameter*; but the return level does not suffer for it, because
+the scale compensates over the range being extrapolated. This is the same
+lesson as the threshold-bias calculation in section 8's prototype — a badly
+wrong shape and an acceptable return level coexist comfortably. Any argument
+for changing `gp_tail.shape_pooling` needs to be made on return levels, not on
+the shape.
+
+**What this means for the pipeline.** The rain-on-snow setting is closer to the
+good case than to the bad one: rainfall and snowmelt are both *observed*, so
+the question is whether runoff can be attributed to them — a structural model
+$Y = f(\text{rain}, \text{snow}, \varepsilon)$ — rather than whether a copula
+can be fitted between a predictor and runoff. That is a different piece of work
+from anything in sections 1 to 7, and on this evidence a more promising one.
+
+**What has not been established.** These numbers are one process at one setting
+of its parameters, which were chosen to make the kink visible. The size of the
+gain will move with the contrast between the two drivers, and a sweep over that
+contrast is the obvious next experiment. The GEV's bias here is only 9% at the
+200-year level, which is much smaller than the bias reported from real annual
+maximum series, so this process is probably kinder than reality.
+
+---
+
 ## References
 
 - Coia, V., Joe, H. and Nolde, N. (2024). Copula-based conditional tail indices.
@@ -253,6 +356,8 @@ label.
 | transport, ensembles, combination rules | `R/copula_transport.R` |
 | the derived-marginal process | `R/transport_lab.R` |
 | pipeline integration (off by default) | `R/dl_transport_marginal.R`, `scripts/5-runoff_marginals.r` |
+| the rain-on-snow process and its estimators | `R/two_process_dgp.R`, `R/hydro_estimators.R` |
+| hydrological sample sizes and return periods | `scripts/experiments/hydrological-decomposition.R` |
 | head-to-head against a direct fit | `scripts/experiments/transport-vs-marginal-fit.R` |
 | choosing the copula by agreement | `scripts/experiments/copula-by-agreement.R` |
 | earlier experiments | `scripts/experiments/{median-of-marginals,copula-transport-sweep,copula-transport-by-x}.R` |
