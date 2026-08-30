@@ -214,6 +214,29 @@ label.
 
 ---
 
+## References
+
+- Coia, V., Joe, H. and Nolde, N. (2024). Copula-based conditional tail indices.
+  *Journal of Multivariate Analysis* **201**, 105268.
+  [doi:10.1016/j.jmva.2023.105268](https://doi.org/10.1016/j.jmva.2023.105268).
+  The conditional tail index factorises into a copula-based conditional extreme
+  value index and the marginal tail index; introduces a parametric family with
+  a *non-constant* CEVI, and another that reduces a heavy-tailed response to a
+  light tail on conditioning. This is the bookkeeping every claim above rests
+  on, and the reason the copula is fitted along the upper edge rather than in
+  the upper-right corner.
+- Coia, V. (2017). *Forecasting of Nonlinear Extreme Quantiles Using Copula
+  Models*. PhD dissertation, University of British Columbia.
+  [cIRcle 1.0342941](https://open.library.ubc.ca/collections/24/items/1.0342941).
+- `igcop`: Computational Tools for the IG and IGL Copula Families. R package,
+  CRAN; documentation at [igcop.netlify.app](https://igcop.netlify.app/). The
+  integrated gamma family is the natural next candidate for the agreement
+  criterion in section 5, whose current candidate set contains only families
+  with a constant CEVI — which is very likely why survival Clayton won every
+  cell.
+
+---
+
 ### Where the code is
 
 | | |
