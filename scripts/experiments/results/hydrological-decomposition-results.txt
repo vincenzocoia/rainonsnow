@@ -14,3 +14,4 @@ Local tail index there: 0.483 0.549 0.488 0.444 (asymptotically 0.25)
 
 200 replicates per sample size.
   ... n =    50 done
+  ... n =   100 done
