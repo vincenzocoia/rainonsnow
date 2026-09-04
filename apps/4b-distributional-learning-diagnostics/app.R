@@ -318,7 +318,7 @@ server <- function(input, output, session) {
     req(!is.null(pp_tbl()))
     sel <- selected_cell_id()
     d <- pp_tbl()
-    ggplot(aes(p_empirical, p_model)) +
+    ggplot(mapping = aes(p_empirical, p_model)) +
       geom_line(
         data = dplyr::filter(d, .data$cell_id != sel),
         aes(group = interaction(cell_id, model)),
@@ -342,7 +342,7 @@ server <- function(input, output, session) {
     req(!is.null(skill_tbl()))
     sel <- selected_cell_id()
     d <- skill_tbl()
-    ggplot(aes(tau, skill_score)) +
+    ggplot(mapping = aes(tau, skill_score)) +
       geom_line(
         data = dplyr::filter(d, .data$cell_id != sel),
         aes(group = cell_id),
