@@ -183,7 +183,7 @@ server <- function(input, output, session) {
     req(peaks(), input$cell_id)
     row <- cells_ref() |> dplyr::filter(.data$cell_id == as.integer(input$cell_id))
     paste0(
-      "lon = ", round(row$y, 3), ", lat = ", round(row$x, 3),
+      "lon = ", round(row$x, 3), ", lat = ", round(row$y, 3),
       "\nPOT peak hours for preview."
     )
   })

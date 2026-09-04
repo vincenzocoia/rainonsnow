@@ -100,13 +100,13 @@ run_script6 <- function(root) {
 }
 
 nearest_cell <- function(lon_click, lat_click, cells_tbl) {
-  dx <- cells_tbl$y - lon_click
-  dy <- cells_tbl$x - lat_click
+  dx <- cells_tbl$x - lon_click
+  dy <- cells_tbl$y - lat_click
   idx <- which.min(dx^2 + dy^2)
   cells_tbl$cell_id[idx]
 }
 
-tile_dims <- function(xy_tbl, x_col = "y", y_col = "x") {
+tile_dims <- function(xy_tbl, x_col = "x", y_col = "y") {
   ux <- sort(unique(xy_tbl[[x_col]]))
   uy <- sort(unique(xy_tbl[[y_col]]))
   w <- if (length(ux) > 1) stats::median(diff(ux)) else 0.25
@@ -231,8 +231,8 @@ cells_ref <- if (!is.null(hourly_all)) {
   tibble(cell_id = integer(), x = numeric(), y = numeric())
 }
 
-map_xlim <- if (nrow(cells_ref) > 0) range(cells_ref$y, na.rm = TRUE) + c(-0.5, 0.5) else c(-1, 1)
-map_ylim <- if (nrow(cells_ref) > 0) range(cells_ref$x, na.rm = TRUE) + c(-0.5, 0.5) else c(-1, 1)
+map_xlim <- if (nrow(cells_ref) > 0) range(cells_ref$x, na.rm = TRUE) + c(-0.5, 0.5) else c(-1, 1)
+map_ylim <- if (nrow(cells_ref) > 0) range(cells_ref$y, na.rm = TRUE) + c(-0.5, 0.5) else c(-1, 1)
 map_bbox <- st_bbox(
   c(xmin = map_xlim[1], xmax = map_xlim[2], ymin = map_ylim[1], ymax = map_ylim[2]),
   crs = st_crs(4326)
@@ -448,7 +448,7 @@ server <- function(input, output, session) {
     req(nrow(cells_ref) > 0)
     row <- cells_ref |> filter(cell_id == as.integer(input$cell_id))
     paste0(
-      "lon = ", round(row$y, 3), ", lat = ", round(row$x, 3),
+      "lon = ", round(row$x, 3), ", lat = ", round(row$y, 3),
       "\n(rainfall_hourly / snowmelt_hourly in mm)"
     )
   })
@@ -459,7 +459,7 @@ server <- function(input, output, session) {
 
   output$map_tiles <- renderPlot({
     req(!is.null(world_map), nrow(cells_ref) > 0)
-    ggplot(cells_ref, aes(y, x)) +
+    ggplot(cells_ref, aes(x, y)) +
       # Country borders are context, not data. At the 2x2-cell extent a single
       # border runs straight through the panel, and at linewidth 1 in the
       # default black it reads as a mystery curve drawn over the cells.

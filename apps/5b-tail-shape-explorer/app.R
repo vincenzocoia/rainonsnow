@@ -42,7 +42,7 @@ cells_ref <- if (have_summary) {
   tibble(cell_id = integer(), x = double(), y = double())
 }
 
-tile_dims <- function(xy, x_col = "y", y_col = "x") {
+tile_dims <- function(xy, x_col = "x", y_col = "y") {
   ux <- sort(unique(xy[[x_col]]))
   uy <- sort(unique(xy[[y_col]]))
   c(
@@ -55,7 +55,7 @@ nearest_cell <- function(lon, lat, tbl) {
   if (nrow(tbl) == 0) {
     return(NULL)
   }
-  tbl$cell_id[which.min((tbl$y - lon)^2 + (tbl$x - lat)^2)]
+  tbl$cell_id[which.min((tbl$x - lon)^2 + (tbl$y - lat)^2)]
 }
 
 REPORT_T <- rp_reporting()
@@ -153,7 +153,7 @@ server <- function(input, output, session) {
     fld <- input$map_field
     d <- mutate(tail_summary, value = .data[[fld]], selected = cell_id == as.integer(input$cell_id))
 
-    ggplot(d, aes(y, x, fill = value)) +
+    ggplot(d, aes(x, y, fill = value)) +
       geom_tile(width = td["width"], height = td["height"]) +
       geom_tile(
         data = filter(d, selected),
@@ -327,7 +327,7 @@ server <- function(input, output, session) {
     st <- selected_tail()
     lines <- c(
       sprintf("cell_id       %d", row$cell_id),
-      sprintf("lon, lat      %.3f, %.3f", row$y, row$x),
+      sprintf("lon, lat      %.3f, %.3f", row$x, row$y),
       sprintf("events / year %.2f", row$num_events_per_year),
       sprintf("tail shape    %.4f", row$tail_shape),
       sprintf("tail scale    %.3f", row$tail_scale),
