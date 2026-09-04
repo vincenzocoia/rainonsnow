@@ -83,16 +83,21 @@ ui <- fluidPage(
         choices = cell_choices,
         selected = default_cell
       ),
+      # The slider carries log10(T) so the sweep is even in T. Its readout is
+      # therefore the exponent, not the year count, so keep the endpoints round
+      # (0.3 -> 2 years, 2.3 -> ~200) and say so in the label; the year value
+      # itself is spelled out under the slider and in the panel titles.
       sliderInput(
         "log_rp",
-        "Return period T (years)",
-        min = log10(2),
-        max = log10(200),
-        value = log10(10),
-        step = (log10(200) - log10(2)) / 29,
+        "Return period, log10 years",
+        min = 0.3,
+        max = 2.3,
+        value = 1,
+        step = 0.05,
         ticks = FALSE,
         animate = animationOptions(interval = 450, loop = TRUE)
       ),
+      uiOutput("rp_readout"),
       helpText(
         "Press play to sweep T. The slider is on a log scale; the value in the ",
         "subtitle is the runoff return level it corresponds to."
@@ -222,6 +227,17 @@ server <- function(input, output, session) {
     rp <- 10^input$log_rp
     z <- mixture_tail_return_level(b$mt, rp * b$nep)
     list(rp = rp, z = z)
+  })
+
+  # The slider itself can only show its own log10 value, so state T in years.
+  # A block-level tag, not helpText: two adjacent help-blocks run together on
+  # one line under this theme.
+  output$rp_readout <- renderUI({
+    tags$p(
+      class = "text-muted",
+      style = "margin: 0.25rem 0 0.5rem;",
+      tags$strong(sprintf("T = %.1f years", 10^input$log_rp))
+    )
   })
 
   output$surface <- renderPlot({
