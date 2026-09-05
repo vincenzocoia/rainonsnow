@@ -1,0 +1,54 @@
+=== Data-generating process ===
+F(x) = F_GEV(x; mu, sigma, xi) * Phi((x - a)/b)   [ = cdf of max(GEV, Normal) ]
+  GEV:    mu = 0, sigma = 1, xi = 0.2
+  Normal: a  = 1.5, b     = 0.8
+  true support: [-5, Inf)
+The normal contaminates the body and vanishes in the tail, so the GEV is
+the exactly correct TAIL model and a wrong BODY model.
+
+=== Where the contamination dies out ===
+contamination(p) = P(Normal > Q_true(p)): how much pull the normal still has.
+
+     p return_period Q_true   Q_GEV pct_excess contamination      w
+ 0.500          2.00  1.754  0.3803  3.612e+02     3.755e-01 0.0000
+ 0.800          5.00  2.562  1.7492  4.645e+01     9.222e-02 0.0000
+ 0.900         10.00  3.162  2.8421  1.124e+01     1.889e-02 0.0000
+ 0.950         20.00  4.079  4.0564  5.551e-01     6.327e-04 0.0000
+ 0.970         33.33  5.052  5.0514  5.888e-03     4.506e-06 0.7407
+ 0.980         50.00  5.912  5.9116  3.196e-05     1.749e-08 1.0000
+ 0.990        100.00  7.547  7.5468  6.737e-11     2.038e-14 1.0000
+ 0.995        200.00  9.420  9.4198 -1.509e-13     2.087e-23 1.0000
+ 0.999       1000.00 14.903 14.9034 -1.430e-13     2.638e-63 1.0000
+
+=== Weight function ===
+smoothstep, 0 below p0 = 0.95, 1 above p1 = 0.98
+p0 sits where contamination ~ 1e-2 (quantiles still 0.6% above the GEV),
+p1 where contamination ~ 1e-4 (quantiles 0.00% above the GEV).
+Quadrature: 192 levels (24 panels x 8 Gauss-Legendre nodes) on [0.95, 1).
+
+=== Asymptotic targets (fit to one sample of n = 2e6) ===
+What each estimator converges to. Any gap from the true GEV (0, 1, 0.2) is
+bias that no sample size removes.
+
+             mu  sigma     xi
+MLE      1.3973 0.8897 0.0625
+Lmoments 1.3838 0.8189 0.1199
+CQE_L1   0.0111 0.9991 0.1999
+CEE_L2   0.8320 0.8787 0.2186
+
+true GEV tail parameters: mu = 0, sigma = 1, xi = 0.2
+
+--- implied return levels at the asymptotic targets ---
+           T=2   T=5  T=10  T=20  T=50 T=100 T=200  T=500 T=1000
+truth    1.754 2.562 3.162 4.079 5.912 7.547 9.420 12.325 14.903
+MLE      1.727 2.796 3.547 4.301 5.328 6.139 6.982  8.152  9.081
+Lmoments 1.691 2.729 3.499 4.305 5.458 6.410 7.441  8.940 10.188
+CQE_L1   0.391 1.758 2.850 4.063 5.915 7.548 9.418 12.318 14.891
+CEE_L2   1.167 2.392 3.386 4.507 6.245 7.800 9.605 12.447 15.007
+
+--- asymptotic % bias in return level ---
+            T=2    T=5  T=10  T=20  T=50  T=100  T=200  T=500 T=1000
+MLE       -1.53   9.15 12.18  5.44 -9.87 -18.66 -25.88 -33.86 -39.07
+Lmoments  -3.61   6.54 10.67  5.55 -7.67 -15.06 -21.00 -27.46 -31.64
+CQE_L1   -77.71 -31.36 -9.86 -0.40  0.06   0.02  -0.02  -0.06  -0.08
+CEE_L2   -33.45  -6.64  7.11 10.49  5.64   3.36   1.97   0.99   0.70
