@@ -113,7 +113,50 @@ for (ty in c("quantile","expectile")) {
               diff(range(r[,1])), diff(range(r[,2])), diff(range(r[,3])), diff(range(r[,4]))))
 }
 
-cat("\n=== 7. Truth: simulated vs analytic ===\n")
+cat("\n=== 7. The grafted truth ===\n")
+TRG <- make_graft(0, 1, 0.4, 0.90, 3, "tight")
+h <- 1e-7
+cat(sprintf("join u = %.4f at F = %.2f; body N(%.4f, %.4f) truncated above u\n",
+            TRG$u, TRG$Fu, TRG$a, TRG$b))
+cat(sprintf("density continuous at the join: f(u-) = %.8f, f(u+) = %.8f\n",
+            d_graft(TRG$u - h, TRG), d_graft(TRG$u + h, TRG)))
+xt <- seq(TRG$u, 60, length.out = 200)
+cat(sprintf("tail is EXACTLY the GEV above the join: max |F_graft - F_GEV| = %.3e\n",
+            max(abs(p_graft(xt, TRG) - pgev(xt, 0, 1, 0.4)))))
+cat(sprintf("density integrates to: %.8f\n",
+            integrate(function(x) d_graft(x, TRG), -Inf, TRG$u)$value +
+            integrate(function(x) d_graft(x, TRG), TRG$u, Inf, rel.tol = 1e-10)$value))
+ppg <- c(0.001, 0.05, 0.3, 0.6, 0.89, 0.9, 0.91, 0.99, 0.999)
+cat(sprintf("q_graft inverts p_graft: max |F(Q(p)) - p| = %.3e\n",
+            max(abs(p_graft(q_graft(ppg, TRG), TRG) - ppg))))
+set.seed(2); yg <- r_graft(2e6, TRG)
+cat(sprintf("simulated vs analytic quantiles, max rel diff: %.4f\n",
+            max(abs(quantile(yg, ppg) - q_graft(ppg, TRG)) / abs(q_graft(ppg, TRG)))))
+cat(sprintf("fraction above the join: simulated %.4f, analytic %.4f\n",
+            mean(yg >= TRG$u), 1 - TRG$Fu))
+
+cat("\n=== 8. The alpha-elastile ===\n")
+pe <- c(0.1, 0.5, 0.9, 0.99, 0.999); sc <- 1.5
+qq <- qgev(pe, 0, 1, 0.2); ee <- gev_expectile(pe, 0, 1, 0.2); mm <- gev_mean(0, 1, 0.2)
+cat("limits: alpha -> 0 is the quantile, alpha -> 1 the expectile\n")
+for (a in c(1e-6, 1 - 1e-6))
+  cat(sprintf("  alpha = %-9g max|.-q| = %.2e  max|.-e| = %.2e\n", a,
+      max(abs(gev_elastile(pe,0,1,0.2,a,sc) - qq)),
+      max(abs(gev_elastile(pe,0,1,0.2,a,sc) - ee))))
+cat("first-order condition G(t) = 0 at the solution:\n")
+for (a in c(0.1, 0.3, 0.5, 0.7, 0.9)) {
+  tt <- gev_elastile(pe, 0, 1, 0.2, a, sc)
+  G <- (2*a/sc)*((1-2*pe)*gev_partial_moment(tt,0,1,0.2) + (1-pe)*(tt-mm)) +
+       (1-a)*(pgev(tt,0,1,0.2) - pe)
+  cat(sprintf("  alpha = %.1f  max|G| = %.2e\n", a, max(abs(G))))
+}
+M <- sapply(seq(0,1,by=0.1), function(a) gev_elastile(pe,0,1,0.2,a,sc))
+cat(sprintf("always between the quantile and the expectile: %s\n",
+            all(M >= pmin(qq,ee) - 1e-9 & M <= pmax(qq,ee) + 1e-9)))
+cat(sprintf("monotone in alpha at every level: %s\n",
+            all(apply(M, 1, function(r) all(diff(r) >= -1e-9) || all(diff(r) <= 1e-9)))))
+
+cat("\n=== 9. Truth: simulated vs analytic ===\n")
 set.seed(3); ysim <- r_true(2e6)
 pp <- c(0.5,0.9,0.99,0.999)
 cat("quantiles  empirical:", paste(round(quantile(ysim, pp),4), collapse=" "), "\n")

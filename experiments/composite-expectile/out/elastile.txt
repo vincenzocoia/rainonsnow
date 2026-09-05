@@ -1,0 +1,56 @@
+=== The alpha-elastile ===
+At level p it is the root of
+
+  G(t) = (2 alpha / s) [ (1 - 2p) phi(t) + (1 - p)(t - m) ] + (1 - alpha) [ F(t) - p ]
+
+The first bracket vanishes at the expectile, the second at the quantile, and
+both are increasing in t, so G is strictly increasing: the root is unique and
+always lies between the quantile and the expectile. alpha = 0 gives the
+quantile, alpha = 1 the expectile.
+
+scale s (population convention) = 5.9027
+
+=== 1. How much body contamination survives into the alpha-elastile ===
+Percent by which the TRUTH's functional exceeds its GEV component's.
+At alpha = 0 this is the quantile contamination (dies out fast); at alpha = 1
+the expectile contamination (does not).
+
+           p=0.950 (T=20) p=0.980 (T=50) p=0.990 (T=100) p=0.999 (T=1000)
+alpha=0.00          0.555          0.000           0.000            0.000
+alpha=0.02          0.900          0.284           0.252            0.191
+alpha=0.05          1.411          0.693           0.604            0.430
+alpha=0.10          2.246          1.334           1.137            0.746
+alpha=0.20          3.869          2.499           2.056            1.206
+alpha=0.35          6.211          4.047           3.205            1.687
+alpha=0.50          8.483          5.449           4.195            2.047
+alpha=0.70         11.467          7.197           5.382            2.430
+alpha=0.85         13.709          8.467           6.219            2.674
+alpha=1.00         15.987          9.734           7.034            2.892
+
+=== 2. Asymptotic target of each alpha (fit to n = 2e6) ===
+               mu  sigma     xi
+alpha=0.00 0.0111 0.9991 0.1999
+alpha=0.02 0.0231 0.9994 0.2001
+alpha=0.05 0.0350 1.0023 0.1998
+alpha=0.10 0.0633 1.0042 0.1996
+alpha=0.20 0.1332 1.0029 0.1998
+alpha=0.35 0.2579 0.9904 0.2014
+alpha=0.50 0.3941 0.9689 0.2045
+alpha=0.70 0.5753 0.9340 0.2098
+alpha=0.85 0.7061 0.9063 0.2142
+alpha=1.00 0.8320 0.8787 0.2186
+
+true GEV tail: mu = 0, sigma = 1, xi = 0.2
+
+asymptotic % bias in the return level
+             T=10  T=19 T=48 T=107 T=203 T=529 T=1000
+alpha=0.00 -10.24 -0.71 0.07  0.01 -0.02 -0.06  -0.08
+alpha=0.02  -9.80 -0.34 0.36  0.27  0.22  0.16   0.14
+alpha=0.05  -9.20  0.20 0.78  0.62  0.53  0.43   0.37
+alpha=0.10  -8.14  1.09 1.43  1.14  0.98  0.79   0.69
+alpha=0.20  -6.02  2.75 2.53  1.96  1.64  1.28   1.10
+alpha=0.35  -3.00  4.91 3.76  2.76  2.20  1.63   1.36
+alpha=0.50  -0.28  6.69 4.59  3.17  2.42  1.70   1.39
+alpha=0.70   2.87  8.57 5.27  3.35  2.38  1.53   1.22
+alpha=0.85   4.96  9.72 5.57  3.31  2.20  1.28   0.99
+alpha=1.00   6.88 10.74 5.77  3.18  1.94  0.96   0.70

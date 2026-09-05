@@ -151,3 +151,79 @@ fit_cqe <- function(y, grid, w_fun, start = NULL)
   fit_composite(y, grid, w_fun, "quantile", start)
 fit_cee <- function(y, grid, w_fun, start = NULL)
   fit_composite(y, grid, w_fun, "expectile", start)
+
+# --- the alpha-elastile composite estimator ---------------------------------
+#
+# Minimises  sum_i int w(p) rho^alpha_p(y_i, T_alpha(p | theta)) dp  with
+#
+#   rho^alpha_p(y, t) = (alpha/s) |p - I(y<t)| (y-t)^2
+#                     + (1 - alpha) (p - I(y<t)) (y - t)
+#
+# and T_alpha the model's alpha-elastile function. The sum of two strictly
+# consistent scoring functions evaluated at the same point is strictly
+# consistent for the minimiser of the sum, so this is a proper criterion
+# targeting the alpha-elastile, with alpha = 0 and 1 the two estimators already
+# studied.
+#
+# The scale s makes the two terms commensurable -- without it alpha = 1/2 is not
+# a midpoint, since the L2 term has units of y^2 and the L1 term units of y. It
+# is fixed per dataset at the ratio of the two integrated losses evaluated at
+# the preliminary L-moment fit, so that at alpha = 1/2 the two contribute
+# equally there. Being a constant during the optimisation, it does not disturb
+# the properness of the criterion; it only chooses the units in which alpha
+# interpolates.
+
+elastile_scale <- function(y, grid, w_fun, start) {
+  p <- grid$p; wts <- grid$w_quad * w_fun(p)
+  keep <- wts > 0; p <- p[keep]; wts <- wts[keep]
+  ys <- sort(y); n <- length(ys)
+  C1 <- c(0, cumsum(ys)); C2 <- c(0, cumsum(ys^2))
+  S1 <- C1[n + 1]; S2 <- C2[n + 1]
+  piece <- function(tv) {
+    j <- findInterval(tv, ys); c1 <- C1[j + 1]; c2 <- C2[j + 1]
+    lo <- c2 - 2 * tv * c1 + j * tv^2
+    hi <- (S2 - c2) - 2 * tv * (S1 - c1) + (n - j) * tv^2
+    c(L2 = sum(wts * ((1 - p) * lo + p * hi)),
+      L1 = sum(wts * (p * (S1 - n * tv) - (c1 - j * tv))))
+  }
+  e <- gev_expectile(p, start[1], start[2], start[3])
+  q <- qgev(p, start[1], start[2], start[3])
+  s <- piece(e)[["L2"]] / piece(q)[["L1"]]
+  if (!is.finite(s) || s <= 0) s <- max(1e-8, sd(y))
+  s
+}
+
+make_elastile_objective <- function(y, grid, w_fun, alpha, s) {
+  p <- grid$p; wts <- grid$w_quad * w_fun(p)
+  keep <- wts > 0; p <- p[keep]; wts <- wts[keep]
+  ys <- sort(y); n <- length(ys)
+  C1 <- c(0, cumsum(ys)); C2 <- c(0, cumsum(ys^2))
+  S1 <- C1[n + 1]; S2 <- C2[n + 1]
+  function(par) {
+    mu <- par[1]; sigma <- exp(par[2]); xi <- par[3]
+    if (!is.finite(mu) || !is.finite(sigma) || xi < XI_LO || xi > XI_HI) return(BIG)
+    tv <- gev_elastile(p, mu, sigma, xi, alpha, s)
+    if (any(!is.finite(tv))) return(BIG)
+    j <- findInterval(tv, ys); c1 <- C1[j + 1]; c2 <- C2[j + 1]
+    lo <- c2 - 2 * tv * c1 + j * tv^2
+    hi <- (S2 - c2) - 2 * tv * (S1 - c1) + (n - j) * tv^2
+    L2 <- sum(wts * ((1 - p) * lo + p * hi))
+    L1 <- sum(wts * (p * (S1 - n * tv) - (c1 - j * tv)))
+    (alpha / s) * L2 + (1 - alpha) * L1
+  }
+}
+
+fit_elastile <- function(y, grid, w_fun, alpha, start = NULL) {
+  if (is.null(start)) start <- fit_lmom(y)
+  if (any(is.na(start))) start <- c(mean(y), sd(y), 0.1)
+  s <- elastile_scale(y, grid, w_fun, start)
+  obj <- make_elastile_objective(y, grid, w_fun, alpha, s)
+  par0 <- c(start[1], log(max(start[2], 1e-6)), min(max(start[3], XI_LO + .05), 0.6))
+  o <- try(optim(par0, obj, method = "Nelder-Mead",
+                 control = list(maxit = 3000, reltol = 1e-12)), silent = TRUE)
+  if (inherits(o, "try-error") || o$value >= BIG) return(rep(NA_real_, 3))
+  o <- optim(o$par, obj, method = "Nelder-Mead",
+             control = list(maxit = 3000, reltol = 1e-12))
+  if (o$value >= BIG) return(rep(NA_real_, 3))
+  c(o$par[1], exp(o$par[2]), o$par[3])
+}

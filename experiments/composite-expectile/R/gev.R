@@ -211,3 +211,23 @@ gev_second_partial_moment <- function(x, mu, sigma, xi) {
   }
   out
 }
+
+# ---------------------------------------------------------------------------
+# The alpha-elastile: the functional elicited by mixing the expectile and
+# quantile check functions at a single level. See src/gev_elastile.cpp for the
+# identification equation. alpha = 0 recovers the quantile, alpha = 1 the
+# expectile, and the root always lies between the two.
+#
+# `s` carries units of y and makes the two loss terms commensurable; without it
+# alpha = 1/2 is not a midpoint in any meaningful sense.
+# ---------------------------------------------------------------------------
+gev_elastile <- function(p, mu, sigma, xi, alpha, s) {
+  if (alpha <= 0) return(qgev(p, mu, sigma, xi))
+  if (alpha >= 1) return(gev_expectile(p, mu, sigma, xi))
+  q0 <- qgev(p, 0, 1, xi)
+  e0 <- gev_expectile_std_cpp(p, xi)
+  tau <- gev_elastile_std_cpp(p, xi,
+                              c = 2 * alpha * sigma / s, d = 1 - alpha,
+                              bracket_lo = pmin(q0, e0), bracket_hi = pmax(q0, e0))
+  mu + sigma * tau
+}

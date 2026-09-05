@@ -92,3 +92,42 @@ expectile_true <- function(p, tr = TRUTH, m = NULL) {
     uniroot(g, c(lo, hi), tol = 1e-10)$root
   }, numeric(1))
 }
+
+# Density of the contaminated truth: f(x) = f_GEV(x) Phi(x) + F_GEV(x) phi(x),
+# the derivative of the product of cdfs.
+dgev <- function(x, mu, sigma, xi) {
+  t <- 1 + xi * (x - mu) / sigma
+  out <- numeric(length(x))
+  ok <- t > 0
+  if (abs(xi) < 1e-12) {
+    u <- (x - mu) / sigma
+    return(exp(-u - exp(-u)) / sigma)
+  }
+  z <- t[ok]^(-1 / xi)
+  out[ok] <- z^(xi + 1) * exp(-z) / sigma
+  out
+}
+
+d_true <- function(x, tr = TRUTH) {
+  dgev(x, tr$mu, tr$sigma, tr$xi) * pnorm(x, tr$a, tr$b) +
+    pgev(x, tr$mu, tr$sigma, tr$xi) * dnorm(x, tr$a, tr$b)
+}
+
+# The alpha-elastile of the true (contaminated) distribution, for the same
+# identification equation as the model's. Used to show how the contamination
+# that survives into the fitted functional interpolates with alpha.
+elastile_true <- function(p, alpha, s, tr = TRUTH, m = NULL) {
+  if (is.null(m)) m <- mean_true(tr)
+  if (alpha <= 0) return(q_true(p, tr))
+  if (alpha >= 1) return(expectile_true(p, tr, m))
+  q <- q_true(p, tr); e <- expectile_true(p, tr, m)
+  vapply(seq_along(p), function(i) {
+    pp <- p[i]
+    G <- function(t) (2 * alpha / s) *
+      ((1 - 2 * pp) * partial_moment_true(t, tr) + (1 - pp) * (t - m)) +
+      (1 - alpha) * (p_true(t, tr) - pp)
+    lo <- min(q[i], e[i]); hi <- max(q[i], e[i])
+    if (hi - lo < 1e-12) return(lo)
+    uniroot(G, c(lo, hi), tol = 1e-11)$root
+  }, numeric(1))
+}
