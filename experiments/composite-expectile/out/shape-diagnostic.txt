@@ -1,0 +1,27 @@
+=== Fitted shape parameter vs sample size ===
+Truth xi = 0.2. Shape bounded at -0.95 (wider than the main run's -0.45).
+200 replicates per cell.
+
+     n xi_L1.quantile at_bound_L1.quantile xi_L2.expectile
+ 5e+01        -0.8193                0.280         -0.5169
+ 1e+02        -0.2418                0.115         -0.1866
+ 2e+02        -0.0102                0.025         -0.0591
+ 5e+02         0.1741                0.000          0.0929
+ 2e+03         0.1796                0.000          0.1640
+ 1e+04         0.2061                0.000          0.2115
+ 1e+05         0.2001                0.000          0.2176
+ at_bound_L2.expectile wt_beyond_data
+                 0.140         0.4473
+                 0.015         0.2697
+                 0.000         0.1342
+                 0.000         0.0523
+                 0.000         0.0140
+                 0.000         0.0030
+                 0.000         0.0003
+
+xi_*        : median fitted shape
+at_bound_*  : fraction of fits sitting on the shape bound
+wt_beyond_data: share of the weight function's mass at levels above the
+                largest observation, where the empirical quantile and
+                expectile functions have both saturated at the sample max
+                and the loss can only pull the fitted tail downward.

@@ -1,0 +1,82 @@
+=== 1. Closed form for psi(x) = E[(X-x)^2 1{X>=x}] ===
+(a) at the lower endpoint psi must equal E[(X - lo)^2] = Var + (mean - lo)^2;
+(b) psi'(x) = -2 phi(x) identically, checked by central difference against
+    the independently derived first partial moment;
+(c) Monte Carlo, which is only a weak check for large xi -- E[(X-x)^4] is
+    infinite once xi >= 1/4, so the MC estimator itself has infinite variance.
+
+GEV(0,1,+0.20)
+   (a) psi(lo) = 37.22980622    Var + (m-lo)^2 = 37.22980622
+   (b) max rel error in psi'(x) = -2 phi(x): 2.24e-10
+   (c) MC / closed form at Q(.3, .5, .9, .99): 1.004  1.006  1.014  1.039
+GEV(0,1,+0.35)
+   (a) psi(lo) = 24.42097133    Var + (m-lo)^2 = 24.42097133
+   (b) max rel error in psi'(x) = -2 phi(x): 1.33e-10
+   (c) MC / closed form at Q(.3, .5, .9, .99): 1.024  1.027  1.045  1.081
+GEV(0,1,+0.45)
+   (a) psi(lo) = 46.98028493    Var + (m-lo)^2 = 46.98028493
+   (b) max rel error in psi'(x) = -2 phi(x): 1.69e-10
+   (c) MC / closed form at Q(.3, .5, .9, .99): 0.921  0.917  0.900  0.870
+GEV(2,3,+0.10)
+   (a) psi(lo) = 1047.80674235    Var + (m-lo)^2 = 1047.80674235
+   (b) max rel error in psi'(x) = -2 phi(x): 2.09e-08
+   (c) MC / closed form at Q(.3, .5, .9, .99): 1.002  1.003  1.008  1.028
+GEV(0,1,-0.20)
+   (b) max rel error in psi'(x) = -2 phi(x): 1.10e-09
+   (c) MC / closed form at Q(.3, .5, .9, .99): 1.001  1.001  1.003  1.018
+
+=== 2. How each risk decays as p -> 1 ===
+Write u = 1 - p. With the model at the truth, the tail behaviour is
+
+   quantile :  r_p ~ u^(1 - xi)      (from the (1-p)(q - m) term)
+   expectile:  r_p ~ u^(1 - 2 xi)    (from the (1-p) E[(e-Y)^2] term)
+
+so int^1 w(p) r_p dp converges for any BOUNDED w whenever xi < 1 (quantile)
+or xi < 1/2 (expectile). Measured exponents (slope of log r vs log u):
+
+xi = 0.10   quantile slope  0.846 (predicted  0.90)   expectile slope  0.689 (predicted  0.80)
+xi = 0.20   quantile slope  0.771 (predicted  0.80)   expectile slope  0.548 (predicted  0.60)
+xi = 0.30   quantile slope  0.686 (predicted  0.70)   expectile slope  0.380 (predicted  0.40)
+xi = 0.45   quantile slope  0.545 (predicted  0.55)   expectile slope  0.098 (predicted  0.10)
+
+=== 3. The condition on an UNBOUNDED weight ===
+For w(p) ~ (1 - p)^(-a) as p -> 1, int w(p) r_p dp converges iff
+
+   quantile :  a < 2 - xi
+   expectile:  a < 2 - 2 xi
+
+At xi = 0.2 that is a < 1.8 and a < 1.6. So a weight that blows up like
+1/(1-p) (a = 1) is still admissible for both, and one like 1/(1-p)^2 is
+admissible for neither. The weight used here is bounded -- it is exactly 1
+on [p1, 1) and exactly 0 below p0 -- so it satisfies both conditions with
+room to spare, for every xi in the range the estimators explore.
+
+=== 4. The condition that actually separates L1 from L2 ===
+The quantile risk needs E|Y| < Inf (xi < 1). The expectile risk needs
+E[Y^2] < Inf (xi < 1/2): above that, E[(e - Y)^2 1{Y < e}] is infinite for
+every e and the whole criterion is +Inf regardless of the weight.
+
+xi = 0.30   r_0.99 quantile =   0.1462   expectile = 1.9139
+xi = 0.45   r_0.99 quantile =   0.2848   expectile = 24.7991
+xi = 0.50   r_0.99 quantile =   0.3642   expectile = Inf
+xi = 0.60   r_0.99 quantile =   0.6228   expectile = Inf
+
+This narrows where the L2 version can be used at all, relative to L1, and
+it narrows it exactly in the heavy-tailed direction the method is aimed at.
+The fix is standard: minimise the loss DIFFERENCE against a fixed reference,
+sum_i int w(p) [rho_p(y_i, T(p)) - rho_p(y_i, T_ref(p))] dp, which has the
+same minimiser and is finite whenever E|Y| < Inf. In this experiment
+xi = 0.2, so the raw criterion is finite and nothing was needed.
+
+=== 5. Finiteness of the criterion actually used here ===
+weight support: [0.95, 1), bounded by 1
+int w(p) dp = 0.035000
+share of the weight above p = 0.99     : 0.2830
+share of the weight above p = 0.999    : 0.0273
+share of the weight above p = 0.9999   : 0.0027
+share of the weight above p = 0.99999  : 0.0002
+
+population risk of the weighted criterion at the true GEV tail (xi = 0.2):
+  quantile  = 0.004831
+  expectile = 0.028516
+Both finite, as the conditions above require.

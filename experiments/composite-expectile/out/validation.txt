@@ -1,0 +1,93 @@
+=== 1. The loss functions target what they claim ===
+Minimising the sample loss at a single level p should return that level's
+expectile (L2) or quantile (L1). Note the absolute value in the expectile
+loss: without it the criterion is unbounded below.
+
+p=0.30  argmin |p-I|(y-e)^2 =   0.3536  (true expectile   0.3513)
+        argmin (p-I)(y-e)^2 = 9999.9998  <- no absolute value: runs to the boundary
+        argmin (p-I)(y-q)   =  -0.1828  (true quantile   -0.1822)
+p=0.70  argmin |p-I|(y-e)^2 =   1.4083  (true expectile   1.4032)
+        argmin (p-I)(y-e)^2 = 9999.9998  <- no absolute value: runs to the boundary
+        argmin (p-I)(y-q)   =   1.1462  (true quantile    1.1449)
+p=0.95  argmin |p-I|(y-e)^2 =   3.5066  (true expectile   3.4881)
+        argmin (p-I)(y-e)^2 = 9999.9998  <- no absolute value: runs to the boundary
+        argmin (p-I)(y-q)   =   4.0766  (true quantile    4.0564)
+
+=== 2. Analytic partial moment phi(x) = E[(X-x)^+] ===
+against  phi(x) = int_{F(x)}^1 (Q(u) - x) du, computed numerically.
+
+GEV(0,1,+0.20)  max rel err 1.86e-12
+GEV(0,1,+0.40)  max rel err 2.15e-12
+GEV(2,3,+0.10)  max rel err 4.14e-13
+GEV(0,1,-0.20)  max rel err 1.25e-13
+
+and at the lower endpoint, where phi must equal (mean - endpoint):
+GEV(0,1,+0.20)  phi(lo) = 5.8211485686   mean - lo = 5.8211485686
+GEV(0,1,+0.40)  phi(lo) = 3.7229806220   mean - lo = 3.7229806220
+GEV(0,1,+0.70)  phi(lo) = 4.2736699824   mean - lo = 4.2736699824
+
+=== 3. Expectile solver ===
+(a) identification equation  p E[(X-e)^+] = (1-p) E[(e-X)^+]  at the solution:
+GEV(+0,1,+0.20)  max residual 3.43e-16
+GEV(+0,1,+0.40)  max residual 7.49e-16
+GEV(+2,3,+0.10)  max residual 4.24e-14
+GEV(+0,1,-0.20)  max residual 5.10e-14
+GEV(-1,2,+0.30)  max residual 4.16e-15
+GEV(+0,1,+0.70)  max residual 1.17e-15
+
+(b) C++ solver vs the R reference implementation:
+xi=-0.30  max rel diff 7.71e-12
+xi=-0.10  max rel diff 7.48e-12
+xi=+0.05  max rel diff 1.49e-11
+xi=+0.20  max rel diff 4.12e-14
+xi=+0.40  max rel diff 4.83e-14
+xi=+0.70  max rel diff 6.83e-13
+xi=+0.85  max rel diff 9.42e-12
+
+(c) location-scale equivariance, e(p; mu, sigma) == mu + sigma e(p; 0, 1):
+max abs diff: 0 
+
+(d) vs distionary::eval_expectile (branch 'expectiles'):
+GEV(+0,1,+0.20)  max rel diff 3.12e-10
+GEV(+0,1,+0.40)  max rel diff 6.44e-09
+GEV(+2,3,+0.10)  max rel diff 2.62e-09
+GEV(+0,1,-0.20)  max rel diff 2.26e-09
+GEV(-1,2,+0.30)  max rel diff 4.08e-09
+
+(e) distionary on a very heavy tail (xi = 0.7), where its numerical
+    integration of the survival function is expected to struggle:
+    distionary: -0.80198 -0.48788 0.34545 1.4988 2.8451 5.6902 
+    here      : -0.80198 -0.48788 0.34545 1.4988 2.8451 5.1285 
+
+=== 4. Fast composite loss == the direct n-by-K definition ===
+n=  50 quantile  max rel diff 1.30e-15
+n=  50 expectile max rel diff 2.87e-15
+n= 100 quantile  max rel diff 6.88e-16
+n= 100 expectile max rel diff 2.08e-15
+n= 500 quantile  max rel diff 2.99e-15
+n= 500 expectile max rel diff 1.66e-15
+
+=== 5. Quadrature: fitted 100-year return level vs rule refinement ===
+
+quantile: max relative change vs the finest rule
+    6x8    12x8    24x8    48x8    96x8 
+0.01030 0.00590 0.00171 0.00153 0.00000 
+
+expectile: max relative change vs the finest rule
+     6x8     12x8     24x8     48x8     96x8 
+7.08e-04 1.41e-04 2.79e-05 1.53e-05 0.00e+00 
+
+The experiment uses 24 x 8 = 192 levels.
+
+=== 6. Optimiser reliability: multi-start on one sample ===
+
+quantile: spread of the 5 solutions (max - min)
+  mu 3.75e-02  sigma 1.41e-02  xi 1.50e-03  loss 5.64e-09
+
+expectile: spread of the 5 solutions (max - min)
+  mu 1.29e-05  sigma 1.10e-05  xi 1.17e-06  loss 2.38e-14
+
+=== 7. Truth: simulated vs analytic ===
+quantiles  empirical: 1.7556 3.1636 7.558 14.8741 
+           analytic : 1.7539 3.1617 7.5468 14.9034 
+mean       empirical: 1.968   analytic: 1.9666 

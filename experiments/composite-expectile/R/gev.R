@@ -173,3 +173,41 @@ gev_expectile <- function(p, mu, sigma, xi, ...) {
     gev_expectile_std_cpp(p, xi) else gev_expectile_std(p, xi, ...)
   mu + sigma * std
 }
+
+# ---------------------------------------------------------------------------
+# Second-order upper partial moment  psi(x) = E[(X - x)^2 1{X >= x}].
+#
+# Needed to decide when the composite losses are finite. Integrating by parts
+# twice, psi(x) = 2 int_x^Inf (t - x) S(t) dt, and the same substitution
+# z = (1 + xi (t - mu)/sigma)^(-1/xi) used for the first partial moment gives
+#
+#   psi(x) = (2 sigma^2 / xi) [ J(z_x, 2 xi) - z_x^{-xi} J(z_x, xi) ],
+#   J(a, s) = int_0^a (1 - e^{-z}) z^{-s-1} dz
+#           = [ gammainc_lower(1 - s, a) - (1 - e^{-a}) a^{-s} ] / s.
+#
+# J(., 2 xi) exists only for xi < 1/2 -- which is exactly the condition for the
+# GEV to have a finite second moment. Above it, psi is infinite everywhere.
+# ---------------------------------------------------------------------------
+gev_J <- function(a, s) {
+  if (s >= 1) return(rep(Inf, length(a)))
+  (pgamma(a, shape = 1 - s) * gamma(1 - s) - (-expm1(-a)) * a^(-s)) / s
+}
+
+gev_second_partial_moment <- function(x, mu, sigma, xi) {
+  if (xi >= 0.5) return(rep(Inf, length(x)))
+  ends <- gev_endpoints(mu, sigma, xi)
+  m <- gev_mean(mu, sigma, xi)
+  v <- sigma^2 * (gamma(1 - 2 * xi) - gamma(1 - xi)^2) / xi^2
+  out <- numeric(length(x))
+  # At or below the lower endpoint X always exceeds x, so psi = E[(X-x)^2].
+  below <- x <= ends[1]
+  above <- x >= ends[2]
+  mid <- !below & !above
+  out[below] <- v + (m - x[below])^2
+  out[above] <- 0
+  if (any(mid)) {
+    z <- gev_z(x[mid], mu, sigma, xi)
+    out[mid] <- (2 * sigma^2 / xi) * (gev_J(z, 2 * xi) - z^(-xi) * gev_J(z, xi))
+  }
+  out
+}

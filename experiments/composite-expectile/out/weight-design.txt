@@ -1,0 +1,65 @@
+=== Weight design, n = 100, 2000 replicates ===
+'capped' means the weight falls back to zero by p = 1 - 1/n, the level of
+the largest observation, instead of staying at one up to p = 1.
+
+--- median fitted shape (true xi = 0.2) and fraction stuck on the shape bound ---
+                              xi_median frac_at_bound
+p0=0.90, uncapped | quantile      0.130         0.117
+p0=0.90, uncapped | expectile    -0.029         0.021
+p0=0.95, uncapped | quantile     -0.264         0.372
+p0=0.95, uncapped | expectile    -0.196         0.177
+p0=0.98, uncapped | quantile     -0.450         0.919
+p0=0.98, uncapped | expectile    -0.450         0.598
+p0=0.90, capped | quantile        0.332         0.190
+p0=0.90, capped | expectile       0.154         0.015
+p0=0.95, capped | quantile        0.190         0.203
+p0=0.95, capped | expectile       0.060         0.090
+
+--- MSE of the return level, relative to GEV MLE (below 1 beats the MLE) ---
+                                 T=10    T=19   T=48 T=107 T=203 T=529 T=1000
+p0=0.90, uncapped | quantile    0.950   1.773  1.777 1.273 1.293 1.909  2.941
+p0=0.90, uncapped | expectile   6.595  11.062  4.804 2.191 1.553 1.203  1.112
+p0=0.95, uncapped | quantile   24.531   4.909  2.296 1.552 1.364 1.510  1.902
+p0=0.95, uncapped | expectile  12.758  24.019  9.838 3.583 2.066 1.276  1.097
+p0=0.98, uncapped | quantile  591.796 130.391  3.832 2.046 1.803 1.372  1.207
+p0=0.98, uncapped | expectile  22.746  48.785 18.297 5.388 2.522 1.250  1.050
+p0=0.90, capped | quantile      0.872   1.674  2.011 2.322 3.759 9.981 20.274
+p0=0.90, capped | expectile     3.142   4.987  2.600 1.466 1.208 1.179  1.321
+p0=0.95, capped | quantile     12.516   3.708  2.120 2.051 2.973 7.520 15.359
+p0=0.95, capped | expectile     5.901   9.056  3.968 1.928 1.456 1.269  1.312
+
+--- bias ---
+                                T=10   T=19   T=48  T=107  T=203  T=529 T=1000
+p0=0.90, uncapped | quantile  -0.098  0.142 -0.077 -0.327 -0.440 -0.137  0.735
+p0=0.90, uncapped | expectile  0.795  1.068  0.776  0.223 -0.419 -1.755 -2.926
+p0=0.95, uncapped | quantile  -0.837 -0.001  0.180 -0.132 -0.571 -1.356 -1.795
+p0=0.95, uncapped | expectile  1.186  1.728  1.560  0.897  0.040 -1.820 -3.476
+p0=0.98, uncapped | quantile  -5.109 -2.058  0.001  0.289 -0.197 -1.937 -3.712
+p0=0.98, uncapped | expectile  1.684  2.566  2.471  1.611  0.489 -1.889 -3.943
+p0=0.90, capped | quantile    -0.021  0.097 -0.059  0.240  1.247  5.634 12.392
+p0=0.90, capped | expectile    0.347  0.399 -0.018 -0.440 -0.772 -1.147 -1.205
+p0=0.95, capped | quantile    -0.089  0.186 -0.005 -0.017  0.492  3.480  8.601
+p0=0.95, capped | expectile    0.599  0.717  0.264 -0.309 -0.846 -1.699 -2.210
+
+--- sd ---
+                               T=10  T=19  T=48 T=107 T=203  T=529 T=1000
+p0=0.90, uncapped | quantile  0.429 0.661 1.373 2.222 3.367  6.750 11.053
+p0=0.90, uncapped | expectile 0.844 1.307 2.123 2.937 3.699  5.064  6.152
+p0=0.95, uncapped | quantile  2.075 1.125 1.552 2.476 3.441  5.849  8.726
+p0=0.95, uncapped | expectile 1.094 1.789 2.834 3.659 4.293  5.211  5.805
+p0=0.98, uncapped | quantile  9.730 5.417 2.019 2.832 4.006  5.385  6.047
+p0=0.98, uncapped | expectile 1.343 2.445 3.654 4.330 4.718  5.126  5.315
+p0=0.90, capped | quantile    0.421 0.649 1.461 3.023 5.656 14.372 26.312
+p0=0.90, capped | expectile   0.722 1.061 1.663 2.369 3.191  5.180  7.327
+p0=0.95, capped | quantile    1.596 0.959 1.502 2.850 5.127 12.939 23.808
+p0=0.95, capped | expectile   0.919 1.349 2.037 2.746 3.503  5.235  7.062
+
+--- GEV MLE, for reference ---
+         bias    sd    mse
+T=10    0.329 0.309  0.204
+T=19    0.189 0.471  0.257
+T=48   -0.644 0.805  1.063
+T=107  -1.601 1.182  3.959
+T=203  -2.548 1.558  8.917
+T=529  -4.325 2.272 23.864
+T=1000 -5.787 2.866 41.704

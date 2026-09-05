@@ -41,7 +41,16 @@ summarise <- function(rl) {
 
 load_n <- function(n) {
   d <- readRDS(sprintf("out/fits-n%d.rds", n))
-  lapply(d$fits, function(f) summarise(return_levels(f)))
+  lapply(d$fits, function(f) {
+    s <- summarise(return_levels(f))
+    s$xi_median <- median(f[, "xi"], na.rm = TRUE)
+    # The shape is bounded to [XI_LO, XI_HI] for all four estimators alike. How
+    # often a fit sits on that bound says how much of the answer is the
+    # constraint rather than the estimator.
+    s$frac_at_xi_bound <- mean(f[, "xi"] <= XI_LO + 1e-6, na.rm = TRUE)
+    s$n_failed <- sum(!complete.cases(f))
+    s
+  })
 }
 
 S <- list(); for (n in c(50, 100, 200)) S[[as.character(n)]] <- load_n(n)
@@ -131,6 +140,13 @@ idx <- sapply(Tshow, function(t) which.min(abs(Tp - t)))
 for (n in c(50, 100, 200)) {
   ss <- S[[as.character(n)]]
   cat(sprintf("\n---------------- n = %d ----------------\n", n))
+  cat("\nfitted shape and how often it sits on the bound (true xi = 0.2, bound = ",
+      XI_LO, ")\n", sep = "")
+  print(round(data.frame(
+    xi_median        = sapply(names(METHODS), function(m) ss[[m]]$xi_median),
+    frac_at_xi_bound = sapply(names(METHODS), function(m) ss[[m]]$frac_at_xi_bound),
+    failed_fits      = sapply(names(METHODS), function(m) ss[[m]]$n_failed),
+    row.names = METHODS), 3))
   for (stat in c("bias", "sd", "rmse", "rel_rmse_pct", "mse_ratio_vs_mle",
                  "mse_MC_se_pct_of_mse", "medae")) {
     cat(sprintf("\n%s\n", stat))

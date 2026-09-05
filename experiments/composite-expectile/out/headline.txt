@@ -1,0 +1,66 @@
+=== Headline comparison, n = 100, 2000 replicates ===
+
+
+bias
+                                    T=2   T=10   T=19   T=48  T=107  T=203
+GEV MLE                          -0.025  0.329  0.189 -0.644 -1.601 -2.548
+GEV L-moments                    -0.056  0.303  0.216 -0.465 -1.210 -1.914
+Composite quantile (L1)          -6.300 -0.837 -0.001  0.180 -0.132 -0.571
+Composite expectile (L2)         -2.452  1.186  1.728  1.560  0.897  0.040
+Composite quantile (L1), capped  -2.689 -0.089  0.186 -0.005 -0.017  0.492
+Composite expectile (L2), capped -0.748  0.599  0.717  0.264 -0.309 -0.846
+                                  T=529 T=1000
+GEV MLE                          -4.325 -5.787
+GEV L-moments                    -3.167 -4.141
+Composite quantile (L1)          -1.356 -1.795
+Composite expectile (L2)         -1.820 -3.476
+Composite quantile (L1), capped   3.480  8.601
+Composite expectile (L2), capped -1.699 -2.210
+
+sd
+                                   T=2  T=10  T=19  T=48 T=107 T=203  T=529
+GEV MLE                          0.097 0.309 0.471 0.805 1.182 1.558  2.272
+GEV L-moments                    0.097 0.319 0.549 1.082 1.748 2.474  3.998
+Composite quantile (L1)          8.888 2.075 1.125 1.552 2.476 3.441  5.849
+Composite expectile (L2)         2.402 1.094 1.789 2.834 3.659 4.293  5.211
+Composite quantile (L1), capped  7.061 1.596 0.959 1.502 2.850 5.127 12.939
+Composite expectile (L2), capped 1.148 0.919 1.349 2.037 2.746 3.503  5.235
+                                 T=1000
+GEV MLE                           2.866
+GEV L-moments                     5.404
+Composite quantile (L1)           8.726
+Composite expectile (L2)          5.805
+Composite quantile (L1), capped  23.808
+Composite expectile (L2), capped  7.062
+
+mse
+                                     T=2  T=10  T=19   T=48  T=107  T=203
+GEV MLE                            0.010 0.204 0.257  1.063  3.959  8.917
+GEV L-moments                      0.013 0.193 0.348  1.387  4.520  9.782
+Composite quantile (L1)          118.658 5.004 1.264  2.440  6.146 12.160
+Composite expectile (L2)          11.777 2.603 6.183 10.459 14.185 18.425
+Composite quantile (L1), capped   57.062 2.553 0.955  2.254  8.120 26.515
+Composite expectile (L2), capped   1.876 1.204 2.331  4.218  7.633 12.984
+                                   T=529  T=1000
+GEV MLE                           23.864  41.704
+GEV L-moments                     26.006  46.338
+Composite quantile (L1)           36.032  79.324
+Composite expectile (L2)          30.457  45.767
+Composite quantile (L1), capped  179.455 640.537
+Composite expectile (L2), capped  30.274  54.725
+
+MSE relative to GEV MLE
+                                       T=2   T=10   T=19  T=48 T=107 T=203
+GEV MLE                              1.000  1.000  1.000 1.000 1.000 1.000
+GEV L-moments                        1.244  0.948  1.352 1.304 1.142 1.097
+Composite quantile (L1)          11766.295 24.531  4.909 2.296 1.552 1.364
+Composite expectile (L2)          1167.801 12.758 24.019 9.838 3.583 2.066
+Composite quantile (L1), capped   5658.341 12.516  3.708 2.120 2.051 2.973
+Composite expectile (L2), capped   186.067  5.901  9.056 3.968 1.928 1.456
+                                 T=529 T=1000
+GEV MLE                          1.000  1.000
+GEV L-moments                    1.090  1.111
+Composite quantile (L1)          1.510  1.902
+Composite expectile (L2)         1.276  1.097
+Composite quantile (L1), capped  7.520 15.359
+Composite expectile (L2), capped 1.269  1.312
