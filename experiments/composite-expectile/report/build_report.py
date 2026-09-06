@@ -1537,6 +1537,50 @@ estimate and the MSE point at the same place, which they did not in the GEV stud
 period &mdash; an oracle no schedule can beat &mdash; improves on the best <em>single</em>
 &alpha; (0.50) by <b>14% at the very far tail and 4.4% on average</b>. That is the entire prize
 available, before any cost of choosing the schedule.</p></div>
+
+<h3>The other dial: L<sup>a</sup> at a = 1.5</h3>
+<p>The exponent in the loss is a second, independent way to sit between L1 and L2. Rather than
+adding the two check functions, raise the residual to a power a between 1 and 2 &mdash; the
+L<sup>a</sup>-quantiles. The two families share endpoints but are different curves in between: at
+p = 0.9 for GPD(0, 1, 0.2) the quantile is 2.925 and the expectile 2.875, while the 1.5-quantile is
+2.747, <em>outside</em> the interval they span. So neither is a reparameterisation of the other and
+a result for one does not transfer. Run on the same 2000 replicates, against the same reference:</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>MSE relative to POT&ndash;MLE(0.90), n = 100, 2000 replicates, all grafted. Monte Carlo
+standard errors on these ratios are 0.014&ndash;0.072, rising with T.</caption>
+<thead><tr><th>estimator</th><th>T=19</th><th>T=48</th><th>T=107</th><th>T=203</th><th>T=529</th><th>T=1000</th><th>win rate, T=1000</th></tr></thead>
+<tbody>
+<tr class="ref"><td>POT&ndash;L-moments(0.90)</td><td>0.81</td><td>0.96</td><td>0.88</td><td>0.70</td><td>0.44</td><td>0.32</td><td>0.73</td></tr>
+<tr><td>a = 1 &nbsp;(pure quantile)</td><td>0.64</td><td>0.89</td><td class="lose">1.15</td><td class="lose">1.24</td><td class="lose">1.08</td><td>0.92</td><td>0.61</td></tr>
+<tr><td>a = 1.5</td><td>0.69</td><td>0.78</td><td>0.88</td><td>0.82</td><td>0.54</td><td>0.39</td><td>0.71</td></tr>
+<tr><td>a = 2 &nbsp;(pure expectile)</td><td>0.89</td><td>0.86</td><td>0.87</td><td>0.70</td><td class="win">0.36</td><td class="win">0.21</td><td class="win">0.77</td></tr>
+<tr><td>&alpha;-elastile, &alpha; = 0.5</td><td class="win">0.65</td><td class="win">0.74</td><td class="win">0.79</td><td class="win">0.67</td><td>0.39</td><td>0.24</td><td>0.74</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>The exponent dial is dominated by the mixing dial. At every one of the six return periods the
+&alpha; = 0.5 elastile beats a = 1.5, and in the far tail pure L2 beats it too &mdash; 0.21 against
+0.39 at T = 1000. What a = 1.5 does have is the most <em>uniform</em> win rate of anything here,
+never dropping below 0.65 at any return period where L1 falls to 0.52 and L2 to 0.62; it is the
+safest single choice if the return period of interest is unknown. But it is nobody's optimum.</p>
+
+<div class="note"><span class="lab">A caveat that runs in a = 1.5's favour</span>
+<p>The closed form used for the upper fractional moment needs &xi; &gt; 0, so the a = 1.5 fitter is
+constrained to positive shape and <b>14.2%</b> of its fits sit pinned at that bound. The
+unconstrained fitters put 10&ndash;23% of their fits <em>below</em> zero, and since every fitter
+here underestimates &xi; on average, censoring at zero prevents the worst underestimates rather
+than causing them. So the constraint flatters a = 1.5 &mdash; and it still loses to the elastile at
+every return period. Lifting it means integrating over the finite upper endpoint of a negative-shape
+GPD, which is straightforward but not done here.</p></div>
+
+<p>Read with the moment conditions of section 7, this gives the two dials a clean division of
+labour. The exponent is the one that widens the domain &mdash; a = 1.5 keeps the root-n limit out
+to &xi; &lt; 1 where L2 stops at &xi; &lt; 1/2 &mdash; and buys little accuracy. The mixing weight
+buys the accuracy and widens nothing. For &xi; = 0.325, comfortably inside both domains, there is
+no reason to reach for the exponent; for a tail heavy enough that L2 has no limit distribution,
+it is the only continuous route back to L1.</p>
 </div>
 </section>
 """

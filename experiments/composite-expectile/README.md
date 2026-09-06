@@ -146,12 +146,43 @@ alpha separately at every return period - an oracle no schedule can beat - impro
 single alpha by 14% at the far tail and 4.4% on average, which is the whole prize available to a
 level-dependent alpha.
 
-**14. Admissible weights.** For `w(p) ~ (1-p)^(-a)`: finite iff `a < 2 - xi` (L1) or `a < 2 - 2 xi`
-(L2). The remembered `a < 1` is the L1 condition at xi = 1. The binding condition is on the truth:
-L1 needs a finite mean (xi < 1), L2 a finite variance (xi < 1/2), above which the raw criterion is
-+Inf everywhere and only the loss-difference form is usable. Weights need not be bounded by 1.
+**14. L^a at a = 1.5: the exponent dial is dominated by the mixing dial.** Raising the residual to
+a power between 1 and 2 (the L^a-quantiles) is a second, independent way to sit between L1 and L2,
+and a different one: at p = 0.9 for GPD(0, 1, 0.2) the quantile is 2.925 and the expectile 2.875,
+while the 1.5-quantile is 2.747, outside the interval they span. On the GPD study, a = 1.5 gives MSE
+ratios 0.69 / 0.78 / 0.88 / 0.82 / 0.54 / 0.39 across T = 19 to 1000 - beaten by the alpha = 0.5
+elastile at every return period, and by pure L2 in the far tail (0.21 at T = 1000). It does have the
+most uniform win rate of anything tried, never below 0.65, so it is the safest single choice when
+the return period of interest is unknown; but it is nobody's optimum. Caveat in its favour: the
+closed form for the upper fractional moment needs xi > 0, so 14.2% of its fits are pinned at that
+bound, where the unconstrained fitters put 10-23% below zero - and since all of them underestimate
+xi, that censoring helps rather than hurts it.
 
-**15. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
+**15. Admissible weights.** For `w(p) ~ (1-p)^(-a)`: finite iff `a < 2 - xi` (L1) or `a < 2 - 2 xi`
+(L2). The remembered `a < 1` is the L1 condition at xi = 1. Weights need not be bounded by 1.
+
+**16. Moment conditions: three thresholds, not one.** Writing the loss as
+`rho_{p,a}(y,t) = |p - I(y<t)| |y-t|^a`, the raw criterion needs `E|Y|^a`, the functional is defined
+under `E|Y|^(a-1)` (the loss-difference form and the identification equation are one order cheaper),
+and the root-n limit needs `E|Y|^(2(a-1))`. For a GPD: MLE has no condition; L-moments/PWM are
+consistent for xi < 1 and asymptotically normal for xi < 1/2; the composite quantile needs nothing
+at all; L^a is defined for xi < 1/(a-1) with root-n to xi < 1/(2(a-1)); L2 is defined for xi < 1
+with root-n to xi < 1/2. Two consequences. L-moments and L2 have identical domains, so the
+practitioner comparison in finding 12 is like-for-like on tail heaviness. And the alpha-elastile is
+a sum, so every alpha > 0 inherits L2's thresholds - mixing cannot widen the domain, only the
+exponent can. That is the division of labour between the two dials: `a` buys domain, `alpha` buys
+accuracy.
+
+**17. Everything here is an M-estimator, and the elastile is an M-quantile.** The composite
+criterion is `rho~(y;theta) = int w(p) rho_p(y, T(p|theta)) dp`, which is an M-estimator by
+definition, so the sandwich `V = A^-1 B A^-1` gives analytic standard errors and identifies the
+variance explosion as `A` going near-singular. More sharply, the alpha-elastile with scale `s` is
+exactly the M-quantile of Breckling & Chambers (1988), `E[|p - I(Y<t)| psi(Y-t)] = 0`, with
+`psi(u) = (2 alpha / s) u + (1 - alpha) sign(u)` - verified against the definition to 1e-17. Note
+the robustness logic inverts here: bounded psi is the "robust" choice, but in tail estimation the
+outliers are the data, and L2 (unbounded psi) has one-half to one-sixth of L1's far-tail error.
+
+**18. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
 above the largest observation, where the empirical functional has saturated; the fitted shape is
 dragged hard negative in proportion to that share.
 
@@ -171,6 +202,7 @@ R/smoothgraft.R  return levels from distplyr's smooth graft
 R/gpd.R          GPD: closed-form partial moments, expectiles
 R/gpd_estimators.R  peaks-over-threshold, and composite GPD fitting
 R/graft_fast.R   the smooth graft evaluated directly (200x faster, exact)
+R/lpquantile.R   L^a-quantiles: fractional partial moments and the composite L^a fitter
 R/config.R       the settings the scripts share
 src/             C++ port of the expectile solver
 scripts/00-design.R             DGP and weight design, asymptotic targets
@@ -188,6 +220,7 @@ scripts/13-smooth-graft.R       composite fit as the tail of a smooth graft on a
 scripts/14-anchored-handoff.R   mean-anchored expectile, and a sweep of the handover
 scripts/15-gpd.R                GPD study: peaks-over-threshold against composite + smooth graft
 scripts/16-gpd-elastile.R       the alpha-elastile inside the GPD study
+scripts/17-lp-quantile.R        the L^a-quantiles at a = 1.5, against L1, L2 and the elastile
 scripts/98-validate.R           every correctness check, re-runnable
 report/build_report.py          builds the standalone HTML report
 out/                            results and figures
