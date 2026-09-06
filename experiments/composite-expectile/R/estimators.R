@@ -227,3 +227,52 @@ fit_elastile <- function(y, grid, w_fun, alpha, start = NULL) {
   if (o$value >= BIG) return(rep(NA_real_, 3))
   c(o$par[1], exp(o$par[2]), o$par[3])
 }
+
+# --- mean-anchored composite expectile estimator ----------------------------
+#
+# Identical to fit_cee() except that the model's expectile function is computed
+# with the SAMPLE mean in place of the model's own mean. The expectile
+# identification equation splits into a tail-local part (the partial moment phi,
+# where a GEV fitted to a contaminated sample is right) and a global part (the
+# mean, where it is not). Taking the second from the data removes the residual
+# that no weight function can.
+#
+# The price: this is no longer a strictly consistent scoring function for the
+# model's expectile. It is a two-step estimating equation targeting a modified
+# functional -- the mean is profiled out nonparametrically -- and needs its own
+# justification. Fisher consistency survives: if the model is correct over the
+# weighted region and the sample mean is consistent for the true mean, the true
+# parameter still solves it.
+
+make_anchored_objective <- function(y, grid, w_fun) {
+  p <- grid$p; wts <- grid$w_quad * w_fun(p)
+  keep <- wts > 0; p <- p[keep]; wts <- wts[keep]
+  ys <- sort(y); n <- length(ys)
+  C1 <- c(0, cumsum(ys)); C2 <- c(0, cumsum(ys^2))
+  S1 <- C1[n + 1]; S2 <- C2[n + 1]
+  m_hat <- mean(y)
+  wp <- wts * p; wq <- wts * (1 - p)
+  function(par) {
+    mu <- par[1]; sigma <- exp(par[2]); xi <- par[3]
+    if (!is.finite(mu) || !is.finite(sigma) || xi < XI_LO || xi > XI_HI) return(BIG)
+    tv <- gev_expectile_anchored(p, mu, sigma, xi, m_hat)
+    if (any(!is.finite(tv))) return(BIG)
+    j <- findInterval(tv, ys); c1 <- C1[j + 1]; c2 <- C2[j + 1]
+    lo <- c2 - 2 * tv * c1 + j * tv^2
+    hi <- (S2 - c2) - 2 * tv * (S1 - c1) + (n - j) * tv^2
+    sum(wq * lo + wp * hi)
+  }
+}
+
+fit_cee_anchored <- function(y, grid, w_fun, start = NULL) {
+  if (is.null(start)) start <- fit_lmom(y)
+  if (any(is.na(start))) start <- c(mean(y), sd(y), 0.1)
+  obj <- make_anchored_objective(y, grid, w_fun)
+  par0 <- c(start[1], log(max(start[2], 1e-6)), min(max(start[3], XI_LO + .05), 0.6))
+  o <- try(optim(par0, obj, method = "Nelder-Mead",
+                 control = list(maxit = 3000, reltol = 1e-12)), silent = TRUE)
+  if (inherits(o, "try-error") || o$value >= BIG) return(rep(NA_real_, 3))
+  o <- optim(o$par, obj, method = "Nelder-Mead", control = list(maxit = 3000, reltol = 1e-12))
+  if (o$value >= BIG) return(rep(NA_real_, 3))
+  c(o$par[1], exp(o$par[2]), o$par[3])
+}

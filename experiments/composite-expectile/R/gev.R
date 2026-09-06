@@ -231,3 +231,11 @@ gev_elastile <- function(p, mu, sigma, xi, alpha, s) {
                               bracket_lo = pmin(q0, e0), bracket_hi = pmax(q0, e0))
   mu + sigma * tau
 }
+
+# Mean-anchored expectile: the identification equation with the model's mean
+# replaced by an external anchor (in practice the sample mean). See
+# src/gev_anchored.cpp. With the anchor equal to the model's own mean this
+# returns the ordinary expectile.
+gev_expectile_anchored <- function(p, mu, sigma, xi, m_anchor) {
+  mu + sigma * gev_expectile_anchored_cpp(p, xi, (m_anchor - mu) / sigma)
+}
