@@ -280,6 +280,7 @@ tr.ref td { color: var(--ink-2); font-style: italic; }
 td.win { color: var(--l2); font-weight: 600; }
 td.lose { color: var(--ref); }
 td.tie { font-weight: 600; }
+td.ind { color: var(--ink-3); font-style: italic; }
 .se { color: var(--ink-3); font-weight: 400; font-size: 0.88em; }
 
 /* --- figures ------------------------------------------------------------ */
@@ -717,32 +718,53 @@ so the raw criterion is finite and nothing was needed &mdash; but it should be b
 estimator meets anything heavier.</p>
 
 <h3>The same condition, across every method here</h3>
-<p>The moment requirement is not peculiar to the composite estimators &mdash; it is the same
-quantity read off different losses, and it lines up into one table. It is worth having, because it
-says which methods are even <em>defined</em> for a given tail heaviness before any question of
-efficiency arises.</p>
+<p>The moment requirement is not peculiar to the composite estimators. But it splits into
+<em>three</em> different questions that are easy to run together, and running them together gives
+the wrong answer. Is the raw criterion finite? Is the target functional even defined? And does the
+estimator have the usual root-n limit? Each is a different power of the tail.</p>
+<p>Write the loss as &rho;<sub>p,a</sub>(y, t) = |p &minus; I(y &lt; t)| |y &minus; t|<sup>a</sup>.
+The raw criterion needs E|Y|<sup>a</sup>. But the loss <em>difference</em> above is bounded by
+C(1 + |Y|<sup>a&minus;1</sup>), and so is the estimating equation it differentiates to,</p>
+</div>
+<div class="eq">p&#8202;E[(Y &minus; t)<sup>a&minus;1</sup>; Y &gt; t] = (1 &minus; p)&#8202;E[(t &minus; Y)<sup>a&minus;1</sup>; Y &lt; t]</div>
+<div class="col">
+<p>so the functional is defined under E|Y|<sup>a&minus;1</sup> &lt; &infin; &mdash; one order
+cheaper. Squaring that score for the sandwich meat gives E|Y|<sup>2(a&minus;1)</sup> for the
+root-n limit. Reading the three off a GPD tail with index 1/&xi;:</p>
 </div>
 <div class="tablewrap">
 <table>
-<caption>What each method needs of the tail. The exponent a is the power in the loss:
-a = 1 is the pinball, a = 2 the asymmetric square, and intermediate a gives the Lp-quantiles of
-section 14.</caption>
-<thead><tr><th>method</th><th>needs</th><th>i.e.</th><th>why</th></tr></thead>
+<caption>What each method needs of the tail, for a GPD with shape &xi;. The exponent a is the power
+in the loss: a = 1 is the pinball, a = 2 the asymmetric square, and intermediate a gives the
+L<sup>a</sup>-quantiles of section 14. Only the middle column decides whether the target exists;
+the first is repaired for free by the loss-difference form.</caption>
+<thead><tr><th>method</th><th>raw criterion finite</th><th>functional defined</th><th>root-n asymptotics</th></tr></thead>
 <tbody>
-<tr><td>GEV / GPD maximum likelihood</td><td>&mdash;</td><td>any &xi;</td><td>the likelihood is defined on the support; &xi; &gt; &minus;1/2 is needed only for the usual asymptotics</td></tr>
-<tr><td>L-moments and probability-weighted moments</td><td>E&#124;Y&#124; &lt; &infin;</td><td>&xi; &lt; 1</td><td>every L-moment is a linear combination of expected order statistics</td></tr>
-<tr><td>Composite quantile (L1)</td><td>E&#124;Y&#124; &lt; &infin;</td><td>&xi; &lt; 1</td><td>the pinball loss is linear in the residual</td></tr>
-<tr><td>Composite L<sup>a</sup> (Lp-quantile)</td><td>E&#124;Y&#124;<sup>a</sup> &lt; &infin;</td><td>&xi; &lt; 1/a</td><td>the loss is a power a of the residual</td></tr>
-<tr><td>Composite expectile (L2)</td><td>E&#124;Y&#124;&sup2; &lt; &infin;</td><td class="lose">&xi; &lt; 1/2</td><td>the a = 2 case</td></tr>
-<tr><td>&alpha;-elastile, any &alpha; &gt; 0</td><td>E&#124;Y&#124;&sup2; &lt; &infin;</td><td class="lose">&xi; &lt; 1/2</td><td>a sum is finite only if both terms are, so mixing does <em>not</em> relax the L2 requirement</td></tr>
+<tr><td>GEV / GPD maximum likelihood</td><td>&mdash;</td><td>any &xi;</td><td>&xi; &gt; &minus;1/2</td></tr>
+<tr><td>L-moments and probability-weighted moments</td><td>&xi; &lt; 1</td><td>&xi; &lt; 1</td><td class="lose">&xi; &lt; 1/2</td></tr>
+<tr><td>Composite quantile (L1)</td><td>&xi; &lt; 1</td><td class="win">any &xi;</td><td class="win">any &xi;</td></tr>
+<tr><td>Composite L<sup>a</sup>, 1 &lt; a &lt; 2</td><td>&xi; &lt; 1/a</td><td>&xi; &lt; 1/(a&minus;1)</td><td>&xi; &lt; 1/(2(a&minus;1))</td></tr>
+<tr><td class="ind">&nbsp;&nbsp;&mdash; at a = 1.5</td><td>&xi; &lt; 2/3</td><td>&xi; &lt; 2</td><td>&xi; &lt; 1</td></tr>
+<tr><td>Composite expectile (L2)</td><td class="lose">&xi; &lt; 1/2</td><td>&xi; &lt; 1</td><td class="lose">&xi; &lt; 1/2</td></tr>
+<tr><td>&alpha;-elastile, any &alpha; &gt; 0</td><td class="lose">&xi; &lt; 1/2</td><td>&xi; &lt; 1</td><td class="lose">&xi; &lt; 1/2</td></tr>
 </tbody></table>
 </div>
 <div class="col">
-<p>The last row is worth pausing on. Mixing the losses buys accuracy but buys no extra domain: the
-&alpha;-elastile inherits the expectile's &xi; &lt; 1/2 for every &alpha; above zero. If a wider
-domain is what is wanted, the L<sup>a</sup> family is the one that delivers it, at a = 1.5 giving
-&xi; &lt; 2/3. In every case the loss-difference form of section 7 relaxes the requirement back to
-E&#124;Y&#124; &lt; &infin;.</p>
+<p>Three things fall out. First, the quantile needs <em>nothing</em>: the raw &xi; &lt; 1 in its
+first column is an artefact of not recentring, and the pinball functional is defined for any tail
+at all. Second, the &alpha;-elastile buys no domain. It is a sum, finite only if both terms are, so
+every &alpha; above zero inherits the expectile's &xi; &lt; 1/2 for the root-n limit &mdash; mixing
+trades bias against variance <em>inside</em> that domain and cannot widen it. Third, and the reason
+the L<sup>a</sup> family is worth its own experiment rather than being folded into the elastile: it
+is the only continuous path off L1 that <em>does</em> widen the domain. At a = 1.5 the functional
+survives to &xi; &lt; 2 and the root-n limit to &xi; &lt; 1, against &xi; &lt; 1 and &xi; &lt; 1/2
+for L2. So a is a dial on how much tail heaviness the method tolerates, and &alpha; is not.</p>
+
+<div class="note"><span class="lab">L-moments and L2 have the same domain</span>
+<p>Worth noting for the practitioner comparison: probability-weighted moment estimators are
+consistent for &xi; &lt; 1 and asymptotically normal only for &xi; &lt; 1/2 &mdash; exactly the
+composite expectile's two thresholds. Whatever else switching from L-moments to L2 costs, it costs
+nothing in admissible tail heaviness. The comparison in section 13 is like-for-like on this axis.</p></div>
 
 <h3>A third trap: weight beyond the data</h3>
 <p>A weight left at one all the way to p = 1 puts a large share of its mass at levels
