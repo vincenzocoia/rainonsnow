@@ -738,7 +738,7 @@ FIG_SHAPE
 
 S8 = """
 <section id="recommend">
-<h2><span class="num">10</span><span>What to do with this</span></h2>
+<h2><span class="num">13</span><span>What to do with this</span></h2>
 <div class="col">
 <p><strong>The obstacle is variance, not bias.</strong> Both composite estimators solve the bias
 problem completely &mdash; against a body-contaminated truth they remove a 39% underestimate of
@@ -800,7 +800,7 @@ optimise, and by those the case for the method is much stronger than by MSE.</li
 
 S9 = """
 <section id="methods">
-<h2><span class="num">11</span><span>Methods and reproducibility</span></h2>
+<h2><span class="num">14</span><span>Methods and reproducibility</span></h2>
 <div class="col">
 <h3>Machinery</h3>
 <p>The expectile function of the GEV is needed on a grid of levels inside an optimiser, roughly
@@ -925,7 +925,7 @@ def build():
             "version sitting at 1.15. Right, median absolute error. The red line is the control: "
             "the MLE grafted onto the same body, which gains nothing.",
             "MSE ratio and median error ratio for grafted and ungrafted composite fits")),
-        S8, S9, FOOTER,
+        S10, S11, S12, GPD_SECTION, S8, S9, FOOTER,
     ]
     return "".join(body)
 
@@ -1202,10 +1202,6 @@ worth grafting.</p>
 """
 
 
-if __name__ == "__main__":
-    html = build()
-    (ROOT / "report" / "report.html").write_text(html)
-    print("wrote report/report.html  (%.1f MB)" % (len(html) / 1e6))
 
 S10 = """
 <section id="anchoring-fix">
@@ -1355,3 +1351,12 @@ selection cost charged before the reported gains mean anything.</p>
 </div>
 </section>
 """
+
+# Filled in by scripts/15-gpd.R's results once that run completes.
+GPD_SECTION = ""
+
+
+if __name__ == "__main__":
+    html = build()
+    (ROOT / "report" / "report.html").write_text(html)
+    print("wrote report/report.html  (%.1f MB)" % (len(html) / 1e6))

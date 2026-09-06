@@ -989,8 +989,151 @@ worth grafting.</p>
 </div>
 </section>
 
+<section id="anchoring-fix">
+<h2><span class="num">10</span><span>Fixing the mean anchoring: it works, and it does not pay</span></h2>
+<div class="col">
+<p>Section 3 identified the one structural disadvantage L2 carries against L1: the expectile is
+anchored to the distribution's mean, so body contamination never fully leaves it. The
+identification equation splits cleanly, though &mdash;</p>
+</div>
+<div class="eq">k &phi;(x) + m &minus; x = 0</div>
+<div class="col">
+<p>&mdash; into a tail-local part (the partial moment &phi;, where a GEV fitted to a contaminated
+sample is right) and a global part (the mean, where it is not). So take the second from the data:
+replace the model's mean by the <em>sample</em> mean and leave &phi; as the model's. The mean
+becomes a nuisance parameter profiled out nonparametrically.</p>
+
+<p>As a piece of statistics it works exactly as designed. The contamination surviving in the
+expectile at p = 0.98 falls from 9.73% to 0.0001%, and the estimator's asymptotic target moves onto
+the true tail parameters:</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Asymptotic targets, fitted to a sample of 2&times;10<sup>6</sup>. The true tail is
+(0, 1, 0.20).</caption>
+<thead><tr><th>estimator</th><th>&mu;</th><th>&sigma;</th><th>&xi;</th><th>bias at T = 100</th><th>at T = 1000</th></tr></thead>
+<tbody>
+<tr><td>Composite expectile, p&#8320; = 0.95</td><td>0.836</td><td>0.872</td><td>0.220</td><td>+2.86%</td><td>+0.51%</td></tr>
+<tr><td>&nbsp;&nbsp;&rarr; mean-anchored</td><td class="win">0.026</td><td class="win">0.989</td><td class="win">0.202</td><td class="win">&minus;0.32%</td><td class="win">&minus;0.23%</td></tr>
+<tr><td>Composite expectile, p&#8320; = 0.90</td><td>1.006</td><td>0.797</td><td>0.237</td><td>+1.22%</td><td>+0.25%</td></tr>
+<tr><td>&nbsp;&nbsp;&rarr; mean-anchored</td><td class="win">0.161</td><td class="win">0.953</td><td class="win">0.208</td><td class="win">&minus;0.49%</td><td class="win">&minus;0.26%</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>The structural obstacle is gone: anchored, the L2 estimator is as asymptotically unbiased as L1.</p>
+
+<div class="note"><span class="lab">And yet it is worse</span>
+<p>At n = 100 the correction loses on every criterion at every return period. The median fitted
+shape goes from 0.209 (ordinary, p&#8320; = 0.5) to 0.079, and at p&#8320; = 0.95 it collapses to
+&minus;0.45, the shape bound. Mean squared error at T = 1000 goes from 1.05 to 1.09 relative to the
+MLE; median absolute error from 4.68 to 4.81; the head-to-head win rate from 78% to 76%. Grafted,
+the ordinary version still wins (0.84&times; the MLE against 0.92&times;).</p></div>
+
+<p>The reason is visible in the equation. An error &delta; in the anchor moves the solution by
+about &delta;/(1 + k S(x)), which for large p is essentially &delta; itself &mdash; the whole
+expectile curve translates by the sample mean's estimation error. Under a contaminated,
+heavy-tailed truth at n = 100 that error is not small, and it is injected at every level. Worse,
+the criterion must now reconcile a data-driven anchor with a model-driven &phi;, and when the
+weight is confined to the tail the model has little left to adjust except the shape &mdash; which
+is why &xi;&#770; is driven to its bound.</p>
+
+<p>So this is a clean negative result, and it closes off the direction rather than opening it: the
+mean anchoring is real, the fix removes it exactly, and the fix is not worth its variance. If the
+idea is to be revived it needs a <em>low-variance</em> estimate of the anchor &mdash; a shrunk or
+model-averaged mean, or the mean of a trimmed body &mdash; not the raw sample mean.</p>
+</div>
+</section>
+
+<section id="handoff">
+<h2><span class="num">11</span><span>Where the handover should sit</span></h2>
+<div class="col">
+<p>Section 9 used a fixed [0.90, 0.98] handover on the grounds that the fitting weight and the
+handover weight do different jobs. Sweeping it further out tests that: if the empirical body is
+good, handing over later should be better.</p>
+
+<p>It is not. Later is monotonically worse:</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Composite expectile fitted at p&#8320; = 0.5, grafted onto an empirical body with the
+handover swept. MSE relative to the GEV MLE, n = 100, 2000 replicates, paired standard errors.</caption>
+<thead><tr><th>handover</th><th>T = 20</th><th>T = 50</th><th>T = 100</th><th>T = 200</th><th>T = 500</th><th>T = 1000</th></tr></thead>
+<tbody>
+<tr><td>0.90 &ndash; 0.98</td><td class="win">1.47</td><td class="win">1.28</td><td class="win">0.92 <span class="se">&plusmn;0.02</span></td><td class="win">0.82 <span class="se">&plusmn;0.02</span></td><td class="win">0.80 <span class="se">&plusmn;0.03</span></td><td class="win">0.84 <span class="se">&plusmn;0.03</span></td></tr>
+<tr><td>0.95 &ndash; 0.99</td><td>1.79</td><td>1.71</td><td>1.16</td><td>1.00</td><td>0.95</td><td>1.00 <span class="se">&plusmn;0.04</span></td></tr>
+<tr><td>0.97 &ndash; 0.995</td><td>1.79</td><td>1.94</td><td class="lose">1.43</td><td class="lose">1.81</td><td class="lose">1.83</td><td class="lose">2.00 <span class="se">&plusmn;0.13</span></td></tr>
+<tr><td>0.99 &ndash; 0.999</td><td>1.79</td><td>1.93</td><td class="lose">1.81</td><td class="lose">2.33</td><td class="lose">2.32</td><td class="lose">2.51 <span class="se">&plusmn;0.18</span></td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>The mechanism is the empirical distribution's own limit. Its quantile function saturates at the
+sample maximum, so it carries no information above about p = 1 &minus; 1/n &mdash; 0.99 at n = 100.
+A handover that only <em>starts</em> at 0.99 leaves the graft relying on the empirical body across
+levels the empirical body cannot see, and the return-level curve flattens onto order statistics
+near the maximum long before the parametric tail is allowed to take over.</p>
+
+<p>That gives a concrete design rule, and it is the mirror image of the one in section 7. The
+weight must not extend past where the data can speak; and the <em>handover</em> must complete
+before the empirical body runs out. With n observations, both point to the same place: finish the
+handover by roughly 1 &minus; 2/n. At n = 100 that is 0.98, which is exactly where the best
+setting lands.</p>
+
+<p>So the two weights should be decoupled, but not in the direction of pushing the handover later.
+The fitting weight can start anywhere the model is trustworthy; the handover is pinned near the
+top of the data by the sample size, not by the fit.</p>
+</div>
+</section>
+
+<section id="alphap">
+<h2><span class="num">12</span><span>Letting &alpha; depend on the level</span></h2>
+<div class="col">
+<p>Since the best &alpha; rises with the return period, the obvious next move is to let &alpha;
+depend on p. Does that still elicit anything?</p>
+
+<p><strong>Yes, and the argument is short.</strong> Properness here is a pointwise-in-p property.
+For each fixed level p, the mixed check function &rho;<sup>&alpha;</sup><sub>p</sub> is strictly
+consistent for the &alpha;-elastile at that level, because the expected loss is strictly convex in
+the prediction with a unique minimiser. Nothing in that argument cares whether the &alpha; used at
+level p is the same as the one used at level p&prime;. So for any measurable schedule
+&alpha;(&middot;), the criterion</p>
+</div>
+<div class="eq">R(&theta;) = &#8747; w(p) E[ &rho;<sup>&alpha;(p)</sup><sub>p</sub>(Y, T(p|&theta;)) ] dp</div>
+<div class="col">
+<p>is bounded below by the sum of the pointwise minima, with equality exactly when
+T(p|&theta;) = T<sub>&alpha;(p)</sub>(p; F) for w-almost every p. It is a strictly consistent
+scoring rule for the <em>curve</em> p &#8614; T<sub>&alpha;(p)</sub>(p; F). Fisher consistency
+survives too: under correct specification over the weighted region, the truth's curve <em>is</em>
+the model's curve, for any schedule.</p>
+
+<p>Three things are worth saying about what you get.</p>
+
+<p><strong>The target is a hybrid.</strong> Different points on the elicited curve are different
+functionals of F &mdash; the 0.2-elastile at p = 0.9, the 0.8-elastile at p = 0.999. That is
+perfectly well defined but it no longer has a name like "the expectile function", and any theory
+you would want to import (asymptotic variance for expectile regression, say) does not transfer
+without redoing it.</p>
+
+<p><strong>Keep &alpha;(p) continuous.</strong> This is the one real constraint, and it is not
+about properness &mdash; it is about attainability. A model's quantile, expectile and elastile
+curves are all increasing in p. The target curve need not be. In the tail the expectile sits
+<em>below</em> the quantile, so raising &alpha; pulls the target down while raising p pushes it up.
+With any continuous schedule tested &mdash; &alpha; = p, a smoothstep ramp over [0.9, 0.999], even
+&alpha; = 1 &minus; (1&minus;p)<sup>0.05</sup>, which is above 0.7 by p = 0.5 &mdash; the target
+stayed strictly increasing, at &xi; = 0.2 and at &xi; = 0.45. A schedule that <em>jumps</em>
+(&alpha; = 0 below p = 0.99, 1 above) makes the target fall by 1.27 at the jump. The criterion is
+still proper there; it is simply aiming at a curve no model can match, which is misspecification
+you have manufactured for yourself.</p>
+
+<p><strong>It generalises further than &alpha;.</strong> The same pointwise argument licenses
+letting <em>any</em> parameter of the level-p loss vary with p &mdash; the scale s included &mdash;
+and it is also why the composite construction tolerates a different loss family at each level. The
+cost is always the same: more tuning surface, and oracle-selected schedules that need their
+selection cost charged before the reported gains mean anything.</p>
+</div>
+</section>
+
 <section id="recommend">
-<h2><span class="num">10</span><span>What to do with this</span></h2>
+<h2><span class="num">13</span><span>What to do with this</span></h2>
 <div class="col">
 <p><strong>The obstacle is variance, not bias.</strong> Both composite estimators solve the bias
 problem completely &mdash; against a body-contaminated truth they remove a 39% underestimate of
@@ -1050,7 +1193,7 @@ optimise, and by those the case for the method is much stronger than by MSE.</li
 </section>
 
 <section id="methods">
-<h2><span class="num">11</span><span>Methods and reproducibility</span></h2>
+<h2><span class="num">14</span><span>Methods and reproducibility</span></h2>
 <div class="col">
 <h3>Machinery</h3>
 <p>The expectile function of the GEV is needed on a grid of levels inside an optimiser, roughly
