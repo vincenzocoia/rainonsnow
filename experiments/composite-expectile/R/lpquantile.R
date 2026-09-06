@@ -40,20 +40,30 @@ gpd_upper_frac <- function(t, mu, sigma, xi, a) {
   out
 }
 
-gpd_lower_frac <- function(t, mu, sigma, xi, a, n_gl = 24) {
-  # E[(t - X)^{a-1} 1{X < t}], over the bounded interval [mu, t]. Vectorised over
-  # t as one (n_gl x length(t)) matrix: the substitution x = t - (t-mu) v^2 puts
-  # every t on the same nodes v, so the whole grid is one matrix operation.
+gpd_lower_frac <- function(t, mu, sigma, xi, a, n_gl = 48) {
+  # E[(t - X)^{a-1} 1{X < t}], integrated in PROBABILITY space:
+  #
+  #   L(t) = int_0^{F(t)} (t - Q(u))^{a-1} du,   u = F(t) (1 - v^2),
+  #
+  # so L(t) = int_0^1 (t - Q(F(t)(1-v^2)))^{a-1} * 2 F(t) v dv. Integrating over u
+  # rather than x keeps the mass evenly spread however far t sits from mu: the
+  # earlier x-space substitution put a fixed number of nodes on [mu, t], so once
+  # t >> mu (heavy xi) almost none of them landed where the density lives, and it
+  # lost several digits. The v^2 substitution flattens the u -> F(t) endpoint,
+  # where the integrand vanishes like v^{2a-1}. Vectorised over t as one
+  # (n_gl x length(t)) matrix.
   gl <- gauss_legendre_01(n_gl)
   out <- numeric(length(t))
   ok <- t > mu
   if (!any(ok)) return(out)
-  d <- t[ok] - mu                                     # length m
+  tt <- t[ok]
+  Ft <- 1 - sgpd(tt, mu, sigma, xi)                   # length m
   v <- gl$x                                           # length n_gl
-  X <- mu + outer(1 - v^2, d)                         # x = t - d v^2
-  U <- 1 + xi * (X - mu) / sigma
-  dens <- ifelse(U > 0, U^(-1 / xi - 1) / sigma, 0)
-  W <- (outer(v^2, d))^(a - 1) * dens * 2 * rep(d, each = n_gl) * v
+  U <- outer(1 - v^2, Ft)                             # u = F(t)(1 - v^2)
+  Q <- qgpd(as.vector(U), mu, sigma, xi)
+  dim(Q) <- dim(U)
+  D <- pmax(rep(tt, each = n_gl) - Q, 0)
+  W <- D^(a - 1) * 2 * rep(Ft, each = n_gl) * v
   out[ok] <- as.vector(gl$w %*% W)
   out
 }
@@ -74,8 +84,14 @@ gpd_frac_numeric <- function(t, mu, sigma, xi, a, side = "upper", n_gl = 40) {
 gpd_lp_quantile <- function(p, mu, sigma, xi, a, tol = 1e-10, maxit = 40) {
   if (abs(a - 1) < 1e-12) return(qgpd(p, mu, sigma, xi))
   if (abs(a - 2) < 1e-12) return(gpd_expectile(p, mu, sigma, xi))
-  q <- qgpd(p, mu, sigma, xi); e <- gpd_expectile(p, mu, sigma, xi)
-  lo <- pmin(q, e); hi <- pmax(q, e)
+  # Bracket. The expectile is only a hint, and it is undefined for xi >= 1 --
+  # precisely the region where the L^a-quantile still exists (it needs only
+  # xi < 1/(a-1)), so fall back to a scale-based bracket around the quantile.
+  q <- qgpd(p, mu, sigma, xi)
+  e <- if (xi < 1) gpd_expectile(p, mu, sigma, xi) else rep(NA_real_, length(q))
+  e[!is.finite(e)] <- q[!is.finite(e)]
+  s0 <- sigma + xi * (q - mu)                 # GPD scale at q; positive on the support
+  lo <- pmin(q, e) - 1e-3 * s0; hi <- pmax(q, e) + 1e-3 * s0
   g <- function(t) p * gpd_upper_frac(t, mu, sigma, xi, a) -
                    (1 - p) * gpd_lower_frac(t, mu, sigma, xi, a)
   glo <- g(lo); ghi <- g(hi)
@@ -83,7 +99,7 @@ gpd_lp_quantile <- function(p, mu, sigma, xi, a, tol = 1e-10, maxit = 40) {
   for (it in 1:40) {
     bad <- glo * ghi > 0
     if (!any(bad)) break
-    span <- pmax(hi - lo, 1e-8)
+    span <- pmax(hi - lo, 1e-3 * s0)
     lo[bad] <- pmax(mu + 1e-12, lo[bad] - span[bad]); hi[bad] <- hi[bad] + span[bad]
     glo <- g(lo); ghi <- g(hi)
   }
