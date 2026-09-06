@@ -107,3 +107,43 @@ fit_gpd_composite <- function(y, grid, w_fun, type, anchored = FALSE) {
   if (o$value >= BIG) return(rep(NA_real_, 3))
   c(o$par[1], exp(o$par[2]), o$par[3])
 }
+
+# --- composite GPD by the alpha-elastile -------------------------------------
+gpd_elastile_scale <- function(y, grid, w_fun, start) {
+  p <- grid$p; wts <- grid$w_quad * w_fun(p); k <- wts > 0; p <- p[k]; wts <- wts[k]
+  ys <- sort(y); n <- length(ys)
+  C1 <- c(0, cumsum(ys)); C2 <- c(0, cumsum(ys^2)); S1 <- C1[n+1]; S2 <- C2[n+1]
+  piece <- function(tv) {
+    j <- findInterval(tv, ys); c1 <- C1[j+1]; c2 <- C2[j+1]
+    lo <- c2 - 2*tv*c1 + j*tv^2; hi <- (S2-c2) - 2*tv*(S1-c1) + (n-j)*tv^2
+    c(L2 = sum(wts*((1-p)*lo + p*hi)), L1 = sum(wts*(p*(S1-n*tv) - (c1-j*tv))))
+  }
+  s <- piece(gpd_expectile(p, start[1], start[2], start[3]))[["L2"]] /
+       piece(qgpd(p, start[1], start[2], start[3]))[["L1"]]
+  if (!is.finite(s) || s <= 0) s <- max(1e-8, sd(y))
+  s
+}
+
+fit_gpd_elastile <- function(y, grid, w_fun, alpha) {
+  start <- c(min(y) - 0.05 * diff(range(y)), max(1e-6, sd(y)), 0.15)
+  s <- gpd_elastile_scale(y, grid, w_fun, start)
+  p <- grid$p; wts <- grid$w_quad * w_fun(p); k <- wts > 0; p <- p[k]; wts <- wts[k]
+  ys <- sort(y); n <- length(ys)
+  C1 <- c(0, cumsum(ys)); C2 <- c(0, cumsum(ys^2)); S1 <- C1[n+1]; S2 <- C2[n+1]
+  obj <- function(par) {
+    mu <- par[1]; sigma <- exp(par[2]); xi <- par[3]
+    if (!is.finite(mu) || !is.finite(sigma) || xi < XI_LO || xi > XI_HI) return(BIG)
+    tv <- gpd_elastile(p, mu, sigma, xi, alpha, s)
+    if (any(!is.finite(tv))) return(BIG)
+    j <- findInterval(tv, ys); c1 <- C1[j+1]; c2 <- C2[j+1]
+    lo <- c2 - 2*tv*c1 + j*tv^2; hi <- (S2-c2) - 2*tv*(S1-c1) + (n-j)*tv^2
+    L2 <- sum(wts*((1-p)*lo + p*hi)); L1 <- sum(wts*(p*(S1-n*tv) - (c1-j*tv)))
+    (alpha/s)*L2 + (1-alpha)*L1
+  }
+  o <- try(optim(c(start[1], log(start[2]), start[3]), obj, method = "Nelder-Mead",
+                 control = list(maxit = 3000, reltol = 1e-12)), silent = TRUE)
+  if (inherits(o, "try-error") || o$value >= BIG) return(rep(NA_real_, 3))
+  o <- optim(o$par, obj, method = "Nelder-Mead", control = list(maxit = 3000, reltol = 1e-12))
+  if (o$value >= BIG) return(rep(NA_real_, 3))
+  c(o$par[1], exp(o$par[2]), o$par[3])
+}

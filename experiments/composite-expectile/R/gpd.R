@@ -143,3 +143,13 @@ gpd_expectile <- function(p, mu, sigma, xi, m_anchor = NULL, tol = 1e-11, maxit 
   out[ok] <- x
   out
 }
+
+# alpha-elastile of the GPD; alpha = 0 is the quantile, 1 the expectile, and the
+# root always lies between them. `s` makes the two loss terms commensurable.
+gpd_elastile <- function(p, mu, sigma, xi, alpha, s) {
+  if (alpha <= 0) return(qgpd(p, mu, sigma, xi))
+  if (alpha >= 1) return(gpd_expectile(p, mu, sigma, xi))
+  q <- qgpd(p, mu, sigma, xi); e <- gpd_expectile(p, mu, sigma, xi)
+  gpd_elastile_cpp(p, mu, sigma, xi, 2 * alpha / s, 1 - alpha,
+                   pmin(q, e), pmax(q, e))
+}

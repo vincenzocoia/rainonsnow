@@ -322,10 +322,12 @@ MASTHEAD = """
 <header class="masthead">
   <div class="eyebrow">Simulation study &middot; extreme value estimation</div>
   <h1>The Composite Expectile Estimator</h1>
-  <p class="standfirst">Fitting a GEV by an expectile loss integrated against a tail-weighted
-  measure, so that a misspecified body does not compromise the tail. Tested against maximum
-  likelihood, L-moments, and the composite quantile estimator, on a Gaussian-contaminated GEV,
-  over return periods from 2 to 1000 years.</p>
+  <p class="standfirst">Fitting an extreme value distribution by an expectile loss integrated
+  against a tail-weighted measure, so that a misspecified body does not compromise the tail.
+  Against maximum likelihood, L-moments, and the composite quantile estimator on a
+  Gaussian-contaminated GEV; and, in its strongest form &mdash; a GPD fitted this way and smooth
+  grafted onto an empirical body &mdash; against peaks-over-threshold, which it beats at every
+  return period from 50 to 1000 years.</p>
   <div class="byline">
     <span>2000 Monte Carlo replicates &middot; n = 50, 100, 200</span>
     <span>Truth: max(GEV, Normal)</span>
@@ -1452,6 +1454,39 @@ the pinball loss has no smoothing to fall back on.</p>
 eight times the reference's error at the 2-year level; grafted, 0.98. And this is the case where
 reusing the fitting weight as the handover is right: it starts at zero on the body by construction,
 so it hands the body to the empirical distribution automatically.</p>
+
+<h3>The elastile inside the GPD study</h3>
+<p>Sweeping &alpha; here reproduces the pattern of section 8, in the setting that matters most.
+The interior optimum is real at moderate return periods and the best &alpha; rises with T:</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>&alpha;-elastile GPD with w = p&#8310;, smooth grafted with the same weight. MSE relative
+to POT&ndash;MLE(0.90), n = 100, 2000 replicates. No fits failed.</caption>
+<thead><tr><th>&alpha;</th><th>T = 20</th><th>T = 50</th><th>T = 100</th><th>T = 200</th><th>T = 500</th><th>T = 1000</th><th>median &xi;&#770;</th></tr></thead>
+<tbody>
+<tr><td>0 &nbsp;(pure L1)</td><td>0.64</td><td>0.89</td><td class="lose">1.15</td><td class="lose">1.24</td><td class="lose">1.08</td><td>0.92</td><td>0.304</td></tr>
+<tr><td>0.10</td><td>0.61</td><td>0.79</td><td>0.89</td><td>0.81</td><td>0.55</td><td>0.40</td><td>0.287</td></tr>
+<tr><td>0.25</td><td class="win">0.61</td><td>0.75</td><td>0.82</td><td>0.71</td><td>0.44</td><td>0.30</td><td>0.266</td></tr>
+<tr><td>0.50</td><td>0.65</td><td class="win">0.74</td><td class="win">0.79</td><td class="win">0.67</td><td>0.39</td><td>0.24</td><td class="win">0.221</td></tr>
+<tr><td>0.75</td><td>0.75</td><td>0.78</td><td>0.82</td><td>0.68</td><td>0.37</td><td>0.22</td><td>0.171</td></tr>
+<tr><td>1 &nbsp;(pure L2)</td><td>0.89</td><td>0.86</td><td>0.87</td><td>0.70</td><td class="win">0.36</td><td class="win">0.21</td><td>0.127</td></tr>
+<tr class="ref"><td>gain over the better pure loss</td><td>0.96</td><td>0.86</td><td>0.91</td><td>0.95</td><td>1.00</td><td>1.00</td><td>&mdash;</td></tr>
+<tr class="ref"><td>POT&ndash;L-moments(0.90)</td><td>0.81</td><td>0.96</td><td>0.88</td><td>0.70</td><td>0.44</td><td>0.32</td><td>&mdash;</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>Mixing buys up to 14% over the better pure loss at T = 50, tapering to nothing beyond T = 500
+where pure L2 already wins. And &alpha; &asymp; 0.5 is where the <em>shape</em> is best recovered:
+median &xi;&#770; = 0.221, against 0.304 at &alpha; = 0 and 0.127 at &alpha; = 1. The shape
+estimate and the MSE point at the same place, which they did not in the GEV study.</p>
+
+<div class="note"><span class="lab">How much is left for a level-dependent alpha</span>
+<p>Since the best &alpha; moves with T, the obvious next step is to let it move with p (section
+12 shows that is proper). The ceiling is small: taking the best &alpha; separately at every return
+period &mdash; an oracle no schedule can beat &mdash; improves on the best <em>single</em>
+&alpha; (0.50) by <b>14% at the very far tail and 4.4% on average</b>. That is the entire prize
+available, before any cost of choosing the schedule.</p></div>
 </div>
 </section>
 """

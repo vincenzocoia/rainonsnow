@@ -137,12 +137,21 @@ cannot extrapolate at all. Threshold choice alone spreads POT's T = 1000 MSE ove
 the composite estimator has no threshold. Here, unlike the GEV case, reusing the fitting weight as
 the handover is the right call - it already starts at zero on the body.
 
-**13. Admissible weights.** For `w(p) ~ (1-p)^(-a)`: finite iff `a < 2 - xi` (L1) or `a < 2 - 2 xi`
+**13. The elastile inside the GPD study.** Sweeping alpha with w = p^6 reproduces the interior
+optimum: MSE relative to POT-MLE(0.90) is 0.74 at T = 50 and 0.79 at T = 100 for alpha = 0.5,
+against 0.89/1.15 for pure L1 and 0.86/0.87 for pure L2 - a gain of up to 14% over the better pure
+loss, tapering to nothing beyond T = 500 where pure L2 already wins. alpha ~ 0.5 also recovers the
+shape best (median xi 0.221, against 0.304 at alpha = 0 and 0.127 at alpha = 1). Taking the best
+alpha separately at every return period - an oracle no schedule can beat - improves on the best
+single alpha by 14% at the far tail and 4.4% on average, which is the whole prize available to a
+level-dependent alpha.
+
+**14. Admissible weights.** For `w(p) ~ (1-p)^(-a)`: finite iff `a < 2 - xi` (L1) or `a < 2 - 2 xi`
 (L2). The remembered `a < 1` is the L1 condition at xi = 1. The binding condition is on the truth:
 L1 needs a finite mean (xi < 1), L2 a finite variance (xi < 1/2), above which the raw criterion is
 +Inf everywhere and only the loss-difference form is usable. Weights need not be bounded by 1.
 
-**14. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
+**15. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
 above the largest observation, where the empirical functional has saturated; the fitted shape is
 dragged hard negative in proportion to that share.
 
@@ -161,6 +170,7 @@ R/graft.R        a grafted truth (exactly-GEV tail, arbitrary body)
 R/smoothgraft.R  return levels from distplyr's smooth graft
 R/gpd.R          GPD: closed-form partial moments, expectiles
 R/gpd_estimators.R  peaks-over-threshold, and composite GPD fitting
+R/graft_fast.R   the smooth graft evaluated directly (200x faster, exact)
 R/config.R       the settings the scripts share
 src/             C++ port of the expectile solver
 scripts/00-design.R             DGP and weight design, asymptotic targets
@@ -177,6 +187,7 @@ scripts/12-sharp-contrast.R     the near-degenerate body, where L2 wins
 scripts/13-smooth-graft.R       composite fit as the tail of a smooth graft on an empirical body
 scripts/14-anchored-handoff.R   mean-anchored expectile, and a sweep of the handover
 scripts/15-gpd.R                GPD study: peaks-over-threshold against composite + smooth graft
+scripts/16-gpd-elastile.R       the alpha-elastile inside the GPD study
 scripts/98-validate.R           every correctness check, re-runnable
 report/build_report.py          builds the standalone HTML report
 out/                            results and figures
