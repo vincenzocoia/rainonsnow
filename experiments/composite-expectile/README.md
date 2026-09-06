@@ -104,12 +104,45 @@ Ungrafted the same fit was a tie. Control: grafting the MLE onto the same body g
 the graft. The handover weight should be decoupled from the fitting weight - reusing p0 = 0.5 as
 the handover costs a factor of 1.6 at T = 1000. And the graft does not rescue L1 (still 6.4x).
 
-**9. Admissible weights.** For `w(p) ~ (1-p)^(-a)`: finite iff `a < 2 - xi` (L1) or `a < 2 - 2 xi`
+**9. The mean anchoring can be removed exactly, and it is not worth it.** Replacing the model's
+mean with the sample mean in the expectile identification equation cuts the surviving contamination
+at p = 0.98 from 9.73% to 0.0001% and moves the asymptotic target to (0.026, 0.989, 0.202) against
+a true (0, 1, 0.20). But at n = 100 it loses everywhere: median xi from 0.209 to 0.079 (to the
+-0.45 bound at p0 = 0.95), MSE at T = 1000 from 1.05 to 1.09, win rate 78% to 76%. An error in the
+anchor translates the whole expectile curve by that error. It needs a low-variance anchor, not the
+raw sample mean.
+
+**10. The handover must finish before the empirical body runs out.** Sweeping it later is
+monotonically worse (1.00, 2.00, 2.51 at T = 1000 for handovers starting at 0.95, 0.97, 0.99). The
+empirical quantile function saturates at the sample maximum, so it carries nothing above ~1 - 1/n.
+Rule: finish the handover by about 1 - 2/n. Decoupling the two weights was right; "later" was not
+the direction.
+
+**11. alpha may depend on p.** Properness is pointwise in p, so any measurable schedule alpha(.)
+gives a strictly consistent scoring rule - for the *curve* p -> T_{alpha(p)}(p; F). Fisher
+consistency survives. The one real constraint is attainability, not properness: keep alpha(p)
+continuous. Every continuous schedule tested kept the target curve increasing (at xi = 0.2 and
+0.45); a schedule that jumps 0 -> 1 at p = 0.99 makes it fall by 1.27 at the jump, so no model
+curve can match it.
+
+**12. Against peaks-over-threshold, the composite version wins** (`scripts/15-gpd.R`, a
+self-contained GPD study with no GEV method in it). A three-parameter GPD fitted by composite L2
+with a convex weight (w = p^6, rising from p = 0 but small on the body) and smooth grafted onto an
+empirical body with that same weight beats POT-MLE(0.90) hard grafted at every return period from
+50 to 1000: MSE ratios 0.86, 0.87, 0.70, 0.36, 0.21; median absolute error at T = 1000 of 4.77
+against 6.78; closer to the truth on 77% of datasets. It also beats the better POT variants
+(POT-MLE(0.95) at 0.52, POT-Lmom(0.90) at 0.32). Read the reference carefully though - at T = 1000
+POT-MLE(0.90) is beaten even by the empirical distribution, whose variance is small only because it
+cannot extrapolate at all. Threshold choice alone spreads POT's T = 1000 MSE over a factor of three;
+the composite estimator has no threshold. Here, unlike the GEV case, reusing the fitting weight as
+the handover is the right call - it already starts at zero on the body.
+
+**13. Admissible weights.** For `w(p) ~ (1-p)^(-a)`: finite iff `a < 2 - xi` (L1) or `a < 2 - 2 xi`
 (L2). The remembered `a < 1` is the L1 condition at xi = 1. The binding condition is on the truth:
 L1 needs a finite mean (xi < 1), L2 a finite variance (xi < 1/2), above which the raw criterion is
 +Inf everywhere and only the loss-difference form is usable. Weights need not be bounded by 1.
 
-**10. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
+**14. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
 above the largest observation, where the empirical functional has saturated; the fitted shape is
 dragged hard negative in proportion to that share.
 
@@ -126,6 +159,8 @@ R/quadrature.R   panelled Gauss-Legendre over levels
 R/estimators.R   the four estimators, plus the alpha-elastile
 R/graft.R        a grafted truth (exactly-GEV tail, arbitrary body)
 R/smoothgraft.R  return levels from distplyr's smooth graft
+R/gpd.R          GPD: closed-form partial moments, expectiles
+R/gpd_estimators.R  peaks-over-threshold, and composite GPD fitting
 R/config.R       the settings the scripts share
 src/             C++ port of the expectile solver
 scripts/00-design.R             DGP and weight design, asymptotic targets
@@ -140,6 +175,8 @@ scripts/10-alt-dgp.R            the heavier max() setting
 scripts/11-graft.R              a grafted truth: exactly-GEV tail, hostile body
 scripts/12-sharp-contrast.R     the near-degenerate body, where L2 wins
 scripts/13-smooth-graft.R       composite fit as the tail of a smooth graft on an empirical body
+scripts/14-anchored-handoff.R   mean-anchored expectile, and a sweep of the handover
+scripts/15-gpd.R                GPD study: peaks-over-threshold against composite + smooth graft
 scripts/98-validate.R           every correctness check, re-runnable
 report/build_report.py          builds the standalone HTML report
 out/                            results and figures

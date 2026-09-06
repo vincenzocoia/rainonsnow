@@ -337,6 +337,16 @@ footer {
     an intermediate functional &mdash; the &alpha;-elastile. Its contamination, bias and variance
     all interpolate smoothly, and an interior &alpha; beats <em>both</em> pure losses by 5 to 23%
     on MSE at every return period up to 500. The best &alpha; rises with the return period.</p></div>
+  <div class="finding"><div class="verdict-tag t-no">Closed off</div>
+    <p><b>The mean anchoring can be removed exactly, and it is not worth it.</b> Taking the mean
+    from the data instead of the model cuts the surviving contamination at p = 0.98 from 9.73% to
+    0.0001% and puts the asymptotic target on the true parameters &mdash; but the sample mean is
+    too noisy at n = 100, and the corrected estimator loses on every finite-sample criterion.</p></div>
+  <div class="finding"><div class="verdict-tag t-yes">Best result</div>
+    <p><b>Against what a practitioner would actually do, the composite version wins.</b> A GPD
+    fitted by the composite L2 criterion with a convex weight and smooth grafted onto an empirical
+    body beats peaks-over-threshold at every return period from 50 to 1000, on MSE, on median
+    error, and on head-to-head win rate.</p></div>
   <div class="finding"><div class="verdict-tag t-yes">And</div>
     <p><b>Grafting onto an empirical body fixes the rest.</b> Used as the tail of a smooth graft
     with the empirical distribution as the body, the composite expectile fit goes from

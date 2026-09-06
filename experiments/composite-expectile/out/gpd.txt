@@ -1,0 +1,232 @@
+=== GPD study, n = 100, 2000 replicates ===
+Reference for all ratios: POT-MLE at the 90th percentile, hard grafted
+onto an empirical body -- the standard practitioner's method.
+
+--- asymptotic % bias in the return level (fit to n = 3e5) ---
+                                         T=2  T=10  T=19  T=48  T=107  T=203
+POT-MLE u=0.85                          0.20  0.82 -0.67 -5.28  -3.52   0.72
+POT-MLE u=0.90                          0.20 -0.04  0.34 -3.99  -3.70  -1.60
+POT-MLE u=0.95                          0.20 -0.04 -0.49 -1.27  -1.67  -1.78
+POT-Lmom u=0.90                         0.20 -0.04  0.32 -4.45  -4.80  -3.39
+L2, w = smoothstep(p/0.8) (ungrafted) -13.26  4.11  5.51 -0.68  -3.53  -4.76
+L2, w = p^2 (ungrafted)               -12.78  2.57  4.06 -1.45  -3.54  -4.07
+L2, w = p^6 (ungrafted)               -11.55  0.96  2.34 -2.67  -4.08  -3.94
+L1, w = p^2 (ungrafted)                -1.75  4.62  2.14 -8.74 -14.99 -18.80
+                                       T=529 T=1000
+POT-MLE u=0.85                         11.08  20.55
+POT-MLE u=0.90                          3.87   8.85
+POT-MLE u=0.95                         -1.78  -1.71
+POT-Lmom u=0.90                         0.77   4.66
+L2, w = smoothstep(p/0.8) (ungrafted)  -5.55  -5.59
+L2, w = p^2 (ungrafted)                -3.67  -2.82
+L2, w = p^6 (ungrafted)                -2.31  -0.53
+L1, w = p^2 (ungrafted)               -23.35 -25.87
+
+--- asymptotic composite GPD parameters (tail xi = 0.2) ---
+                            [,1]   [,2]   [,3]
+L2, w = smoothstep(p/0.8) 0.9367 0.7781 0.2291
+L2, w = p^2               0.9784 0.7283 0.2506
+L2, w = p^6               1.0373 0.6738 0.2728
+L1, w = p^2               1.1599 0.7672 0.1651
+
+--- median fitted shape of the composite GPD fits ---
+L2, w = smoothstep(p/0.8)               L2, w = p^2               L2, w = p^6 
+                    0.130                     0.138                     0.127 
+              L1, w = p^2 
+                    0.128 
+
+--- MSE relative to POT-MLE(0.90) ---
+                                        T=2  T=10  T=19  T=48 T=107 T=203 T=529
+POT-MLE u=0.85                        1.000 1.226 0.800 0.844 1.063 1.269 1.523
+POT-MLE u=0.90                        1.000 1.000 1.000 1.000 1.000 1.000 1.000
+POT-MLE u=0.95                        1.000 1.000 0.969 1.236 1.099 0.861 0.607
+POT-Lmom u=0.90                       1.000 1.000 0.807 0.963 0.882 0.702 0.438
+empirical                             1.000 1.000 0.969 1.176 4.412 1.448 0.424
+L2, w = smoothstep(p/0.8) (ungrafted) 4.718 1.860 0.870 0.809 0.887 0.748 0.414
+L2, w = smoothstep(p/0.8) + graft     1.405 3.265 1.372 1.017 1.034 0.854 0.471
+L2, w = p^2 (ungrafted)               4.909 2.083 0.977 0.857 0.891 0.734 0.398
+L2, w = p^2 + graft                   0.986 2.104 1.037 0.885 0.924 0.771 0.417
+L2, w = p^6 (ungrafted)               7.957 3.276 1.531 1.125 1.010 0.772 0.387
+L2, w = p^6 + graft                   0.978 1.381 0.894 0.859 0.867 0.704 0.358
+L1, w = p^2 (ungrafted)               0.888 1.109 0.604 0.947 1.189 1.080 0.693
+L1, w = p^2 + graft                   0.960 0.987 0.567 0.889 1.091 0.973 0.629
+                                      T=1000
+POT-MLE u=0.85                         1.621
+POT-MLE u=0.90                         1.000
+POT-MLE u=0.95                         0.515
+POT-Lmom u=0.90                        0.323
+empirical                              0.233
+L2, w = smoothstep(p/0.8) (ungrafted)  0.248
+L2, w = smoothstep(p/0.8) + graft      0.284
+L2, w = p^2 (ungrafted)                0.236
+L2, w = p^2 + graft                    0.249
+L2, w = p^6 (ungrafted)                0.220
+L2, w = p^6 + graft                    0.205
+L1, w = p^2 (ungrafted)                0.475
+L1, w = p^2 + graft                    0.440
+
+--- MC standard error of that ratio ---
+                                        T=2  T=10  T=19  T=48 T=107 T=203 T=529
+POT-MLE u=0.85                        0.000 0.038 0.022 0.016 0.020 0.045 0.079
+POT-MLE u=0.90                        0.000 0.000 0.000 0.000 0.000 0.000 0.000
+POT-MLE u=0.95                        0.000 0.000 0.029 0.033 0.019 0.029 0.057
+POT-Lmom u=0.90                       0.000 0.000 0.020 0.013 0.020 0.034 0.055
+empirical                             0.000 0.000 0.029 0.036 0.264 0.067 0.064
+L2, w = smoothstep(p/0.8) (ungrafted) 0.081 0.067 0.026 0.020 0.017 0.034 0.060
+L2, w = smoothstep(p/0.8) + graft     0.034 0.112 0.041 0.028 0.019 0.031 0.057
+L2, w = p^2 (ungrafted)               0.087 0.080 0.028 0.020 0.017 0.033 0.060
+L2, w = p^2 + graft                   0.011 0.070 0.030 0.023 0.018 0.033 0.059
+L2, w = p^6 (ungrafted)               0.222 0.140 0.050 0.032 0.019 0.031 0.060
+L2, w = p^6 + graft                   0.007 0.040 0.025 0.021 0.019 0.034 0.061
+L1, w = p^2 (ungrafted)               0.017 0.033 0.028 0.018 0.023 0.040 0.059
+L1, w = p^2 + graft                   0.012 0.027 0.030 0.020 0.024 0.041 0.060
+                                      T=1000
+POT-MLE u=0.85                         0.094
+POT-MLE u=0.90                         0.000
+POT-MLE u=0.95                         0.068
+POT-Lmom u=0.90                        0.065
+empirical                              0.076
+L2, w = smoothstep(p/0.8) (ungrafted)  0.071
+L2, w = smoothstep(p/0.8) + graft      0.069
+L2, w = p^2 (ungrafted)                0.071
+L2, w = p^2 + graft                    0.071
+L2, w = p^6 (ungrafted)                0.072
+L2, w = p^6 + graft                    0.073
+L1, w = p^2 (ungrafted)                0.068
+L1, w = p^2 + graft                    0.069
+
+--- median absolute error ---
+                                        T=2  T=10  T=19  T=48 T=107 T=203 T=529
+POT-MLE u=0.85                        0.072 0.202 0.382 0.871 1.602 2.570 4.915
+POT-MLE u=0.90                        0.072 0.192 0.410 0.921 1.572 2.402 4.661
+POT-MLE u=0.95                        0.072 0.192 0.433 0.927 1.619 2.383 4.275
+POT-Lmom u=0.90                       0.072 0.192 0.397 0.954 1.551 2.196 3.572
+empirical                             0.072 0.192 0.433 1.038 1.932 2.542 4.443
+L2, w = smoothstep(p/0.8) (ungrafted) 0.214 0.231 0.347 0.797 1.488 2.243 3.810
+L2, w = smoothstep(p/0.8) + graft     0.091 0.351 0.433 0.811 1.496 2.231 3.892
+L2, w = p^2 (ungrafted)               0.218 0.243 0.362 0.819 1.480 2.204 3.656
+L2, w = p^2 + graft                   0.072 0.259 0.379 0.796 1.465 2.205 3.722
+L2, w = p^6 (ungrafted)               0.239 0.298 0.433 0.890 1.540 2.218 3.594
+L2, w = p^6 + graft                   0.071 0.198 0.373 0.810 1.445 2.132 3.531
+L1, w = p^2 (ungrafted)               0.070 0.193 0.332 0.956 1.864 2.855 4.808
+L1, w = p^2 + graft                   0.071 0.179 0.312 0.898 1.757 2.671 4.490
+                                      T=1000
+POT-MLE u=0.85                         7.047
+POT-MLE u=0.90                         6.780
+POT-MLE u=0.95                         6.256
+POT-Lmom u=0.90                        5.091
+empirical                              6.610
+L2, w = smoothstep(p/0.8) (ungrafted)  5.215
+L2, w = smoothstep(p/0.8) + graft      5.371
+L2, w = p^2 (ungrafted)                5.067
+L2, w = p^2 + graft                    5.125
+L2, w = p^6 (ungrafted)                4.896
+L2, w = p^6 + graft                    4.769
+L1, w = p^2 (ungrafted)                6.556
+L1, w = p^2 + graft                    6.068
+
+--- fraction closer to the truth than POT-MLE(0.90) ---
+                                        T=2  T=10  T=19  T=48 T=107 T=203 T=529
+POT-MLE u=0.85                        0.000 0.504 0.571 0.535 0.440 0.478 0.512
+POT-MLE u=0.90                        0.000 0.000 0.000 0.000 0.000 0.000 0.000
+POT-MLE u=0.95                        0.000 0.000 0.438 0.476 0.494 0.538 0.515
+POT-Lmom u=0.90                       0.000 0.000 0.488 0.362 0.554 0.648 0.706
+empirical                             0.000 0.000 0.438 0.394 0.502 0.564 0.280
+L2, w = smoothstep(p/0.8) (ungrafted) 0.128 0.430 0.641 0.599 0.513 0.537 0.622
+L2, w = smoothstep(p/0.8) + graft     0.377 0.291 0.483 0.614 0.593 0.549 0.626
+L2, w = p^2 (ungrafted)               0.121 0.429 0.631 0.610 0.568 0.577 0.662
+L2, w = p^2 + graft                   0.509 0.386 0.588 0.644 0.699 0.629 0.670
+L2, w = p^6 (ungrafted)               0.113 0.352 0.496 0.556 0.594 0.636 0.719
+L2, w = p^6 + graft                   0.513 0.477 0.616 0.643 0.713 0.743 0.743
+L1, w = p^2 (ungrafted)               0.548 0.492 0.691 0.416 0.364 0.431 0.515
+L1, w = p^2 + graft                   0.489 0.520 0.683 0.441 0.393 0.470 0.557
+                                      T=1000
+POT-MLE u=0.85                         0.534
+POT-MLE u=0.90                         0.000
+POT-MLE u=0.95                         0.508
+POT-Lmom u=0.90                        0.733
+empirical                              0.273
+L2, w = smoothstep(p/0.8) (ungrafted)  0.660
+L2, w = smoothstep(p/0.8) + graft      0.672
+L2, w = p^2 (ungrafted)                0.702
+L2, w = p^2 + graft                    0.708
+L2, w = p^6 (ungrafted)                0.756
+L2, w = p^6 + graft                    0.769
+L1, w = p^2 (ungrafted)                0.555
+L1, w = p^2 + graft                    0.591
+
+--- bias ---
+                                         T=2   T=10  T=19   T=48  T=107  T=203
+POT-MLE u=0.85                        -0.009  0.071 0.054 -0.321 -0.417 -0.098
+POT-MLE u=0.90                        -0.009 -0.009 0.131 -0.207 -0.527 -0.624
+POT-MLE u=0.95                        -0.009 -0.009 0.037 -0.015 -0.425 -0.935
+POT-Lmom u=0.90                       -0.009 -0.009 0.011 -0.397 -0.670 -0.797
+empirical                             -0.009 -0.009 0.037 -0.343  1.777  0.040
+L2, w = smoothstep(p/0.8) (ungrafted) -0.211  0.231 0.270 -0.149 -0.592 -0.980
+L2, w = smoothstep(p/0.8) + graft     -0.073  0.407 0.475  0.115 -0.261 -0.581
+L2, w = p^2 (ungrafted)               -0.216  0.221 0.267 -0.134 -0.555 -0.922
+L2, w = p^2 + graft                   -0.021  0.282 0.350  0.007 -0.355 -0.665
+L2, w = p^6 (ungrafted)               -0.260  0.265 0.339 -0.034 -0.454 -0.843
+L2, w = p^6 + graft                   -0.001  0.154 0.229 -0.087 -0.451 -0.785
+L1, w = p^2 (ungrafted)               -0.031  0.150 0.090 -0.450 -0.943 -1.312
+L1, w = p^2 + graft                   -0.028  0.125 0.103 -0.344 -0.743 -1.014
+                                       T=529 T=1000
+POT-MLE u=0.85                         1.820  4.956
+POT-MLE u=0.90                         0.027  1.596
+POT-MLE u=0.95                        -1.684 -1.848
+POT-Lmom u=0.90                       -0.504  0.279
+empirical                             -3.013 -5.397
+L2, w = smoothstep(p/0.8) (ungrafted) -1.590 -1.983
+L2, w = smoothstep(p/0.8) + graft     -1.057 -1.333
+L2, w = p^2 (ungrafted)               -1.495 -1.862
+L2, w = p^2 + graft                   -1.193 -1.495
+L2, w = p^6 (ungrafted)               -1.508 -1.992
+L2, w = p^6 + graft                   -1.540 -2.030
+L1, w = p^2 (ungrafted)               -1.711 -1.764
+L1, w = p^2 + graft                   -1.217 -1.105
+
+--- sd ---
+                                        T=2  T=10  T=19  T=48 T=107 T=203 T=529
+POT-MLE u=0.85                        0.107 0.337 0.615 1.170 2.225 3.984 9.711
+POT-MLE u=0.90                        0.107 0.311 0.678 1.304 2.132 3.482 8.005
+POT-MLE u=0.95                        0.107 0.311 0.678 1.468 2.263 3.147 6.005
+POT-Lmom u=0.90                       0.107 0.311 0.620 1.233 1.951 2.855 5.274
+empirical                             0.107 0.311 0.678 1.390 4.257 4.257 4.257
+L2, w = smoothstep(p/0.8) (ungrafted) 0.100 0.356 0.584 1.178 1.982 2.897 4.900
+L2, w = smoothstep(p/0.8) + graft     0.105 0.388 0.652 1.313 2.197 3.200 5.396
+L2, w = p^2 (ungrafted)               0.102 0.391 0.628 1.215 1.998 2.886 4.823
+L2, w = p^2 + graft                   0.105 0.352 0.608 1.235 2.070 3.024 5.030
+L2, w = p^6 (ungrafted)               0.157 0.497 0.784 1.400 2.161 2.992 4.749
+L2, w = p^6 + graft                   0.107 0.332 0.611 1.220 1.992 2.860 4.539
+L1, w = p^2 (ungrafted)               0.097 0.292 0.529 1.204 2.201 3.434 6.441
+L1, w = p^2 + graft                   0.102 0.285 0.510 1.166 2.146 3.373 6.386
+                                      T=1000
+POT-MLE u=0.85                        17.446
+POT-MLE u=0.90                        14.156
+POT-MLE u=0.95                        10.053
+POT-Lmom u=0.90                        8.092
+empirical                              4.257
+L2, w = smoothstep(p/0.8) (ungrafted)  6.811
+L2, w = smoothstep(p/0.8) + graft      7.495
+L2, w = p^2 (ungrafted)                6.665
+L2, w = p^2 + graft                    6.964
+L2, w = p^6 (ungrafted)                6.374
+L2, w = p^6 + graft                    6.125
+L1, w = p^2 (ungrafted)                9.655
+L1, w = p^2 + graft                    9.625
+
+failed variants:
+                       POT-MLE u=0.85                        POT-MLE u=0.90 
+                                    0                                     0 
+                       POT-MLE u=0.95                       POT-Lmom u=0.90 
+                                    0                                     0 
+                            empirical L2, w = smoothstep(p/0.8) (ungrafted) 
+                                    0                                     0 
+    L2, w = smoothstep(p/0.8) + graft               L2, w = p^2 (ungrafted) 
+                                   22                                     0 
+                  L2, w = p^2 + graft               L2, w = p^6 (ungrafted) 
+                                   11                                     0 
+                  L2, w = p^6 + graft               L1, w = p^2 (ungrafted) 
+                                    2                                     0 
+                  L1, w = p^2 + graft 
+                                  138 
