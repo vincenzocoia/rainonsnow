@@ -716,6 +716,34 @@ function,</p>
 so the raw criterion is finite and nothing was needed &mdash; but it should be built in before the
 estimator meets anything heavier.</p>
 
+<h3>The same condition, across every method here</h3>
+<p>The moment requirement is not peculiar to the composite estimators &mdash; it is the same
+quantity read off different losses, and it lines up into one table. It is worth having, because it
+says which methods are even <em>defined</em> for a given tail heaviness before any question of
+efficiency arises.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>What each method needs of the tail. The exponent a is the power in the loss:
+a = 1 is the pinball, a = 2 the asymmetric square, and intermediate a gives the Lp-quantiles of
+section 14.</caption>
+<thead><tr><th>method</th><th>needs</th><th>i.e.</th><th>why</th></tr></thead>
+<tbody>
+<tr><td>GEV / GPD maximum likelihood</td><td>&mdash;</td><td>any &xi;</td><td>the likelihood is defined on the support; &xi; &gt; &minus;1/2 is needed only for the usual asymptotics</td></tr>
+<tr><td>L-moments and probability-weighted moments</td><td>E&#124;Y&#124; &lt; &infin;</td><td>&xi; &lt; 1</td><td>every L-moment is a linear combination of expected order statistics</td></tr>
+<tr><td>Composite quantile (L1)</td><td>E&#124;Y&#124; &lt; &infin;</td><td>&xi; &lt; 1</td><td>the pinball loss is linear in the residual</td></tr>
+<tr><td>Composite L<sup>a</sup> (Lp-quantile)</td><td>E&#124;Y&#124;<sup>a</sup> &lt; &infin;</td><td>&xi; &lt; 1/a</td><td>the loss is a power a of the residual</td></tr>
+<tr><td>Composite expectile (L2)</td><td>E&#124;Y&#124;&sup2; &lt; &infin;</td><td class="lose">&xi; &lt; 1/2</td><td>the a = 2 case</td></tr>
+<tr><td>&alpha;-elastile, any &alpha; &gt; 0</td><td>E&#124;Y&#124;&sup2; &lt; &infin;</td><td class="lose">&xi; &lt; 1/2</td><td>a sum is finite only if both terms are, so mixing does <em>not</em> relax the L2 requirement</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>The last row is worth pausing on. Mixing the losses buys accuracy but buys no extra domain: the
+&alpha;-elastile inherits the expectile's &xi; &lt; 1/2 for every &alpha; above zero. If a wider
+domain is what is wanted, the L<sup>a</sup> family is the one that delivers it, at a = 1.5 giving
+&xi; &lt; 2/3. In every case the loss-difference form of section 7 relaxes the requirement back to
+E&#124;Y&#124; &lt; &infin;.</p>
+
 <h3>A third trap: weight beyond the data</h3>
 <p>A weight left at one all the way to p = 1 puts a large share of its mass at levels
 <em>above the largest observation</em>. Out there the empirical quantile and expectile functions
@@ -750,7 +778,7 @@ FIG_SHAPE
 
 S8 = """
 <section id="recommend">
-<h2><span class="num">13</span><span>What to do with this</span></h2>
+<h2><span class="num">15</span><span>What to do with this</span></h2>
 <div class="col">
 <p><strong>The obstacle is variance, not bias.</strong> Both composite estimators solve the bias
 problem completely &mdash; against a body-contaminated truth they remove a 39% underestimate of
@@ -812,7 +840,7 @@ optimise, and by those the case for the method is much stronger than by MSE.</li
 
 S9 = """
 <section id="methods">
-<h2><span class="num">14</span><span>Methods and reproducibility</span></h2>
+<h2><span class="num">16</span><span>Methods and reproducibility</span></h2>
 <div class="col">
 <h3>Machinery</h3>
 <p>The expectile function of the GEV is needed on a grid of levels inside an optimiser, roughly
@@ -937,7 +965,7 @@ def build():
             "version sitting at 1.15. Right, median absolute error. The red line is the control: "
             "the MLE grafted onto the same body, which gains nothing.",
             "MSE ratio and median error ratio for grafted and ungrafted composite fits")),
-        S10, S11, S12, GPD_SECTION, S8, S9, FOOTER,
+        S10, S11, S12, GPD_SECTION, SM, S8, S9, FOOTER,
     ]
     return "".join(body)
 
@@ -1487,6 +1515,87 @@ estimate and the MSE point at the same place, which they did not in the GEV stud
 period &mdash; an oracle no schedule can beat &mdash; improves on the best <em>single</em>
 &alpha; (0.50) by <b>14% at the very far tail and 4.4% on average</b>. That is the entire prize
 available, before any cost of choosing the schedule.</p></div>
+</div>
+</section>
+"""
+
+
+
+SM = """
+<section id="mquantile">
+<h2><span class="num">14</span><span>Everything here is an M-estimator, and the elastile is an M-quantile</span></h2>
+<div class="col">
+<p>It is worth naming the framework these estimators already live in, because it supplies theory
+for free and it changes how the elastile should be positioned.</p>
+
+<h3>The estimators</h3>
+<p>Every composite estimator in this report minimises a sum over observations of a criterion in
+&theta;,</p>
+</div>
+<div class="eq">&theta;&#770; = argmin &Sigma;&#8202;<sub>i</sub> &rho;&#771;(y&#8202;<sub>i</sub>; &theta;),   &rho;&#771;(y; &theta;) = &#8747; w(p) &rho;&#8202;<sub>p</sub>(y, T(p|&theta;)) dp</div>
+<div class="col">
+<p>which is exactly Huber's M-estimator with a particular &rho;&#771;. Maximum likelihood is the case
+&rho;&#771; = &minus;log f. (L-moments is not an M-estimator but is a Z-estimator, solving
+&lambda;&#770;<sub>r</sub> = &lambda;<sub>r</sub>(&theta;), and the same asymptotics apply.)</p>
+
+<p>The consequence is that standard M-estimation theory applies without modification. Under the
+usual conditions &theta;&#770; is consistent for the population minimiser &mdash; the "asymptotic
+target" tabulated throughout this report &mdash; and asymptotically normal with the sandwich
+variance</p>
+</div>
+<div class="eq">V = A<sup>&minus;1</sup> B A<sup>&minus;1</sup>,   A = E[&nabla;&sup2;&rho;&#771;],   B = Var[&nabla;&rho;&#771;]</div>
+<div class="col">
+<p>Two things follow that would otherwise cost simulation. Analytic standard errors and asymptotic
+relative efficiencies, so the choice of weight and of &alpha; can be studied without a Monte Carlo
+at every setting. And a diagnosis of the near-flat ridge that dominates the variance in section 5:
+that ridge is A being close to singular over the tail-weighted region, which says the remedy is a
+reparameterisation or a penalty in that direction rather than a different loss.</p>
+
+<h3>The functionals</h3>
+<p>The second sense of "M" is Breckling and Chambers' <strong>M-quantiles</strong>: the level-p
+M-quantile for an influence function &psi; is the root of</p>
+</div>
+<div class="eq">E[ |p &minus; I(Y &lt; t)| &psi;(Y &minus; t) ] = 0</div>
+<div class="col">
+<p>Every functional in this report is one of these, differing only in &psi;:</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>The functionals as M-quantiles. The elastile row is verified against the definition to
+machine precision (residuals below 1e-11) in <code>scripts/98-validate.R</code>.</caption>
+<thead><tr><th>functional</th><th>&psi;(u)</th><th>influence</th><th>reference</th></tr></thead>
+<tbody>
+<tr><td>Quantile</td><td>sign(u)</td><td class="win">bounded</td><td>&mdash;</td></tr>
+<tr><td>Expectile</td><td>u</td><td class="lose">unbounded</td><td>Newey &amp; Powell (1987)</td></tr>
+<tr><td>L<sup>a</sup>-quantile</td><td>&#124;u&#124;<sup>a&minus;1</sup> sign(u)</td><td class="lose">unbounded for a &gt; 1</td><td>Chen (1996); Daouia, Girard &amp; Stupfler</td></tr>
+<tr><td><strong>&alpha;-elastile</strong></td><td><strong>(2&alpha;/s) u + (1&minus;&alpha;) sign(u)</strong></td><td class="lose">unbounded for &alpha; &gt; 0</td><td>this report, as an M-quantile</td></tr>
+<tr><td>Huber M-quantile</td><td>min(k, max(&minus;k, u))</td><td class="win">bounded</td><td>Breckling &amp; Chambers (1988)</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p><strong>So the &alpha;-elastile is not a new functional.</strong> It is the M-quantile with a
+linear-plus-sign influence function, and it sits inside a framework that is thirty-five years old.
+That is worth saying plainly, and it is not a loss: positioning it as "a particular M-quantile,
+chosen because its identification equation needs only the first partial moment" is both honest and
+stronger than claiming novelty, because it inherits the existing asymptotic theory rather than
+having to rebuild it. What is genuinely new here is the <em>use</em> &mdash; a tail-weighted
+composite criterion built on it, and the finding that the mixing parameter has an interior optimum
+that moves with the return period.</p>
+
+<div class="note"><span class="lab">The robustness logic inverts</span>
+<p>M-estimation exists to bound the influence of outliers, and by that standard the quantile
+(&psi; bounded) is the robust choice and the expectile (&psi; unbounded) the fragile one. Every
+result in this report points the other way: L2 has one-half to one-sixth of L1's far-tail error.
+The reason is that in tail estimation the "outliers" <em>are the data</em> &mdash; the large
+observations carry nearly all the information about &xi;, and a bounded &psi; deliberately discards
+it. Whatever is inherited from robust statistics, the usual advice about bounded influence should
+be inverted when the target is the tail.</p></div>
+
+<p>One caveat about which path to take between L1 and L2. The elastile and the L<sup>a</sup>
+family share endpoints but are different curves: at p = 0.9 for GPD(0, 1, 0.2) the quantile is
+2.925 and the expectile 2.875, while the 1.5-quantile is 2.747 &mdash; outside the interval they
+span. So the two are not reparameterisations of one another, and a result for one does not transfer
+to the other.</p>
 </div>
 </section>
 """
