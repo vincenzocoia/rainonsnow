@@ -1223,6 +1223,17 @@ at every setting. And a diagnosis of the near-flat ridge that dominates the vari
 that ridge is A being close to singular over the tail-weighted region, which says the remedy is a
 reparameterisation or a penalty in that direction rather than a different loss.</p>
 
+<div class="note"><span class="lab">How flat that ridge is, measured</span>
+<p>Flat enough that the "asymptotic target" figures in this report are not converged at the sample
+size used to estimate them. Refitting the same criterion to three independent n = 5000 samples
+gives &xi;&#770; = 0.149, 0.233 and 0.405 for the one-sided M-quantile of section 15, and 0.213,
+0.259 and 0.354 for pure L2 &mdash; a spread of a quarter in the shape parameter, at fifty times
+the sample size of the study. The three decimal places these targets are quoted to are therefore
+misleading, and comparisons between one estimator's asymptotic target and another's should not be
+read at that resolution. The 2000-replicate medians are the reliable summaries throughout, and the
+return-level results, which average over the ridge rather than sitting on it, are unaffected. This
+is the same near-singular A, seen from a different direction.</p></div>
+
 <h3>The functionals</h3>
 <p>The second sense of "M" is Breckling and Chambers' <strong>M-quantiles</strong>: the level-p
 M-quantile for an influence function &psi; is the root of</p>
