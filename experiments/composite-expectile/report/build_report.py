@@ -366,6 +366,13 @@ VERDICT = """
     all interpolate smoothly, and an interior &alpha; beats <em>both</em> pure losses by 5 to 23%
     on MSE at every return period up to 500. The best &alpha; rises with the return period.</p></div>
   <div class="finding"><div class="verdict-tag t-yes">And</div>
+    <p><b>Grafting onto an empirical body fixes the rest.</b> Used as the tail of a smooth graft
+    with the empirical distribution as the body, the composite expectile fit goes from
+    <b>1168&times;</b> the MLE's error at the 2-year level to <b>1.15&times;</b>, and beats the
+    MLE across the whole tail (0.82&times; at T = 200, 0.84&times; at T = 1000, closer on 80% of
+    datasets). Grafting the MLE onto the same body gains nothing, so it is the composite tail
+    doing the work.</p></div>
+  <div class="finding"><div class="verdict-tag t-yes">And</div>
     <p><b>There is a realistic setting where L2 wins outright.</b> When the body is
     near-degenerate &mdash; ordinary snowmelt maxima clustered tightly, a heavy rain-on-snow tail
     &mdash; the composite expectile estimator's typical error at the 1000-year level is
@@ -731,7 +738,7 @@ FIG_SHAPE
 
 S8 = """
 <section id="recommend">
-<h2><span class="num">09</span><span>What to do with this</span></h2>
+<h2><span class="num">10</span><span>What to do with this</span></h2>
 <div class="col">
 <p><strong>The obstacle is variance, not bias.</strong> Both composite estimators solve the bias
 problem completely &mdash; against a body-contaminated truth they remove a 39% underestimate of
@@ -793,7 +800,7 @@ optimise, and by those the case for the method is much stronger than by MSE.</li
 
 S9 = """
 <section id="methods">
-<h2><span class="num">10</span><span>Methods and reproducibility</span></h2>
+<h2><span class="num">11</span><span>Methods and reproducibility</span></h2>
 <div class="col">
 <h3>Machinery</h3>
 <p>The expectile function of the GEV is needed on a grid of levels inside an optimiser, roughly
@@ -909,6 +916,15 @@ def build():
             "T = 1000, with the GEV MLE and L-moments marked. The interior minimum at "
             "p&#8320; = 0.5 is the elastic-net effect; at p&#8320; = 0.95 it is largely absent.",
             "MSE against return period and against alpha for the elastile at two weights")),
+        SG.replace("FIG_SG", fig(
+            "fig-smooth-graft.png",
+            "<b>Grafting repairs the body and improves the tail.</b> Dashed lines are ungrafted "
+            "composite fits, solid lines the same fits used as the tail of a smooth graft with an "
+            "empirical body. Left, MSE relative to the GEV MLE on a log scale &mdash; note the "
+            "ungrafted p&#8320;=0.95 expectile fit starting above 1000 at T = 2 and the grafted "
+            "version sitting at 1.15. Right, median absolute error. The red line is the control: "
+            "the MLE grafted onto the same body, which gains nothing.",
+            "MSE ratio and median error ratio for grafted and ungrafted composite fits")),
         S8, S9, FOOTER,
     ]
     return "".join(body)
@@ -1087,6 +1103,100 @@ the more the variance term dominates and the more of the expectile's smoothing y
 p&#8320; = 0.95 gives an interior optimum only at T &le; 20, and the pure losses win everywhere
 beyond. And &alpha; is a tuning parameter, so a fair account of it needs the selection cost
 folded in &mdash; these are oracle values.</p>
+</div>
+</section>
+"""
+
+
+
+SG = """
+<section id="graft">
+<h2><span class="num">09</span><span>Grafting the composite fit onto an empirical body</span></h2>
+<div class="col">
+<p>Everything above reports the composite fit as if it were the whole distribution, which is
+unfair to it and unlike how it would be used. The estimator buys its tail by abandoning the body,
+and the damage is severe: at p&#8320; = 0.95 the mean squared error of the 2-year return level is
+<strong>eleven thousand times</strong> the MLE's for the quantile version and a thousand times for
+the expectile version. That is not a subtlety, it is a ruined distribution.</p>
+
+<p>The natural repair is to use the composite fit only as the <em>tail</em> of a smooth graft whose
+body is the empirical distribution. The construction used here is the hazard-mixture smooth graft
+(Coia and De Michele), taken from <code>probaverse/distplyr</code> rather than reimplemented, which
+mixes body and tail on the hazard rather than the density and so has no jump or kink at the
+handover and no normalising constant. Writing w for the handover weight and
+<span class="mono">M = (1-w) S<sub>body</sub> + w S<sub>tail</sub></span>, the survival is
+<span class="mono">S = M C</span> with a correction factor C driven by w'.</p>
+
+<p>With a weight that is exactly 0 below x<sub>lo</sub> and exactly 1 above x<sub>hi</sub>, the
+construction collapses to three regimes, which is worth spelling out because it explains the
+results:</p>
+<ul>
+<li>below x<sub>lo</sub>: w' = 0 so C = 1, and the graft <em>is</em> the empirical distribution;</li>
+<li>between: the transition, the only part needing the integral;</li>
+<li>above x<sub>hi</sub>: w' = 0 again, so C freezes at a constant c and
+<span class="mono">S(x) = c &middot; S<sub>tail</sub>(x)</span> &mdash; the fitted tail,
+<em>rescaled by a single constant</em> that reconciles it with the body's mass at the handover.</li>
+</ul>
+<p>That last point matters: the graft does not merely paste the fitted tail on, it re-anchors it.
+So one should expect the body to be fixed by construction, and the tail to change too.</p>
+</div>
+FIG_SG
+<div class="col">
+<p>Both expectations hold. The handover weight was run two ways &mdash; the same weight used in the
+fitting criterion, as proposed, and a fixed [0.90, 0.98] window &mdash; because the two weights do
+different jobs: one says which levels to fit, the other says where to stop trusting the data.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>n = 100, 2000 replicates, MSE relative to the GEV MLE with paired Monte Carlo standard
+errors. No fits failed. The last two rows are the control: grafting a <em>global</em> fit onto the
+same body, to test whether any of the gain is simply the empirical body.</caption>
+<thead><tr><th>fit used as the tail</th><th>T = 2</th><th>T = 10</th><th>T = 100</th><th>T = 200</th><th>T = 1000</th><th>closer than MLE at T = 1000</th></tr></thead>
+<tbody>
+<tr><td>Composite expectile p&#8320;=0.95, <em>ungrafted</em></td>
+  <td class="lose">1168 <span class="se">&plusmn; 61</span></td><td class="lose">12.8</td><td class="lose">3.58</td><td class="lose">2.07</td><td>1.10 <span class="se">&plusmn; 0.04</span></td><td>63%</td></tr>
+<tr><td>&nbsp;&nbsp;&rarr; grafted, handover 0.95&ndash;0.98</td>
+  <td class="win">1.15 <span class="se">&plusmn; 0.03</span></td><td class="win">0.47</td><td>1.52</td><td>1.24</td><td class="tie">1.01 <span class="se">&plusmn; 0.02</span></td><td>59%</td></tr>
+<tr><td>Composite expectile p&#8320;=0.50, <em>ungrafted</em></td>
+  <td class="lose">2.98 <span class="se">&plusmn; 0.08</span></td><td>1.17</td><td>1.07</td><td>0.98</td><td>1.05 <span class="se">&plusmn; 0.05</span></td><td>78%</td></tr>
+<tr><td>&nbsp;&nbsp;&rarr; grafted, handover 0.90&ndash;0.98</td>
+  <td class="win">1.15 <span class="se">&plusmn; 0.03</span></td><td class="win">0.47</td><td class="win">0.92 <span class="se">&plusmn; 0.02</span></td><td class="win">0.82 <span class="se">&plusmn; 0.02</span></td><td class="win">0.84 <span class="se">&plusmn; 0.03</span></td><td class="win">80%</td></tr>
+<tr><td>&nbsp;&nbsp;&rarr; grafted, handover 0.50&ndash;0.53 (same as fitting weight)</td>
+  <td class="win">1.15</td><td class="lose">1.89</td><td>1.32</td><td>1.20</td><td>1.34 <span class="se">&plusmn; 0.08</span></td><td>76%</td></tr>
+<tr><td>Composite quantile p&#8320;=0.50 &rarr; grafted, 0.90&ndash;0.98</td>
+  <td class="win">1.15</td><td class="win">0.47</td><td class="lose">2.01</td><td class="lose">2.46</td><td class="lose">6.38 <span class="se">&plusmn; 0.58</span></td><td>58%</td></tr>
+<tr class="ref"><td>Empirical distribution alone</td>
+  <td>1.15</td><td>0.47</td><td>5.37</td><td>2.03</td><td>1.13</td><td>43%</td></tr>
+<tr class="ref"><td>GEV MLE &rarr; grafted, 0.90&ndash;0.98 <em>(control)</em></td>
+  <td>1.15</td><td>0.47</td><td>1.13 <span class="se">&plusmn; 0.01</span></td><td>1.07 <span class="se">&plusmn; 0.01</span></td><td>1.02 <span class="se">&plusmn; 0.01</span></td><td>50%</td></tr>
+<tr class="ref"><td>GEV L-moments &rarr; grafted, 0.90&ndash;0.98 <em>(control)</em></td>
+  <td>1.15</td><td>0.47</td><td>1.24</td><td>1.15</td><td>1.14</td><td>62%</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p><strong>The body is completely repaired.</strong> Eleven thousand becomes 1.15, which is the
+empirical distribution's own figure &mdash; as it must be, since below the handover the graft is
+exactly the empirical distribution. The composite estimator's worst liability simply disappears.</p>
+
+<p><strong>The tail improves as well</strong>, which was not guaranteed. The best combination,
+composite expectile fitted at p&#8320; = 0.5 and handed over on [0.90, 0.98], beats the GEV MLE at
+every return period from 50 to 1000 &mdash; 0.92, 0.82, 0.80, 0.84 &mdash; each five to eight
+standard errors below one, and it is closer to the truth than the MLE on <strong>80% of
+datasets</strong>. Ungrafted, the same fit was 1.07, 0.98, 0.98, 1.05: a tie. The re-anchoring
+constant c is doing real work.</p>
+
+<div class="note"><span class="lab">The control settles it</span>
+<p>Grafting the <em>MLE</em> onto the same empirical body gives 1.13, 1.07, 1.03, 1.02 and a 50%
+win rate &mdash; that is, nothing. Grafting L-moments is likewise neutral. So the gain is not the
+empirical body, and it is not the graft; it is the composite expectile tail, which only becomes
+usable once the graft takes the body off its hands. Neither ingredient works alone.</p></div>
+
+<p>Two practical points. The handover weight should <em>not</em> be tied to the fitting weight:
+handing over at [0.50, 0.53] because the criterion was fitted from p&#8320; = 0.5 means trusting
+the parametric model from the 53rd percentile up, and costs a factor of 1.6 at T = 1000 against
+the decoupled [0.90, 0.98] version. And the graft does not rescue the L1 fit &mdash; grafted, the
+composite quantile estimator is still 6.4&times; the MLE at T = 1000. The tail model has to be
+worth grafting.</p>
 </div>
 </section>
 """

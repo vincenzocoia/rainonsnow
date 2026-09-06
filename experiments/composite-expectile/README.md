@@ -90,12 +90,26 @@ and the expectile. At a well-placed weight an interior alpha beats *both* pure l
 MSE at every return period up to 500, with the best alpha rising with T (about 0.2 near the record
 length, pure L2 an order of magnitude beyond). At p0 = 0.95 the effect is largely absent.
 
-**8. Admissible weights.** For `w(p) ~ (1-p)^(-a)`: finite iff `a < 2 - xi` (L1) or `a < 2 - 2 xi`
+**8. Grafting onto an empirical body fixes what's left.** The composite fit is ruinous as a whole
+distribution - at p0 = 0.95 its 2-year return level has 11766x (L1) and 1168x (L2) the MLE's MSE.
+Used instead as the *tail* of a smooth graft (Coia's hazard-mixture construction, from
+`probaverse/distplyr`) with the empirical distribution as the body, that becomes **1.15x** - the
+empirical distribution's own figure, since below the handover the graft *is* the empirical
+distribution. The tail improves too: above the handover the graft is the fitted tail rescaled by a
+single constant that re-anchors it to the body's mass. The best combination - expectile fit at
+p0 = 0.5, handover on [0.90, 0.98] - beats the GEV MLE at **every** return period from 50 to 1000
+(0.92, 0.82, 0.80, 0.84, each 5-8 MC standard errors below 1) and is closer on **80%** of datasets.
+Ungrafted the same fit was a tie. Control: grafting the MLE onto the same body gains nothing
+(1.02 at T = 1000, 50% win rate), so it is the composite tail doing the work, not the body and not
+the graft. The handover weight should be decoupled from the fitting weight - reusing p0 = 0.5 as
+the handover costs a factor of 1.6 at T = 1000. And the graft does not rescue L1 (still 6.4x).
+
+**9. Admissible weights.** For `w(p) ~ (1-p)^(-a)`: finite iff `a < 2 - xi` (L1) or `a < 2 - 2 xi`
 (L2). The remembered `a < 1` is the L1 condition at xi = 1. The binding condition is on the truth:
 L1 needs a finite mean (xi < 1), L2 a finite variance (xi < 1/2), above which the raw criterion is
 +Inf everywhere and only the loss-difference form is usable. Weights need not be bounded by 1.
 
-**9. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
+**10. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
 above the largest observation, where the empirical functional has saturated; the fitted shape is
 dragged hard negative in proportion to that share.
 
@@ -109,7 +123,9 @@ R/gev.R          GEV cdf, quantile, mean, closed-form partial moment, expectiles
 R/dgp.R          the contaminated truth, plus its quantiles and expectiles
 R/weight.R       the weight function
 R/quadrature.R   panelled Gauss-Legendre over levels
-R/estimators.R   the four estimators
+R/estimators.R   the four estimators, plus the alpha-elastile
+R/graft.R        a grafted truth (exactly-GEV tail, arbitrary body)
+R/smoothgraft.R  return levels from distplyr's smooth graft
 R/config.R       the settings the scripts share
 src/             C++ port of the expectile solver
 scripts/00-design.R             DGP and weight design, asymptotic targets
@@ -123,6 +139,7 @@ scripts/09-elastile.R           the alpha-elastile: population behaviour and an 
 scripts/10-alt-dgp.R            the heavier max() setting
 scripts/11-graft.R              a grafted truth: exactly-GEV tail, hostile body
 scripts/12-sharp-contrast.R     the near-degenerate body, where L2 wins
+scripts/13-smooth-graft.R       composite fit as the tail of a smooth graft on an empirical body
 scripts/98-validate.R           every correctness check, re-runnable
 report/build_report.py          builds the standalone HTML report
 out/                            results and figures
@@ -134,3 +151,9 @@ Run in order from this directory; each script starts with `source("R/setup.R")`.
 
 R with `Rcpp`. `distionary` (branch `expectiles`) is optional — it is used only
 as an independent cross-check in `scripts/98-validate.R`.
+
+`scripts/13-smooth-graft.R` additionally needs `distplyr` (branch
+`claude/distplyr-smooth-graft-spond9`) and `distionary` (branch `development`, whose `Version:`
+string still reads 0.1.1.9000 and must be bumped past 0.2.0 for distplyr's dependency check to
+pass). Install them into a separate library and put it first on `.libPaths()`, so the `expectiles`
+build of distionary used elsewhere is not clobbered.
