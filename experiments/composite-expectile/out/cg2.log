@@ -1,0 +1,3 @@
+composite L1    fit ... 0.1 min, graft ... 0.2 min
+composite L2    fit ... 0.2 min, graft ... 0.2 min
+elastile a=0.5  fit ... 0.4 min, graft ... 
