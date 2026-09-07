@@ -1,0 +1,59 @@
+=== Correctly specified GPD against the efficiency bound ===
+iid GPD(1, 0.5, 0.2), n = 100, 2000 replicates.
+
+
+--- MSE relative to the ORACLE two-parameter MLE ---
+                         T=2  T=10  T=48 T=107 T=203 T=529 T=1000
+ORACLE MLE (mu known)  1.000 1.000 1.000 1.000 1.000 1.000  1.000
+GPD full MLE           0.999 1.001 1.001 1.001 1.001 1.000  0.999
+POT-MLE u=0.10         1.008 1.009 1.013 1.028 1.040 1.058  1.071
+POT-MLE u=0.50         1.309 1.139 1.030 1.144 1.259 1.467  1.636
+POT-MLE u=0.90         1.309 1.572 1.136 1.031 1.176 1.789  2.578
+POT-Lmom u=0.90        1.309 1.572 1.083 1.381 1.083 1.049  1.175
+composite L1 + graft   1.285 1.355 1.088 1.196 1.402 1.815  2.218
+composite L2 + graft   1.303 1.363 1.103 1.056 1.039 0.978  0.888
+elastile a=0.5 + graft 1.291 1.371 0.944 0.900 0.916 0.961  0.924
+inv Huber k=4 + graft  1.311 1.402 1.144 1.049 0.985 0.880  0.752
+composite L2           3.325 2.445 1.397 1.222 1.133 1.019  0.945
+inv Huber k=4          4.884 2.779 1.525 1.255 1.107 0.923  0.812
+
+--- fraction closer to the truth than the oracle MLE ---
+                         T=2  T=10  T=48 T=107 T=203 T=529 T=1000
+ORACLE MLE (mu known)  0.000 0.000 0.000 0.000 0.000 0.000  0.000
+GPD full MLE           0.494 0.510 0.476 0.470 0.468 0.465  0.459
+POT-MLE u=0.10         0.505 0.474 0.478 0.476 0.472 0.460  0.456
+POT-MLE u=0.50         0.410 0.457 0.450 0.432 0.418 0.400  0.392
+POT-MLE u=0.90         0.410 0.373 0.447 0.395 0.370 0.320  0.296
+POT-Lmom u=0.90        0.410 0.373 0.422 0.466 0.470 0.455  0.424
+composite L1 + graft   0.424 0.410 0.476 0.456 0.440 0.421  0.415
+composite L2 + graft   0.426 0.416 0.471 0.467 0.438 0.420  0.414
+elastile a=0.5 + graft 0.428 0.415 0.488 0.478 0.468 0.444  0.431
+inv Huber k=4 + graft  0.420 0.412 0.466 0.462 0.437 0.423  0.417
+composite L2           0.336 0.362 0.456 0.435 0.432 0.417  0.410
+inv Huber k=4          0.323 0.344 0.450 0.428 0.426 0.418  0.411
+
+--- bias ---
+                          T=2   T=10   T=48  T=107  T=203  T=529 T=1000
+ORACLE MLE (mu known)   0.005 -0.010 -0.038 -0.034 -0.008  0.101  0.248
+GPD full MLE            0.005 -0.010 -0.038 -0.034 -0.008  0.102  0.250
+POT-MLE u=0.10          0.006 -0.010 -0.043 -0.043 -0.020  0.088  0.240
+POT-MLE u=0.50         -0.001 -0.003 -0.065 -0.083 -0.064  0.076  0.302
+POT-MLE u=0.90         -0.001 -0.020 -0.055 -0.216 -0.351 -0.408 -0.179
+POT-Lmom u=0.90        -0.001 -0.020 -0.141 -0.192 -0.279 -0.275 -0.091
+composite L1 + graft    0.004 -0.002 -0.027 -0.005  0.082  0.354  0.723
+composite L2 + graft    0.006  0.025 -0.062 -0.190 -0.328 -0.670 -0.946
+elastile a=0.5 + graft  0.005  0.009 -0.082 -0.177 -0.259 -0.438 -0.564
+inv Huber k=4 + graft   0.007  0.033 -0.057 -0.212 -0.393 -0.831 -1.221
+composite L2           -0.025  0.104 -0.007 -0.157 -0.325 -0.655 -0.925
+inv Huber k=4          -0.037  0.132  0.020 -0.157 -0.363 -0.793 -1.168
+
+--- decomposing section 13's headline gain ---
+Section 13 reports composite L2 + graft at MSE ratio 0.209 against
+POT-MLE(0.90) on the MISSPECIFIED truth, at T = 1000. Here, with the same
+estimator and reference but NO misspecification at all, that ratio is:
+
+   0.344
+
+On a log scale the total gain is -1.565, of which -1.066 (68%) is present
+with a perfectly specified model and only -0.499 (32%) is attributable
+to the misspecification the method exists to exploit.

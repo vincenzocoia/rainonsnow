@@ -377,7 +377,20 @@ VERDICT = """
     <p><b>Against what a practitioner would actually do, the composite version wins.</b> A GPD
     fitted by the composite L2 criterion with a convex weight and smooth grafted onto an empirical
     body beats peaks-over-threshold at every return period from 50 to 1000, on MSE, on median
-    error, and on head-to-head win rate.</p></div>
+    error, and on head-to-head win rate. <b>But most of that margin is not the loss function</b>
+    &mdash; see the next line.</p></div>
+  <div class="finding"><div class="verdict-tag t-no">Qualified hard</div>
+    <p><b>Two thirds of that headline gain survives when nothing is misspecified.</b> Repeating the
+    comparison on data that really are iid GPD, the same estimator still beats the same
+    POT&ndash;MLE(0.90) reference by a ratio of 0.344 at T = 1000, against 0.209 on the
+    contaminated truth. On a log scale, <b>68% of the gain is present with a perfect model</b> and
+    only 32% comes from the misspecification the method exists to exploit. The reference keeps ten
+    exceedances out of a hundred observations, and against a real efficiency bound it is 2.58&times;
+    worse at T = 1000 even when correctly specified.</p></div>
+  <div class="finding"><div class="verdict-tag t-mix">The premium</div>
+    <p><b>On a correctly specified GEV the composite estimators cost 12&ndash;32% in the far tail
+    and 2&ndash;3.7&times; in the body</b>, and they under-predict &mdash; the unsafe direction for
+    design. If there is no evidence of misspecification, use L-moments or the MLE.</p></div>
   <div class="finding"><div class="verdict-tag t-yes">And</div>
     <p><b>Grafting onto an empirical body fixes the rest.</b> Used as the tail of a smooth graft
     with the empirical distribution as the body, the composite expectile fit goes from
@@ -800,7 +813,7 @@ FIG_SHAPE
 
 S8 = """
 <section id="recommend">
-<h2><span class="num">16</span><span>What to do with this</span></h2>
+<h2><span class="num">17</span><span>What to do with this</span></h2>
 <div class="col">
 <p><strong>The obstacle is variance, not bias.</strong> Both composite estimators solve the bias
 problem completely &mdash; against a body-contaminated truth they remove a 39% underestimate of
@@ -862,7 +875,7 @@ optimise, and by those the case for the method is much stronger than by MSE.</li
 
 S9 = """
 <section id="methods">
-<h2><span class="num">17</span><span>Methods and reproducibility</span></h2>
+<h2><span class="num">18</span><span>Methods and reproducibility</span></h2>
 <div class="col">
 <h3>Machinery</h3>
 <p>The expectile function of the GEV is needed on a grid of levels inside an optimiser, roughly
@@ -1010,6 +1023,22 @@ def build():
             "k = 4, circled, and the curve turns back up towards the pure-L2 dashed line on "
             "either side.",
             "MSE against return period for seven knots, and MSE against knot at T = 529 and 1000")),
+        SCS.replace("FIG_CGEV", fig(
+            "fig-correct-gev.png",
+            "<b>The premium, on a correctly specified GEV.</b> Left, MSE relative to the GEV MLE, "
+            "which is exactly right here; the dashed black line at 1 is the MLE itself. Every "
+            "composite estimator is 2&ndash;3.7&times; worse at T = 2, where the weight has "
+            "deliberately discarded the body. Right, the fraction of datasets on which each is "
+            "closer to the truth than the MLE &mdash; all below one half, everywhere.",
+            "MSE ratio and win rate against the GEV MLE on correctly specified data")).replace("FIG_CGPD", fig(
+            "fig-correct-gpd.png",
+            "<b>And on a correctly specified GPD, measured against a real efficiency bound.</b> "
+            "Left, the ungrafted composite fits, 2.5&ndash;4.9&times; the bound at T = 2 because "
+            "the weight neglected the body. Right, the same fits grafted onto an empirical body, "
+            "which brings them all back to about 1.3&times; there. The dashed black line is "
+            "POT&ndash;MLE(0.90), section 13's reference, which is 2.58&times; the bound at "
+            "T = 1000 despite being correctly specified.",
+            "MSE against the oracle MLE for grafted and ungrafted composite fits")),
         S8, S9, FOOTER,
     ]
     return "".join(body)
@@ -1811,6 +1840,124 @@ of k &mdash; but it belongs in a paper as an empirical finding with a suggestive
 attached, not as a theoretical result confirmed by simulation. The gap between the two is the same
 gap as between sections 3 and 10: an obstacle that is genuine asymptotically and invisible at the
 sample sizes flood frequency actually has.</p>
+</div>
+</section>
+"""
+
+
+SCS = """
+<section id="correct">
+<h2><span class="num">16</span><span>The honest test: when nothing is wrong</span></h2>
+<div class="col">
+<p>Every result so far is on a misspecified truth, where a tail-weighted criterion has
+misspecification to avoid. If the data really are iid from the fitted family, maximum likelihood is
+efficient and every estimator here is throwing information away on purpose. It should lose. The
+size of that loss is the insurance premium, and without it none of this is deployable.</p>
+
+<h3>An exactly correct GEV</h3>
+<p>iid GEV(0, 1, 0.2), n = 100, 2000 replicates, the weight starting at the median as section 5
+recommends. The GEV MLE is now exactly right, so every ratio above one is what the method
+costs.</p>
+</div>
+FIG_CGEV
+<div class="tablewrap">
+<table>
+<caption>MSE relative to the GEV MLE on data that really are GEV. Above 1 is the price paid.</caption>
+<thead><tr><th>estimator</th><th>T=2</th><th>T=10</th><th>T=48</th><th>T=107</th><th>T=203</th><th>T=529</th><th>T=1000</th><th>median &xi;&#770;</th></tr></thead>
+<tbody>
+<tr class="ref"><td>GEV L-moments</td><td>1.05</td><td>0.95</td><td>0.94</td><td>0.96</td><td>0.98</td><td>1.01</td><td>1.03</td><td>0.184</td></tr>
+<tr><td>composite L1</td><td class="lose">3.68</td><td>1.20</td><td>1.11</td><td class="lose">1.35</td><td class="lose">1.64</td><td class="lose">2.24</td><td class="lose">2.83</td><td>0.167</td></tr>
+<tr><td>composite L2</td><td class="lose">2.03</td><td class="lose">2.03</td><td>1.30</td><td>1.27</td><td>1.28</td><td>1.31</td><td>1.32</td><td class="lose">0.095</td></tr>
+<tr><td>&alpha;-elastile, &alpha; = 0.5</td><td class="lose">2.01</td><td>1.51</td><td class="win">0.98</td><td class="win">0.99</td><td>1.04</td><td>1.15</td><td>1.25</td><td>0.122</td></tr>
+<tr><td>inverted Huber, k = 4</td><td class="lose">2.47</td><td class="lose">2.28</td><td>1.43</td><td>1.32</td><td>1.26</td><td>1.18</td><td class="win">1.12</td><td class="lose">0.085</td></tr>
+<tr class="ref"><td>GEV MLE (truth &xi; = 0.2)</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>0.198</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>Three things. <strong>The body is where it hurts</strong>: every composite estimator is 2 to
+3.7&times; the MLE's error at T = 2, which is the weight doing exactly what it was told to do in a
+setting where the body was informative. <strong>The far-tail premium is modest for two of them</strong>
+&mdash; 12% for the inverted Huber and 25% for the elastile at T = 1000, against 32% for pure L2.
+And <strong>L1 gets worse with return period rather than better</strong>, 1.11 at T = 48 rising to
+2.83 at T = 1000: the variance explosion appears even with no misspecification to justify it, so L1
+has no defensible regime here at all. L-moments meanwhile ties the MLE across the board, the known
+result at this sample size and a check that the harness is not flattering anything.</p>
+
+<div class="note"><span class="lab">The bias runs the unsafe way</span>
+<p>At T = 1000 the MLE is biased +1.01 and L-moments +0.45, while L2 is &minus;1.52, the elastile
+&minus;1.03 and the inverted Huber &minus;1.93. The composite estimators <em>under</em>-predict the
+far tail, which for flood design is the dangerous direction. The cause is in the last column:
+median &xi;&#770; is 0.198 for the MLE against 0.095 for L2 and 0.085 for the inverted Huber, on a
+true 0.2. Tail-weighted fitting underestimates the shape badly at n = 100 even when the family is
+perfect, and a low shape shrinks the far-tail extrapolation.</p></div>
+
+<h3>An exactly correct GPD, and a confound in section 13</h3>
+<p>The same test in the GPD setting turned up something that changes how section 13 should be
+read. Repeated on data that really are iid GPD(1, 0.5, 0.2), the composite estimators
+<em>still</em> beat POT&ndash;MLE(0.90) in the far tail &mdash; with no misspecification for them
+to exploit. That is not a win for the loss. It is the reference discarding data: at n = 100 a 0.90
+threshold keeps ten exceedances to fit two parameters, while the composite estimators use all
+hundred points.</p>
+
+<p>Measuring everything instead against a real efficiency bound &mdash; the two-parameter MLE with
+the threshold fixed at its true value, which is regular and uses every observation &mdash; puts the
+reference in its place. (The three-parameter MLE, whose threshold estimate min(y) is a boundary
+parameter and therefore non-regular, agrees with the oracle to 0.1% at this sample size, so the
+non-regularity costs nothing and either is a sound benchmark.)</p>
+</div>
+FIG_CGPD
+<div class="tablewrap">
+<table>
+<caption>MSE relative to the oracle two-parameter MLE on data that really are GPD. The
+POT rows show what section 13's reference costs by discarding data even when correctly
+specified.</caption>
+<thead><tr><th>estimator</th><th>T=2</th><th>T=48</th><th>T=107</th><th>T=203</th><th>T=529</th><th>T=1000</th></tr></thead>
+<tbody>
+<tr class="ref"><td>oracle MLE (threshold known)</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+<tr class="ref"><td>full-sample 3-parameter MLE</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+<tr class="ref"><td>POT&ndash;MLE, u = 0.10</td><td>1.01</td><td>1.01</td><td>1.03</td><td>1.04</td><td>1.06</td><td>1.07</td></tr>
+<tr class="ref"><td>POT&ndash;MLE, u = 0.50</td><td>1.31</td><td>1.03</td><td>1.14</td><td>1.26</td><td>1.47</td><td class="lose">1.64</td></tr>
+<tr class="ref"><td>POT&ndash;MLE, u = 0.90 <em>(section 13's reference)</em></td><td>1.31</td><td>1.14</td><td>1.03</td><td>1.18</td><td class="lose">1.79</td><td class="lose">2.58</td></tr>
+<tr><td>composite L1 + graft</td><td>1.29</td><td>1.09</td><td>1.20</td><td class="lose">1.40</td><td class="lose">1.82</td><td class="lose">2.22</td></tr>
+<tr><td>composite L2 + graft</td><td>1.30</td><td>1.10</td><td>1.06</td><td>1.04</td><td>0.98</td><td class="win">0.89</td></tr>
+<tr><td>&alpha;-elastile 0.5 + graft</td><td>1.29</td><td class="win">0.94</td><td class="win">0.90</td><td class="win">0.92</td><td>0.96</td><td class="win">0.92</td></tr>
+<tr><td>inverted Huber k = 4 + graft</td><td>1.31</td><td>1.14</td><td>1.05</td><td>0.99</td><td class="win">0.88</td><td class="win">0.75</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>So in the GPD setting the composite estimators do <em>not</em> pay a far-tail premium at all
+&mdash; the inverted Huber beats the efficient MLE by 25% at T = 1000. Maximum likelihood is
+asymptotically efficient, not finite-sample optimal, and a 1000-year return level at n = 100 is a
+violent extrapolation whose variance dominates. Shrinking &xi; downward trades a little bias for a
+lot of variance and wins on MSE. It is shrinkage, not information, and the bias column shows the
+price: &minus;1.22 for the inverted Huber against +0.25 for the MLE. The same unsafe direction as
+the GEV study.</p>
+
+<div class="note"><span class="lab">What this does to section 13</span>
+<p>Section 13 reports the composite L2 graft at an MSE ratio of <b>0.209</b> against POT&ndash;MLE(0.90)
+at T = 1000 on the contaminated truth. The identical comparison with <em>no misspecification at
+all</em> gives <b>0.344</b>. On a log scale that is <b>68% of the headline gain present with a
+perfect model</b>, and only 32% attributable to the misspecification the method exists to exploit.
+The result stands &mdash; the estimator really does beat what a practitioner would run &mdash; but
+most of the margin comes from using the whole sample instead of ten exceedances, and from
+shrinkage. A referee will ask, and the answer should be in the paper rather than extracted from
+it.</p></div>
+
+<h3>Does the graft hurt when the body is right?</h3>
+<p>It does not, and that is worth its own line. Ungrafted, the composite fits are 2.5 to 4.9&times;
+the bound at T = 2 even on a perfectly specified GPD, because the weight neglected the body
+whether or not the family could have fitted it. Grafting brings every one of them back to about
+1.3&times;. So the graft is not a repair for a <em>wrong</em> body specifically; it repairs the
+composite criterion's own deliberate neglect of the body, and it is worth applying regardless of
+whether misspecification is suspected.</p>
+
+<p><strong>The recommendation that follows.</strong> If there is no evidence of misspecification,
+use L-moments or maximum likelihood: on a correct GEV the composite estimators cost 12&ndash;32% in
+the far tail, 2&ndash;3.7&times; in the body, and lean unsafe. What justifies them is the
+misspecified case, where they cut error by half to six-fold. So the question a practitioner has to
+answer first is not which loss to use but whether the body model is wrong &mdash; and section 2's
+argument is that for rain-on-snow, where an ordinary-snowmelt population sits underneath a
+rain-driven tail, it usually is.</p>
 </div>
 </section>
 """

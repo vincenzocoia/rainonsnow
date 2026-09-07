@@ -1,7 +1,3 @@
-composite L1    fit ... 0.1 min, graft ... 0.2 min
-composite L2    fit ... 0.4 min, graft ... 0.2 min
-elastile a=0.5  fit ... 0.9 min, graft ... 0.2 min
-inv Huber k=4   fit ... 9.5 min, graft ... 0.3 min
 === Correctly specified GPD: iid GPD(1, 0.5, 0.2), n = 100, 2000 reps ===
 Ratios against POT-MLE(0.90), the reference used in section 13. The GPD is
 threshold stable, so POT-MLE(0.50) is also correct and uses more data.
@@ -78,7 +74,3 @@ failed fits:
                      0                      0                      0 
          inv Huber k=4  inv Huber k=4 + graft 
                      0                      0 
-null device 
-          1 
-
-wrote out/fig-correct-gpd.png and out/correct-gpd.txt

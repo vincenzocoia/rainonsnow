@@ -216,7 +216,49 @@ n = 5000 samples gives xi = 0.149, 0.233, 0.405 for the one-sided M-quantile and
 The 2000-replicate medians and the return-level results are unaffected; target-vs-target
 comparisons should not be read at three decimals.
 
-**20. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
+**20. The honest test: what this costs when nothing is wrong.** On iid GEV(0, 1, 0.2), n = 100,
+where the GEV MLE is exactly right and efficient, MSE relative to the MLE is:
+
+                     T=2   T=48  T=203  T=1000
+    L-moments       1.05   0.94   0.98    1.03
+    composite L1    3.68   1.11   1.64    2.83
+    composite L2    2.03   1.30   1.28    1.32
+    elastile 0.5    2.01   0.98   1.04    1.25
+    inv Huber k=4   2.47   1.43   1.26    1.12
+
+The body is where it hurts - every composite estimator is 2 to 3.7 times the MLE's error at T = 2,
+the weight doing exactly what it was told. The far-tail premium is 12% for the inverted Huber and
+25% for the elastile, which is cheap insurance; but L1 gets WORSE with return period (1.11 at
+T = 48 rising to 2.83 at T = 1000), so the variance explosion appears with no misspecification to
+justify it and L1 has no defensible regime. L-moments ties the MLE throughout.
+
+The bias runs the unsafe way. At T = 1000 the MLE is +1.01 and L-moments +0.45, while L2 is -1.52,
+the elastile -1.03 and the inverted Huber -1.93: the composite estimators under-predict the far
+tail, the dangerous direction for design. Median fitted xi is 0.198 for the MLE against 0.095 for
+L2 and 0.085 for the inverted Huber, on a true 0.2.
+
+**21. A confound in finding 12, and its size.** Repeating the GPD comparison on data that really
+are iid GPD, the composite estimators STILL beat POT-MLE(0.90) in the far tail - with no
+misspecification to exploit. That is the reference discarding data: at n = 100 a 0.90 threshold
+keeps ten exceedances, while the composite estimators use all hundred points. Against a real
+efficiency bound (the two-parameter MLE with the threshold known, which the non-regular
+three-parameter MLE matches to 0.1%), POT-MLE(0.90) is 2.58x worse at T = 1000 despite being
+correctly specified.
+
+Quantified: finding 12 reports the composite L2 graft at MSE ratio 0.209 against POT-MLE(0.90) on
+the contaminated truth. The identical comparison with no misspecification gives 0.344. On a log
+scale **68% of the headline gain is present with a perfect model** and only 32% comes from the
+misspecification. The result stands, but most of the margin is using the whole sample rather than
+ten exceedances, plus shrinkage - the composite fits beat even the efficient MLE at T = 1000 (0.75
+for the inverted Huber) by trading bias for variance, at a bias of -1.22 against the MLE's +0.25.
+
+**22. Grafting does not hurt when the body is right.** Ungrafted, the composite fits are 2.5 to
+4.9 times the bound at T = 2 even on a perfectly specified GPD, because the weight neglected the
+body whether or not the family could have fitted it; grafting brings all of them back to about
+1.3x. So the graft repairs the composite criterion's own neglect of the body, not a wrong body
+specifically, and is worth applying regardless of whether misspecification is suspected.
+
+**23. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
 above the largest observation, where the empirical functional has saturated; the fitted shape is
 dragged hard negative in proportion to that share.
 
@@ -260,6 +302,10 @@ scripts/18-inverted-huber.R     inverted-Huber M-quantiles: the population conta
 scripts/19-invhuber-gpd.R       the one-sided inverted Huber in the GPD study, k = 0.25 to 4
 scripts/21-invhuber-wide.R      the same at k = 8 and 16, to locate the interior optimum
 scripts/22-invhuber-figure.R    the knot sweep, drawn
+scripts/23-correct-gev.R        the honest test: an exactly correct GEV
+scripts/24-correct-gpd.R        the same on an exactly correct GPD, grafted and not
+scripts/25-correct-gpd-refs.R   full-sample and low-threshold references for it
+scripts/26-correct-gpd-oracle.R the efficiency bound, and what it does to finding 12
 scripts/20-loss-geometry.R      loss balls in residual space, and influence functions
 scripts/98-validate.R           every correctness check, re-runnable
 report/build_report.py          builds the standalone HTML report

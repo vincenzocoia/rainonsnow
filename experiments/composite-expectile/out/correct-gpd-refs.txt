@@ -1,0 +1,58 @@
+=== Correctly specified GPD, against the FULL-SAMPLE MLE ===
+iid GPD(1, 0.5, 0.2), n = 100, 2000 replicates.
+Ratios are against the three-parameter GPD MLE fitted to the whole sample,
+which is the efficient estimator for the model everything here is fitting.
+Above 1 is the price paid. The POT rows show what the section 13 reference
+costs by discarding data even when it is correctly specified.
+
+
+--- MSE relative to the full-sample GPD MLE ---
+                         T=2  T=10  T=48 T=107 T=203 T=529 T=1000
+GPD full MLE           1.000 1.000 1.000 1.000 1.000 1.000  1.000
+POT-MLE u=0.10         1.009 1.008 1.012 1.027 1.039 1.058  1.073
+POT-MLE u=0.25         1.008 1.031 1.028 1.078 1.121 1.191  1.244
+POT-MLE u=0.50         1.310 1.138 1.029 1.143 1.258 1.466  1.638
+POT-MLE u=0.90         1.310 1.570 1.135 1.030 1.175 1.788  2.581
+POT-Lmom u=0.90        1.310 1.570 1.081 1.379 1.082 1.049  1.177
+composite L1           2.809 1.291 1.033 1.149 1.317 1.711  2.115
+composite L1 + graft   1.286 1.354 1.087 1.195 1.401 1.814  2.221
+composite L2           3.327 2.442 1.396 1.221 1.132 1.019  0.947
+composite L2 + graft   1.304 1.361 1.102 1.055 1.038 0.978  0.889
+elastile a=0.5         2.545 1.620 0.969 0.902 0.885 0.882  0.888
+elastile a=0.5 + graft 1.292 1.369 0.943 0.899 0.915 0.960  0.925
+inv Huber k=4          4.887 2.776 1.524 1.253 1.105 0.923  0.813
+inv Huber k=4 + graft  1.312 1.400 1.143 1.048 0.984 0.880  0.753
+
+--- fraction closer to the truth than the full-sample MLE ---
+                         T=2  T=10  T=48 T=107 T=203 T=529 T=1000
+GPD full MLE           0.000 0.000 0.000 0.000 0.000 0.000  0.000
+POT-MLE u=0.10         0.502 0.480 0.476 0.466 0.462 0.456  0.454
+POT-MLE u=0.25         0.496 0.484 0.458 0.446 0.438 0.426  0.420
+POT-MLE u=0.50         0.410 0.461 0.446 0.426 0.421 0.400  0.388
+POT-MLE u=0.90         0.410 0.378 0.444 0.396 0.364 0.318  0.292
+POT-Lmom u=0.90        0.410 0.378 0.421 0.472 0.470 0.452  0.426
+composite L1           0.308 0.420 0.494 0.454 0.432 0.416  0.406
+composite L1 + graft   0.424 0.412 0.480 0.459 0.434 0.410  0.408
+composite L2           0.336 0.366 0.453 0.438 0.430 0.412  0.410
+composite L2 + graft   0.419 0.420 0.474 0.469 0.440 0.414  0.412
+elastile a=0.5         0.313 0.401 0.480 0.471 0.466 0.440  0.434
+elastile a=0.5 + graft 0.424 0.414 0.488 0.481 0.470 0.451  0.436
+inv Huber k=4          0.318 0.346 0.448 0.427 0.425 0.413  0.412
+inv Huber k=4 + graft  0.414 0.413 0.464 0.464 0.436 0.418  0.412
+
+--- bias ---
+                          T=2   T=10   T=48  T=107  T=203  T=529 T=1000
+GPD full MLE            0.005 -0.010 -0.038 -0.034 -0.008  0.102  0.250
+POT-MLE u=0.10          0.006 -0.010 -0.043 -0.043 -0.020  0.088  0.240
+POT-MLE u=0.25          0.005 -0.008 -0.051 -0.059 -0.040  0.071  0.236
+POT-MLE u=0.50         -0.001 -0.003 -0.065 -0.083 -0.064  0.076  0.302
+POT-MLE u=0.90         -0.001 -0.020 -0.055 -0.216 -0.351 -0.408 -0.179
+POT-Lmom u=0.90        -0.001 -0.020 -0.141 -0.192 -0.279 -0.275 -0.091
+composite L1           -0.002  0.004 -0.041 -0.035  0.018  0.262  0.617
+composite L1 + graft    0.004 -0.002 -0.027 -0.005  0.082  0.354  0.723
+composite L2           -0.025  0.104 -0.007 -0.157 -0.325 -0.655 -0.925
+composite L2 + graft    0.006  0.025 -0.062 -0.190 -0.328 -0.670 -0.946
+elastile a=0.5         -0.016  0.041 -0.081 -0.201 -0.319 -0.515 -0.640
+elastile a=0.5 + graft  0.005  0.009 -0.082 -0.177 -0.259 -0.438 -0.564
+inv Huber k=4          -0.037  0.132  0.020 -0.157 -0.363 -0.793 -1.168
+inv Huber k=4 + graft   0.007  0.033 -0.057 -0.212 -0.393 -0.831 -1.221
