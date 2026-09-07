@@ -157,13 +157,16 @@ llqr_solve_one <- function(xc, y, w, levels, degree,
       A <- crossprod(X, Xv)
       b <- crossprod(Xv, y) - (1 - 2 * p) * cw
       beta_new <- tryCatch(solve(A, b), error = function(e) NULL)
-      if (is.null(beta_new)) break
+      # A ties-heavy predictor can drive residuals to zero and the solve to a
+      # non-finite answer; keep the last good beta rather than propagating NA.
+      if (is.null(beta_new) || !all(is.finite(beta_new))) break
       delta <- max(abs(beta_new - beta))
       beta <- beta_new
+      if (!is.finite(delta)) break
       eps <- max(eps * 0.7, 1e-9)
       if (delta < tol) break
     }
-    out[j] <- beta[1]                     # value of the local fit at x0
+    out[j] <- if (is.finite(beta[1])) beta[1] else NA_real_
   }
   out
 }
