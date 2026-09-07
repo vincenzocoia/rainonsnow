@@ -1,5 +1,3 @@
-# Joint rainfall–snowmelt model (scripts/6-drivers_joint_distribution.r, apps/6-joint-rain-snow-explorer).
-
 fit_joint_rain_snow_cells:
   group_cols:
   - cell_id
@@ -11,48 +9,23 @@ fit_joint_rain_snow_cells:
   marginal_snowmelt: gamma
   bicop_family_set: parametric
   bicop_controls:
-    cores: 1
+    cores: 4
   min_obs: 40
-  progress: yes
-  verbose: yes
-
-# Conditional density / likeliest rain–snow given runoff = z (scripts/7-likeliest_rain_snow.r).
-# Combines joint model from script 6 with conditional runoff given rain/snow from script 4.
-
+  progress: no
+  verbose: no
 likeliest_rain_snow:
-  # Focus grid cell for single-cell exploration (scripts 6 and 7). Cell ids are
-  # assigned in script 2 and depend on the grid extent, so a fixed number is only
-  # valid for one grid. Set to `null` to auto-select the cell with the most
-  # co-occurring rain+snowmelt peak hours (the "mixed regime" cell).
-  cell_id: null
-
-  # Target runoff depth z (mm/h). Use this for a fast, explicit contour level.
+  cell_id: ~
   runoff_threshold_mm: 15
-
-  # Alternative: set `runoff_threshold_mm` to null and set return_period (years).
-  # Requires script 5 output derived/era5_land_hourly_alps_dl_marginal_return_levels.rds.
-  return_period: null
-
-  # When using return_period: which precomputed marginal return level to use.
+  return_period: ~
   marginal_return_model: gp
-  # gp     -> "Forest mixture + GP tail"
-  # forest -> "Forest mixture (empirical)"
-
-  # Predictive distribution for f(z | rain, snow): forest = raw rqforest ecdf dst;
-  # gp = GP-adjusted tail per convert_emp_to_gp() (matches script 4 hourly preds).
   runoff_conditional_model: forest
-
-  # Optional: divide the surface by f_Z(z) from script 5 (equal-weight mixture of
-  # peak-hour predictive distributions). Then the contour levels match the proper
-  # conditional density up to the mixture approximation for f_Z.
-  normalize_by_marginal_runoff_density: false
-
+  normalize_by_marginal_runoff_density: no
   grid:
-    size: [45, 45]
-    mult: [1.3, 1.3]
-
-  output_pdf: null
-  output_rds: null
-  # Default write paths when null:
-  #   plots/rain_snow_conditional_runoff_cell_<id>_z_<...>.pdf
-  #   derived/rain_snow_conditional_runoff_cell_<id>_z_<...>.rds
+    size:
+    - 45
+    - 45
+    mult:
+    - 1.3
+    - 1.3
+  output_pdf: ~
+  output_rds: ~
