@@ -1,120 +1,89 @@
-<title>Tail-Weighted Composite Losses</title>
+<title>Composite M-quantile estimation for extreme-value models</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap">
 <style>
-:root{
-  --ground:#fafbfc; --surface:#ffffff; --surface-2:#eef2f5;
-  --ink:#141d24; --ink-2:#4b5f6d; --ink-3:#7d909c;
-  --rule:#d5dee4; --rule-strong:#a9bac5;
-  --accent:#1c5d7d; --accent-2:#9c4a2f; --accent-3:#2d6a4a;
-  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --serif:"Literata",Georgia,"Times New Roman",serif;
-  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  --measure:68ch; --wide:1080px;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --ground:#0e151a; --surface:#151f26; --surface-2:#1b272f;
-  --ink:#e2eaf0; --ink-2:#9aaebb; --ink-3:#71858f;
-  --rule:#26343d; --rule-strong:#3b4d59;
-  --accent:#6bb2d6; --accent-2:#dd937f; --accent-3:#6cc79a;
-}}
-:root[data-theme="dark"]{
-  --ground:#0e151a; --surface:#151f26; --surface-2:#1b272f;
-  --ink:#e2eaf0; --ink-2:#9aaebb; --ink-3:#71858f;
-  --rule:#26343d; --rule-strong:#3b4d59;
-  --accent:#6bb2d6; --accent-2:#dd937f; --accent-3:#6cc79a;
-}
+@page{size:210mm 297mm;margin:24mm 30mm 22mm 30mm;
+  @bottom-center{content:counter(page);font-family:serif;font-size:9pt;color:#444}}
+:root{--ink:#111;--ink-2:#3d3d3d;--ink-3:#6a6a6a;--rule:#c9c9c9;--rule-strong:#8a8a8a;
+  --accent:#1c5d7d;--accent-2:#9c4a2f;--accent-3:#2d6a4a;
+  --sans:"IBM Plex Sans",Arial,sans-serif;--serif:"Literata",Georgia,serif;
+  --mono:"IBM Plex Mono",monospace}
 *{box-sizing:border-box}
-body{background:var(--ground);color:var(--ink);font-family:var(--serif);
-  font-size:17px;line-height:1.66;-webkit-font-smoothing:antialiased}
-.page{max-width:var(--wide);margin:0 auto;padding:0 28px 110px}
-.col{max-width:var(--measure)}
+html,body{background:#fff}
+body{color:var(--ink);font-family:var(--serif);font-size:10.5pt;line-height:1.55;
+  text-align:justify;hyphens:auto;-webkit-hyphens:auto}
+.page{max-width:none;margin:0;padding:0}
+.col{max-width:none}
 
-/* --- title block ------------------------------------------------------- */
-header.title{padding:64px 0 26px;border-bottom:1px solid var(--rule-strong);margin-bottom:34px}
-.kicker{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.15em;
-  text-transform:uppercase;color:var(--accent);margin-bottom:16px}
-h1{font-family:var(--sans);font-weight:600;font-size:clamp(27px,3.9vw,40px);
-  line-height:1.16;letter-spacing:-.02em;margin:0 0 18px;max-width:30ch;text-wrap:balance}
-.sub{font-size:19px;line-height:1.55;color:var(--ink-2);max-width:var(--measure);margin:0}
-.abstract{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);
-  padding:22px 26px;margin:30px 0 18px;max-width:var(--measure);font-size:16px}
-.abstract h2{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;display:block}
-.abstract p{margin:0 0 12px}.abstract p:last-child{margin:0}
-.keywords{font-family:var(--sans);font-size:13px;color:var(--ink-2);max-width:var(--measure);
-  margin:0 0 8px}
+header.title{padding:0 0 12pt;border-bottom:.8pt solid var(--ink);margin-bottom:16pt;
+  text-align:left}
+.kicker{font-family:var(--sans);font-size:7.6pt;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:10pt}
+h1{font-family:var(--serif);font-weight:600;font-size:19pt;line-height:1.22;letter-spacing:-.005em;
+  margin:0 0 9pt;max-width:none;text-align:left}
+.sub{font-size:10.6pt;line-height:1.45;color:var(--ink-2);margin:0;text-align:left;font-style:italic}
+.abstract{background:none;border:none;border-top:.6pt solid var(--rule);
+  border-bottom:.6pt solid var(--rule);padding:11pt 0;margin:16pt 0 9pt;max-width:none;
+  font-size:9.4pt;line-height:1.48}
+.abstract h2{font-family:var(--sans);font-size:7.6pt;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 7pt}
+.keywords{font-family:var(--serif);font-size:9pt;color:var(--ink-2);margin:0 0 4pt;max-width:none}
 .keywords b{color:var(--ink);font-weight:600}
 
-/* --- structure --------------------------------------------------------- */
-h2{font-family:var(--sans);font-weight:600;font-size:21px;letter-spacing:-.01em;
-  line-height:1.25;margin:52px 0 4px;text-wrap:balance;display:flex;gap:14px;align-items:baseline}
-h2 .n{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--accent);flex:none}
-h3{font-family:var(--sans);font-weight:600;font-size:16px;margin:30px 0 2px;color:var(--ink)}
-h3 .n{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--ink-3);margin-right:9px}
-p{margin:0 0 14px}h2+p,h3+p{margin-top:10px}
-a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
-strong{font-weight:600}
-em.term{font-style:italic;color:var(--ink)}
-code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);padding:1px 4px;border-radius:2px}
-ul,ol{max-width:var(--measure);padding-left:22px;margin:0 0 14px}li{margin-bottom:7px}
+h2{font-family:var(--sans);font-weight:600;font-size:11.6pt;line-height:1.25;
+  margin:18pt 0 3pt;display:block;break-after:avoid;text-align:left}
+h2 .n{font-family:var(--sans);color:var(--ink);margin-right:8pt}
+h3{font-family:var(--sans);font-weight:600;font-size:10pt;margin:12pt 0 2pt;
+  break-after:avoid;text-align:left}
+h3 .n{color:var(--ink-3);margin-right:6pt;font-family:var(--sans)}
+p{margin:0 0 7pt;orphans:3;widows:3}
+h2+p,h3+p{margin-top:5pt}
+a{color:var(--ink);text-decoration:none}
 
-/* --- equations --------------------------------------------------------- */
-.eq{display:flex;align-items:center;gap:18px;margin:20px 0;max-width:var(--measure)}
-.eq .body{flex:1;font-family:var(--mono);font-size:14px;line-height:1.8;
-  background:var(--surface);border-left:3px solid var(--rule-strong);
-  padding:14px 18px;overflow-x:auto;white-space:pre;color:var(--ink)}
-.eq .tag{font-family:var(--mono);font-size:13px;color:var(--ink-3);flex:none}
-.eq .hl{color:var(--accent-2);font-weight:500}
+.eq{display:flex;align-items:center;gap:12pt;margin:10pt 0;max-width:none;break-inside:avoid}
+.eq .body{flex:1;font-family:var(--mono);font-size:9pt;line-height:1.65;background:none;
+  border-left:none;padding:0;text-align:center;white-space:pre;overflow-x:visible}
+.eq .tag{font-family:var(--serif);font-size:9.4pt;color:var(--ink);flex:none}
+.eq .hl{color:var(--accent-2)}
 
-/* --- propositions ------------------------------------------------------ */
-.prop{max-width:var(--measure);background:var(--surface);border:1px solid var(--rule);
-  border-top:3px solid var(--accent);padding:18px 22px;margin:24px 0}
-.prop .lab{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.11em;
-  text-transform:uppercase;color:var(--accent);display:block;margin-bottom:7px}
-.prop p:last-child{margin-bottom:0}
-.note{max-width:var(--measure);border-left:3px solid var(--accent-2);
-  padding:4px 0 4px 18px;margin:22px 0;color:var(--ink-2);font-size:16px}
-.note p:last-child{margin-bottom:0}
+.prop{max-width:none;background:none;border:none;border-left:1.6pt solid var(--ink);
+  padding:2pt 0 2pt 12pt;margin:11pt 0;break-inside:avoid;font-size:9.7pt}
+.prop .lab{font-family:var(--sans);font-size:8pt;font-weight:600;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink);display:block;margin-bottom:5pt}
+.note{max-width:none;border-left:.8pt solid var(--rule-strong);padding:2pt 0 2pt 12pt;
+  margin:10pt 0;color:var(--ink-2);font-size:9.3pt;break-inside:avoid}
 
-/* --- tables ------------------------------------------------------------ */
-.tablewrap{overflow-x:auto;margin:24px 0;max-width:var(--wide)}
-table{border-collapse:collapse;font-family:var(--sans);font-size:13.5px;
-  font-variant-numeric:tabular-nums;min-width:100%}
-caption{text-align:left;font-family:var(--sans);font-size:13px;color:var(--ink-2);
-  padding-bottom:10px;max-width:var(--measure);line-height:1.5}
-caption b{color:var(--ink);font-weight:600}
-th,td{padding:7px 13px;text-align:right;white-space:nowrap}
+.tablewrap{overflow-x:visible;margin:12pt 0;max-width:none;break-inside:avoid}
+table{border-collapse:collapse;font-family:var(--sans);font-size:8.2pt;
+  font-variant-numeric:tabular-nums;width:100%}
+caption{text-align:left;font-family:var(--serif);font-size:8.8pt;color:var(--ink);
+  padding-bottom:6pt;max-width:none;line-height:1.4}
+th,td{padding:3.2pt 6pt;text-align:right;white-space:nowrap}
 th:first-child,td:first-child{text-align:left;padding-left:0}
-thead th{font-weight:600;font-size:12px;letter-spacing:.03em;color:var(--ink-2);
-  border-bottom:1.5px solid var(--rule-strong)}
-tbody td{border-bottom:1px solid var(--rule)}
-tbody tr:last-child td{border-bottom:1.5px solid var(--rule-strong)}
+thead th{font-weight:600;font-size:7.8pt;color:var(--ink);border-bottom:.8pt solid var(--ink)}
+tbody td{border-bottom:.4pt solid var(--rule)}
+tbody tr:last-child td{border-bottom:.8pt solid var(--ink)}
 tr.ref td{color:var(--ink-2);font-style:italic}
-tr.sub td{color:var(--ink-3);font-size:.92em}
+tr.sub td{color:var(--ink-3);font-size:.94em}
 td.win{color:var(--accent-3);font-weight:600}
 td.lose{color:var(--accent-2)}
 
-/* --- figures ----------------------------------------------------------- */
-figure{margin:30px 0;max-width:var(--wide)}
-figure img{width:100%;display:block;background:#fff;border:1px solid var(--rule);border-radius:2px}
-figcaption{font-family:var(--sans);font-size:13px;line-height:1.55;color:var(--ink-2);
-  margin-top:10px;max-width:var(--measure)}
-.fignum{color:var(--ink);font-weight:600}
+figure{margin:13pt 0;max-width:none;break-inside:avoid}
+figure img{width:100%;display:block;border:.4pt solid var(--rule);background:#fff}
+figcaption{font-family:var(--serif);font-size:8.8pt;line-height:1.42;color:var(--ink);
+  margin-top:6pt;max-width:none;text-align:left}
+.fignum{font-weight:600}
 
-/* --- references -------------------------------------------------------- */
-.refs{max-width:var(--measure);font-size:15px;line-height:1.55}
-.refs li{margin-bottom:11px;color:var(--ink-2)}
-.refs li b{color:var(--ink);font-weight:600}
-footer{margin-top:70px;padding-top:20px;border-top:1px solid var(--rule);
-  font-family:var(--sans);font-size:13px;color:var(--ink-3);max-width:var(--measure)}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-@media (max-width:640px){.eq{flex-direction:column;align-items:stretch;gap:6px}
-  .eq .tag{text-align:right}}
+.refs{max-width:none;font-size:9pt;line-height:1.42;padding-left:0;list-style:none;counter-reset:r}
+.refs li{margin-bottom:5pt;color:var(--ink);padding-left:16pt;text-indent:-16pt;
+  break-inside:avoid;text-align:left}
+.refs li b{font-weight:600}
+footer{margin-top:16pt;padding-top:9pt;border-top:.6pt solid var(--rule);
+  font-family:var(--sans);font-size:8.2pt;color:var(--ink-3);max-width:none;text-align:left}
+ul,ol{max-width:none}
+code{font-family:var(--mono);font-size:.88em;background:none;padding:0}
 </style>
-
 <div class="page">
 <header class="title">
   <div class="kicker">Statistics of extremes &middot; manuscript draft</div>
