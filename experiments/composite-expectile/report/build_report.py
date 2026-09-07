@@ -1031,14 +1031,15 @@ def build():
             "deliberately discarded the body. Right, the fraction of datasets on which each is "
             "closer to the truth than the MLE &mdash; all below one half, everywhere.",
             "MSE ratio and win rate against the GEV MLE on correctly specified data")).replace("FIG_CGPD", fig(
-            "fig-correct-gpd.png",
-            "<b>And on a correctly specified GPD, measured against a real efficiency bound.</b> "
-            "Left, the ungrafted composite fits, 2.5&ndash;4.9&times; the bound at T = 2 because "
-            "the weight neglected the body. Right, the same fits grafted onto an empirical body, "
-            "which brings them all back to about 1.3&times; there. The dashed black line is "
-            "POT&ndash;MLE(0.90), section 13's reference, which is 2.58&times; the bound at "
-            "T = 1000 despite being correctly specified.",
-            "MSE against the oracle MLE for grafted and ungrafted composite fits")),
+            "fig-correct-gpd2.png",
+            "<b>And on a correctly specified GPD, fitted as a GPD.</b> "
+            "Threshold known, so only scale and shape are estimated, by every method. Left, "
+            "ungrafted: the composite fits are 1.5&ndash;2.0&times; the MLE at T = 2 because the "
+            "weight neglected the body. Right, grafted onto an empirical body, which brings them "
+            "all to about 1.29 there &mdash; the same value for four different tail models, and "
+            "close to the empirical distribution's own 1.35 (dotted), because the body is doing "
+            "the work. The dashed orange line is L-moments, which beats the MLE throughout.",
+            "MSE against the GPD MLE for grafted and ungrafted two-parameter composite fits")),
         S8, S9, FOOTER,
     ]
     return "".join(body)
@@ -1891,73 +1892,80 @@ median &xi;&#770; is 0.198 for the MLE against 0.095 for L2 and 0.085 for the in
 true 0.2. Tail-weighted fitting underestimates the shape badly at n = 100 even when the family is
 perfect, and a low shape shrinks the far-tail extrapolation.</p></div>
 
-<h3>An exactly correct GPD, and a confound in section 13</h3>
-<p>The same test in the GPD setting turned up something that changes how section 13 should be
-read. Repeated on data that really are iid GPD(1, 0.5, 0.2), the composite estimators
-<em>still</em> beat POT&ndash;MLE(0.90) in the far tail &mdash; with no misspecification for them
-to exploit. That is not a win for the loss. It is the reference discarding data: at n = 100 a 0.90
-threshold keeps ten exceedances to fit two parameters, while the composite estimators use all
-hundred points.</p>
+<h3>An exactly correct GPD, done properly</h3>
+<p>The first version of this test drew from GPD(1, 0.5, 0.2) and fitted three parameters. That was
+wrong twice. A three-parameter GPD with unknown threshold is non-regular &mdash; the likelihood
+rises monotonically in &mu; up to min(y), so &mu;&#770; is a boundary estimate &mdash; and, worse
+for the comparison, the reference was handed the true threshold while the composite estimators had
+to estimate it, so they were paying for a parameter the reference got free. A GPD used as a tail
+model has no location to estimate anyway: it starts at the threshold, and only scale and shape are
+unknown. So: iid GPD(0, 0.5, 0.2), &mu; known, two parameters for every method including the
+references, on a regular problem where the MLE is efficient.</p>
 
-<p>Measuring everything instead against a real efficiency bound &mdash; the two-parameter MLE with
-the threshold fixed at its true value, which is regular and uses every observation &mdash; puts the
-reference in its place. (The three-parameter MLE, whose threshold estimate min(y) is a boundary
-parameter and therefore non-regular, agrees with the oracle to 0.1% at this sample size, so the
-non-regularity costs nothing and either is a sound benchmark.)</p>
+<div class="note"><span class="lab">Return periods need the exceedance rate</span>
+<p>Here the GPD <em>is</em> the whole distribution, so exceedance probability 1/T is a T-year level
+and the labels below are self-consistent. Attached above a threshold with exceedance rate &zeta;,
+the T-year level solves &zeta;&#8202;S(x) = 1/T, so a column labelled T is the
+<b>(T/&zeta;)-year</b> level: with &zeta; = 0.1 the column marked T = 100 is the 1000-year return
+level. No ratio changes &mdash; but the practically interesting range moves an order of magnitude
+left, into the middle of the table rather than its right edge.</p></div>
 </div>
 FIG_CGPD
 <div class="tablewrap">
 <table>
-<caption>MSE relative to the oracle two-parameter MLE on data that really are GPD. The
-POT rows show what section 13's reference costs by discarding data even when correctly
-specified.</caption>
-<thead><tr><th>estimator</th><th>T=2</th><th>T=48</th><th>T=107</th><th>T=203</th><th>T=529</th><th>T=1000</th></tr></thead>
+<caption>MSE relative to GPD <em>L-moments</em>, which beats the MLE at every return period here
+(0.83 to 1.00, the known small-sample result for the GPD) and is therefore the honest yardstick.
+All rows grafted. Below 1 is better than L-moments.</caption>
+<thead><tr><th>estimator</th><th>T=2</th><th>T=5</th><th>T=10</th><th>T=26</th><th>T=48</th><th>T=107</th><th>T=1000</th></tr></thead>
 <tbody>
-<tr class="ref"><td>oracle MLE (threshold known)</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
-<tr class="ref"><td>full-sample 3-parameter MLE</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
-<tr class="ref"><td>POT&ndash;MLE, u = 0.10</td><td>1.01</td><td>1.01</td><td>1.03</td><td>1.04</td><td>1.06</td><td>1.07</td></tr>
-<tr class="ref"><td>POT&ndash;MLE, u = 0.50</td><td>1.31</td><td>1.03</td><td>1.14</td><td>1.26</td><td>1.47</td><td class="lose">1.64</td></tr>
-<tr class="ref"><td>POT&ndash;MLE, u = 0.90 <em>(section 13's reference)</em></td><td>1.31</td><td>1.14</td><td>1.03</td><td>1.18</td><td class="lose">1.79</td><td class="lose">2.58</td></tr>
-<tr><td>composite L1 + graft</td><td>1.29</td><td>1.09</td><td>1.20</td><td class="lose">1.40</td><td class="lose">1.82</td><td class="lose">2.22</td></tr>
-<tr><td>composite L2 + graft</td><td>1.30</td><td>1.10</td><td>1.06</td><td>1.04</td><td>0.98</td><td class="win">0.89</td></tr>
-<tr><td>&alpha;-elastile 0.5 + graft</td><td>1.29</td><td class="win">0.94</td><td class="win">0.90</td><td class="win">0.92</td><td>0.96</td><td class="win">0.92</td></tr>
-<tr><td>inverted Huber k = 4 + graft</td><td>1.31</td><td>1.14</td><td>1.05</td><td>0.99</td><td class="win">0.88</td><td class="win">0.75</td></tr>
+<tr class="ref"><td>&zeta; = 0.1 &rarr; true return period</td><td>20</td><td>52</td><td>98</td><td>256</td><td>484</td><td>1074</td><td>10000</td></tr>
+<tr class="ref"><td>GPD MLE</td><td>1.06</td><td>1.00</td><td>1.03</td><td>1.09</td><td>1.12</td><td>1.15</td><td>1.20</td></tr>
+<tr class="ref"><td>empirical distribution alone</td><td>1.43</td><td>1.51</td><td>1.59</td><td>1.55</td><td>1.44</td><td>1.33</td><td>1.05</td></tr>
+<tr><td>composite L1</td><td class="lose">1.36</td><td class="lose">1.36</td><td class="lose">1.26</td><td class="lose">1.21</td><td class="lose">1.25</td><td class="lose">1.32</td><td class="lose">1.51</td></tr>
+<tr><td>composite L2</td><td class="lose">1.36</td><td class="lose">1.35</td><td class="lose">1.19</td><td>1.00</td><td>0.98</td><td>1.00</td><td>0.97</td></tr>
+<tr><td>&alpha;-elastile 0.5</td><td class="lose">1.35</td><td class="lose">1.36</td><td class="lose">1.21</td><td>1.03</td><td>1.02</td><td>1.03</td><td>1.01</td></tr>
+<tr><td>inverted Huber k = 4</td><td class="lose">1.36</td><td class="lose">1.35</td><td class="lose">1.19</td><td>0.98</td><td class="win">0.94</td><td class="win">0.91</td><td class="win">0.76</td></tr>
 </tbody></table>
 </div>
 <div class="col">
-<p>So in the GPD setting the composite estimators do <em>not</em> pay a far-tail premium at all
-&mdash; the inverted Huber beats the efficient MLE by 25% at T = 1000. Maximum likelihood is
-asymptotically efficient, not finite-sample optimal, and a 1000-year return level at n = 100 is a
-violent extrapolation whose variance dominates. Shrinking &xi; downward trades a little bias for a
-lot of variance and wins on MSE. It is shrinkage, not information, and the bias column shows the
-price: &minus;1.22 for the inverted Huber against +0.25 for the MLE. The same unsafe direction as
-the GEV study.</p>
+<p><strong>The premium is real, and it sits exactly where flood work lives.</strong> Only the
+inverted Huber clearly beats L-moments, and only beyond T = 26; L2 and the elastile tie it; L1
+loses everywhere. Now read the &zeta; = 0.1 row. The 50-to-1000-year range that design work cares
+about is T = 5 to 100 in this table, and across it the best composite estimator is <b>35% worse
+than L-moments at 50 years, 19% worse at 100, level at 250, and 9% better at 1000</b>. The far-tail
+advantage quoted from the earlier three-parameter run sat almost entirely past the range of
+practical interest.</p>
+
+<div class="note"><span class="lab">What the short-return-period numbers were measuring</span>
+<p>At T = 2 the four grafted fits give 1.284, 1.288, 1.283 and 1.289 against the MLE. Four
+completely different tail models returning the same number is the signature of the empirical body
+doing all the work, and the empirical distribution on its own gives 1.353 there. So that column is
+the empirical distribution's performance against a parametric fit, not the loss function's, and it
+should not be read as a cost of the composite criterion. It is a cost of grafting. The ungrafted
+GEV numbers above are a different matter &mdash; there is no empirical body in that study at all,
+so their 2&ndash;3.7&times; really is the weight discarding the body.</p></div>
+
+<p>The bias still runs the unsafe way: at T = 1000, &minus;0.69 for the inverted Huber and
+&minus;0.44 for L2, against +0.23 for the MLE and +0.37 for L-moments. Median fitted &xi; is 0.124
+to 0.172 against a true 0.2.</p>
 
 <div class="note"><span class="lab">What this does to section 13</span>
-<p>Section 13 reports the composite L2 graft at an MSE ratio of <b>0.209</b> against POT&ndash;MLE(0.90)
-at T = 1000 on the contaminated truth. The identical comparison with <em>no misspecification at
-all</em> gives <b>0.344</b>. On a log scale that is <b>68% of the headline gain present with a
-perfect model</b>, and only 32% attributable to the misspecification the method exists to exploit.
-The result stands &mdash; the estimator really does beat what a practitioner would run &mdash; but
-most of the margin comes from using the whole sample instead of ten exceedances, and from
-shrinkage. A referee will ask, and the answer should be in the paper rather than extracted from
-it.</p></div>
+<p>Section 13 reports the composite L2 graft at an MSE ratio of <b>0.209</b> against
+POT&ndash;MLE(0.90) at T = 1000 on the contaminated truth. The identical comparison &mdash; same
+estimator, same three-parameter fit, same reference &mdash; with <em>no misspecification at all</em>
+gives <b>0.344</b>. On a log scale that is <b>68% of the headline gain present with a perfect
+model</b>, only 32% from the misspecification the method exists to exploit. The reference keeps ten
+exceedances out of a hundred observations. The result stands, but most of the margin is data
+efficiency, and the paper should say so rather than leave it to be extracted.</p></div>
 
-<h3>Does the graft hurt when the body is right?</h3>
-<p>It does not, and that is worth its own line. Ungrafted, the composite fits are 2.5 to 4.9&times;
-the bound at T = 2 even on a perfectly specified GPD, because the weight neglected the body
-whether or not the family could have fitted it. Grafting brings every one of them back to about
-1.3&times;. So the graft is not a repair for a <em>wrong</em> body specifically; it repairs the
-composite criterion's own deliberate neglect of the body, and it is worth applying regardless of
-whether misspecification is suspected.</p>
-
-<p><strong>The recommendation that follows.</strong> If there is no evidence of misspecification,
-use L-moments or maximum likelihood: on a correct GEV the composite estimators cost 12&ndash;32% in
-the far tail, 2&ndash;3.7&times; in the body, and lean unsafe. What justifies them is the
-misspecified case, where they cut error by half to six-fold. So the question a practitioner has to
-answer first is not which loss to use but whether the body model is wrong &mdash; and section 2's
-argument is that for rain-on-snow, where an ordinary-snowmelt population sits underneath a
-rain-driven tail, it usually is.</p>
+<p><strong>The recommendation.</strong> With no evidence of misspecification, use L-moments. On a
+correct GEV the composite estimators cost 12&ndash;32% in the far tail and 2&ndash;3.7&times; in
+the body; on a correct GPD they cost 20&ndash;35% across the practically relevant return periods
+and only repay beyond about the 250-year level; and in both they lean unsafe. What justifies them
+is the misspecified case, where they cut error by half to six-fold. The first question is not which
+loss to use but whether the body model is wrong &mdash; and section 2's argument is that for
+rain-on-snow, with an ordinary-snowmelt population sitting under a rain-driven tail, it usually
+is.</p>
 </div>
 </section>
 """
