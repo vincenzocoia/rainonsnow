@@ -1,7 +1,3 @@
-composite L1    fit ... 0.1 min, graft ... 0.2 min
-composite L2    fit ... 0.2 min, graft ... 0.2 min
-elastile a=0.5  fit ... 0.4 min, graft ... 0.2 min
-inv Huber k=4   fit ... 4.7 min, graft ... 0.2 min
 === Truly just a GPD: iid GPD(0, 0.5, 0.2), mu KNOWN, n = 100, 2000 reps ===
 Only scale and shape are estimated, by every method including the MLE, so
 the problem is regular and the MLE is efficient. Ratios are against it.
@@ -70,7 +66,3 @@ failed fits:
                      0                      0                      0 
          inv Huber k=4  inv Huber k=4 + graft 
                      0                      0 
-null device 
-          1 
-
-wrote out/fig-correct-gpd2.png and out/correct-gpd2.txt
