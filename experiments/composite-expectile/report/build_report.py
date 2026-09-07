@@ -2023,16 +2023,55 @@ estimators separate by about as much as the seed-to-seed noise. They can be solv
 Differentiating the composite criterion in &theta;, where the indicator contributes nothing because
 &rho; is continuous at zero, the pseudo-true &theta;* solves</p>
 </div>
-<div class="eq">&#8747; w(p)&#8202;g&#8202;<sub>p</sub>(T(p|&theta;))&#8202;&part;T(p|&theta;)/&part;&theta;&#8202;dp = 0,    g&#8202;<sub>p</sub>(t) = E&#8202;<sub>F</sub>[ |p &minus; I(Y &lt; t)|&#8202;&psi;(Y &minus; t) ]</div>
+<div class="eq">g&#8202;<sub>p</sub><sup>G</sup>(t) = E&#8202;<sub>G</sub>[ |p &minus; I(Y &lt; t)|&#8202;&psi;(Y &minus; t) ]
+             = p&#8202;E&#8202;<sub>G</sub>[&psi;(Y&minus;t)&#8202;I(Y&gt;t)] + (1&minus;p)&#8202;E&#8202;<sub>G</sub>[&psi;(Y&minus;t)&#8202;I(Y&lt;t)]</div>
 <div class="col">
-<p>The function g<sub>p</sub>(t) is the <em>truth's</em> M-quantile identification function evaluated
-at the <em>model's</em> level-p functional; it vanishes exactly when the two agree at that level.
-So the equation says the pseudo-true parameter sets a weighted average of the level-by-level
-discrepancies to zero &mdash; weighted by w(p) and by the sensitivity &part;T/&part;&theta;. Two
-consequences follow immediately: the target depends on the weight, and it depends on &psi; only
-through which functional is being matched. Solved to a residual below 10<sup>&minus;10</sup>, with
-the two references obtained exactly as well (the likelihood limit minimises Kullback&ndash;Leibler
-divergence, the L-moment limit matches the first two L-moments):</p>
+<p>Write g<sub>p</sub><sup>G</sup> for the M-quantile identification function of an arbitrary
+distribution G. The model's level-p functional T<sub>p</sub>(&theta;) is defined by
+g<sub>p</sub><sup>F&#8202;&theta;</sup>(T<sub>p</sub>(&theta;)) = 0. Then the pseudo-true
+&theta;* solves</p>
+</div>
+<div class="eq">&#8747;&#8320;&sup1; w(p)&#8202;<span class="hl">g&#8202;<sub>p</sub><sup>F</sup>(T&#8202;<sub>p</sub>(&theta;))</span>&#8202;&nabla;&#8202;<sub>&theta;</sub>T&#8202;<sub>p</sub>(&theta;)&#8202;dp = 0
+
+&nabla;&#8202;<sub>&theta;</sub>T&#8202;<sub>p</sub>(&theta;) = &minus; [&part;g&#8202;<sub>p</sub><sup>F&#8202;&theta;</sup>/&part;&theta;] / [&part;g&#8202;<sub>p</sub><sup>F&#8202;&theta;</sup>/&part;t]   at t = T&#8202;<sub>p</sub>(&theta;)</div>
+<div class="col">
+<p>The same function g appears twice, evaluated at two different distributions. At the
+<em>model</em> it defines the functional and, by implicit differentiation, its sensitivity. At the
+<em>truth</em> &mdash; the highlighted term &mdash; it measures the discrepancy: g<sub>p</sub><sup>F</sup>(t)
+vanishes exactly when t is the truth's own level-p M-quantile. So &theta;* sets a weighted average
+of the level-by-level discrepancies to zero, weighted by w(p) and by the sensitivity. Two
+consequences follow at once: the target depends on the weight, and it depends on &psi; only through
+which functional is being matched.</p>
+
+<p>Everything is elementary once the truth's distribution function F and partial moments
+&Phi;&#772;(t) = E[(Y &minus; t)<sup>+</sup>] and &Phi;(t) = E[(t &minus; Y)<sup>+</sup>] are
+available, using &Phi;(t) = t &minus; E[Y] + &Phi;&#772;(t) above the lower endpoint and
+&Phi;(t) = 0 below it:</p>
+</div>
+<div class="eq">quantile   &psi;(v) = sign(v)             g&#8202;<sub>p</sub>(t) = p &minus; F(t)
+expectile  &psi;(v) = v                   g&#8202;<sub>p</sub>(t) = p&#8202;&Phi;&#772;(t) &minus; (1&minus;p)&#8202;&Phi;(t)
+elastile   &psi;(v) = (2&alpha;/s)v + (1&minus;&alpha;)sign(v)  g&#8202;<sub>p</sub>(t) = (2&alpha;/s)[p&#8202;&Phi;&#772; &minus; (1&minus;p)&Phi;] + (1&minus;&alpha;)[p &minus; F(t)]
+one-sided  &psi;(v) = max(v, &minus;c)          g&#8202;<sub>p</sub>(t) = p&#8202;&Phi;&#772;(t) &minus; (1&minus;p)[&Phi;(t) &minus; &Phi;(t&minus;c)]</div>
+<div class="col">
+<p>For the composite quantile fitted to GPD(0, &sigma;, &xi;) exceedances the whole system collapses
+to something writable. With T<sub>p</sub> = &sigma;[(1&minus;p)<sup>&minus;&xi;</sup> &minus; 1]/&xi;
+one has &part;T/&part;&sigma; = T/&sigma;, and eliminating that equation from the second leaves the
+pair</p>
+</div>
+<div class="eq">&#8747;&#8320;&sup1; w(p)&#8202;[p &minus; F(T&#8202;<sub>p</sub>)]&#8202;T&#8202;<sub>p</sub>&#8202;dp = 0
+&#8747;&#8320;&sup1; w(p)&#8202;[p &minus; F(T&#8202;<sub>p</sub>)]&#8202;(1&minus;p)<sup>&minus;&xi;</sup>&#8202;log[1/(1&minus;p)]&#8202;dp = 0</div>
+<div class="col">
+<p>two explicit integral equations in (&sigma;, &xi;). Solving them directly recovers
+(1.38035, 0.25484), the same root the general system gives, to five significant figures. For the
+expectile the model functional has no elementary form &mdash; it is the root of
+k&#8202;&phi;<sub>&theta;</sub>(t) + m<sub>&theta;</sub> &minus; t = 0 with k = (2p&minus;1)/(1&minus;p)
+&mdash; but implicit differentiation of that equation still gives
+&nabla;<sub>&theta;</sub>T in closed form, and it agrees with central differences to
+2.5&times;10<sup>&minus;10</sup>.</p>
+
+<p>Solved to a residual below 10<sup>&minus;10</sup>, with the two references obtained exactly as
+well (the likelihood limit minimises Kullback&ndash;Leibler divergence, the L-moment limit matches
+the first two L-moments):</p>
 </div>
 FIG_PT
 <div class="tablewrap">

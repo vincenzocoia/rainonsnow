@@ -238,7 +238,43 @@ about the shape parameter, and bounding their influence discards it deliberately
 </figure>
 
 
-<h3><span class="n">2.3</span>Closed forms</h3>
+<h3><span class="n">2.3</span>The pseudo-true limit</h3>
+<div class="col">
+<p>Because the family will be misspecified, the object of interest is not a true &theta; but the
+pseudo-true limit &mdash; what the estimator converges to with unlimited data. It can be written
+down. Let g<sub>p</sub><sup>G</sup> denote the M-quantile identification function (2) of an
+arbitrary distribution G, so that the model's level-p functional T<sub>p</sub>(&theta;) is defined
+by g<sub>p</sub><sup>F<sub>&theta;</sub></sup>(T<sub>p</sub>(&theta;)) = 0. Differentiating (1) in
+&theta; &mdash; the indicator contributes nothing, &rho; being continuous at zero &mdash; the
+pseudo-true &theta;* solves</p>
+</div>
+<div class="eq"><div class="body">&#8747;&#8320;&sup1; w(p) g&#8202;<sub>p</sub><sup>F</sup>(T&#8202;<sub>p</sub>(&theta;)) &nabla;&#8202;<sub>&theta;</sub>T&#8202;<sub>p</sub>(&theta;) dp = 0</div><div class="tag">(6)</div></div>
+<div class="col">
+<p>with the sensitivity following by implicit differentiation of the defining equation,</p>
+</div>
+<div class="eq"><div class="body">&nabla;&#8202;<sub>&theta;</sub>T&#8202;<sub>p</sub>(&theta;) = &minus; [&part;g&#8202;<sub>p</sub><sup>F<sub>&theta;</sub></sup>/&part;&theta;] / [&part;g&#8202;<sub>p</sub><sup>F<sub>&theta;</sub></sup>/&part;t]   at t = T&#8202;<sub>p</sub>(&theta;)</div><div class="tag">(7)</div></div>
+<div class="col">
+<p>The same function g appears twice, at two distributions. At the model it defines the functional
+and its sensitivity; at the truth it measures the discrepancy, vanishing exactly when
+T<sub>p</sub>(&theta;) is the truth's own level-p M-quantile. So (6) says the pseudo-true parameter
+sets a weighted average of the level-by-level discrepancies to zero, weighted by w and by the
+sensitivity. The target therefore depends on the weight, and on &psi; only through which functional
+is matched. Section 5.5 solves (6) numerically and finds that concentrating w drives &theta;*
+towards the limiting GPD, which is the asymptotic justification for tail weighting.</p>
+
+<p>For the pinball loss on GPD(0, &sigma;, &xi;) exceedances the system is elementary. With
+T<sub>p</sub> = &sigma;[(1&minus;p)<sup>&minus;&xi;</sup> &minus; 1]/&xi; one has
+&part;T/&part;&sigma; = T/&sigma;, and eliminating that equation from the other leaves two explicit
+integral equations in (&sigma;, &xi;):</p>
+</div>
+<div class="eq"><div class="body">&#8747; w(p)[p &minus; F(T&#8202;<sub>p</sub>)] T&#8202;<sub>p</sub> dp = 0,   &#8747; w(p)[p &minus; F(T&#8202;<sub>p</sub>)] (1&minus;p)<sup>&minus;&xi;</sup> log[1/(1&minus;p)] dp = 0</div><div class="tag">(8)</div></div>
+<div class="col">
+<p>For the other members T<sub>p</sub> has no elementary form, but (7) still delivers
+&nabla;<sub>&theta;</sub>T in closed form from the identification equation, so no numerical
+differentiation is required anywhere.</p>
+</div>
+
+<h3><span class="n">2.4</span>Closed forms</h3>
 <div class="col">
 <p>Equation (2) is tractable for both extreme-value families because each identification equation
 reduces to the first partial moment</p>
@@ -538,6 +574,57 @@ empirical body, the T = 2 error is 1.284, 1.288, 1.283 and 1.289 for four very d
 models, and the empirical distribution alone gives 1.353. Four indistinguishable numbers indicate
 that the body is doing all the work: that column measures the empirical distribution against a
 parametric fit, and is a cost of grafting rather than of the loss.</p>
+</div>
+
+<h3><span class="n">5.5</span>What the estimators converge to</h3>
+<div class="col">
+<p>The comparisons above are at a fixed sample size. Solving (6) removes the sampling noise and
+isolates what each criterion targets. Fit to exceedances over u = 3.16, the truth's 0.90-quantile,
+where threshold stability fixes the asymptotic target: if exceedances over u&#8320; are
+GPD(&sigma;&#8320;, &xi;), then over u they are GPD(&sigma;&#8320; + &xi;(u &minus; u&#8320;), &xi;),
+so for a GEV(&mu;, &sigma;, &xi;) tail the limiting GPD at u has shape &xi; and scale
+&sigma; + &xi;(u &minus; &mu;) &mdash; here (1.6323, 0.2000). The truth's conditional survival
+matches that to a maximum log-ratio of 2.7&times;10<sup>&minus;7</sup> at u = 100.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption><b>Table 4.</b> Pseudo-true GPD limits above u = 3.16 with w(p) = p<sup>6</sup>, solved
+from (6) to a residual below 10<sup>&minus;10</sup>. The likelihood limit minimises
+Kullback&ndash;Leibler divergence and the L-moment limit matches the first two L-moments; both are
+obtained exactly. The right-hand block sweeps the weight for the asymmetric square.</caption>
+<thead><tr><th>estimator</th><th>scale</th><th>shape</th><th>&nbsp;&nbsp;w = p<sup>m</sup></th><th>scale</th><th>shape</th></tr></thead>
+<tbody>
+<tr><td>POT maximum likelihood</td><td class="lose">1.1933</td><td class="lose">0.3459</td><td>m = 0</td><td>1.313</td><td>0.2637</td></tr>
+<tr><td>POT L-moments</td><td class="lose">1.2011</td><td class="lose">0.3247</td><td>m = 1</td><td>1.346</td><td>0.2520</td></tr>
+<tr><td>composite, pinball</td><td>1.3804</td><td>0.2548</td><td>m = 2</td><td>1.367</td><td>0.2448</td></tr>
+<tr><td>composite, asymmetric square</td><td>1.4100</td><td>0.2316</td><td>m = 6</td><td>1.410</td><td>0.2316</td></tr>
+<tr><td>&alpha;-elastile, &alpha; = 0.5</td><td>1.4090</td><td>0.2326</td><td>m = 10</td><td>1.430</td><td>0.2259</td></tr>
+<tr><td>one-sided, k = 4</td><td class="win">1.4176</td><td class="win">0.2291</td><td>m = 20</td><td>1.455</td><td>0.2195</td></tr>
+<tr class="ref"><td>limiting GPD (the target)</td><td>1.6323</td><td>0.2000</td><td>&rarr; limit</td><td>1.632</td><td>0.2000</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>Three readings. Maximum likelihood and L-moments do <em>not</em> share a limit, 0.3459 against
+0.3247: under correct specification they coincide, but under misspecification a
+Kullback&ndash;Leibler projection and a moment match are different functionals. &psi; separates the
+losses only weakly &mdash; the asymmetric square, elastile and one-sided limits fall within 0.003
+of each other, while the pinball sits 0.023 away, so the division that matters is bounded against
+unbounded &psi;, not the choice among the unbounded ones. And the weight moves the target
+monotonically towards the limiting GPD, which is the asymptotic content of tail weighting: what
+section 3.3 costs in finite samples, this buys in the limit, and the tension between them is what
+fixes a usable weight.</p>
+
+<p>One further decomposition is worth separating. At m = 0 &mdash; a flat weight, no tail focus at
+all &mdash; the asymmetric square still reaches 0.2637 against likelihood's 0.3459. Roughly half
+the movement from 0.346 to 0.200 comes from matching expectiles rather than maximising likelihood,
+before any weighting is applied, which is a different argument from the one the construction is
+usually motivated by.</p>
+
+<div class="note"><p>A caution on reading the target. The carried-back limiting GPD is not the
+truth's conditional law even asymptotically: conditioning on X &gt; u sweeps in the body mass the
+contamination adds at the threshold, so
+S<sub>cond</sub>/S<sub>limit</sub> &rarr; 1/[S(u)(1 + &xi;u/&sigma;)<sup>1/&xi;</sup>] = 0.8629
+here. The limit is a target for the shape; the truth is the target for the level.</p></div>
 </div>
 
 <h2><span class="n">6</span><span>Discussion</span></h2>
