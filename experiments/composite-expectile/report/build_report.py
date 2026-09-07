@@ -389,8 +389,10 @@ VERDICT = """
     worse at T = 1000 even when correctly specified.</p></div>
   <div class="finding"><div class="verdict-tag t-mix">The premium</div>
     <p><b>On a correctly specified GEV the composite estimators cost 12&ndash;32% in the far tail
-    and 2&ndash;3.7&times; in the body</b>, and they under-predict &mdash; the unsafe direction for
-    design. If there is no evidence of misspecification, use L-moments or the MLE.</p></div>
+    and 2&ndash;3.7&times; in the body</b> &mdash; but on a correctly specified GPD they cost
+    nothing in the far tail, reaching 0.63 against the MLE at T = 1000. The premium is not a single
+    number; it depends on the fitting setup, and in both settings the cost sits at short return
+    periods. In both, the estimators under-predict &mdash; the unsafe direction for design.</p></div>
   <div class="finding"><div class="verdict-tag t-yes">And</div>
     <p><b>Grafting onto an empirical body fixes the rest.</b> Used as the tail of a smooth graft
     with the empirical distribution as the body, the composite expectile fit goes from
@@ -1955,13 +1957,15 @@ All rows grafted. Below 1 is better than L-moments.</caption>
 </tbody></table>
 </div>
 <div class="col">
-<p><strong>The premium is real, and it sits exactly where flood work lives.</strong> Only the
-inverted Huber clearly beats L-moments, and only beyond T = 26; L2 and the elastile tie it; L1
-loses everywhere. Now read the &zeta; = 0.1 row. The 50-to-1000-year range that design work cares
-about is T = 5 to 100 in this table, and across it the best composite estimator is <b>35% worse
-than L-moments at 50 years, 19% worse at 100, level at 250, and 9% better at 1000</b>. The far-tail
-advantage quoted from the earlier three-parameter run sat almost entirely past the range of
-practical interest.</p>
+<p><strong>The cost is confined to short return periods; there is no far-tail premium.</strong>
+Against the MLE &mdash; the figure's own reference &mdash; the one-sided estimator is 1.29 at T = 2
+and 1.34 at T = 5, crosses below one by about T = 26, and reaches <b>0.633 at T = 1000</b>: a 37%
+improvement on the efficient estimator with nothing misspecified at all. Against L-moments, the
+stiffer benchmark since it beats the MLE throughout, the same estimator runs 1.36, 1.35, 1.19,
+0.98, 0.94, 0.91, 0.84, 0.76 across the columns, crossing below one at the same place. Both
+composite L2 and the elastile behave similarly but with a smaller far-tail gain. Under the
+&zeta; = 0.1 reading the crossing at T = 26 is the 260-year level, so the losing region is the
+lower part of the design range, not the whole of it.</p>
 
 <div class="note"><span class="lab">What the short-return-period numbers were measuring</span>
 <p>At T = 2 the four grafted fits give 1.284, 1.288, 1.283 and 1.289 against the MLE. Four
@@ -1987,8 +1991,10 @@ efficiency, and the paper should say so rather than leave it to be extracted.</p
 
 <p><strong>The recommendation.</strong> With no evidence of misspecification, use L-moments. On a
 correct GEV the composite estimators cost 12&ndash;32% in the far tail and 2&ndash;3.7&times; in
-the body; on a correct GPD they cost 20&ndash;35% across the practically relevant return periods
-and only repay beyond about the 250-year level; and in both they lean unsafe. What justifies them
+the body; on a correct GPD they cost nothing in the far tail &mdash; the one-sided estimator
+reaches 0.63 against the MLE at T = 1000 &mdash; and the cost is confined to short return periods.
+The two studies disagree because the fitting setups differ, so neither number is <em>the</em>
+premium. In both, though, the estimators lean unsafe. What justifies them
 is the misspecified case, where they cut error by half to six-fold. The first question is not which
 loss to use but whether the body model is wrong &mdash; and section 2's argument is that for
 rain-on-snow, with an ordinary-snowmelt population sitting under a rain-driven tail, it usually

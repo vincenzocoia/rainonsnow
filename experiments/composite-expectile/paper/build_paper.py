@@ -586,9 +586,15 @@ return period when the GPD sits above a threshold with exceedance rate &zeta; = 
 </tbody></table>
 </div>
 <div class="col">
-<p>Across the practically occupied range, then, the best composite estimator is 35% worse than
-L-moments at the 50-year level, 19% worse at 100, level at 250, and 9% better at 1000. The far-tail
-advantage is real but sits largely beyond the horizon of interest.</p>
+<p>The cost is confined to short return periods. Against the MLE the one-sided estimator is
+1.29 at T = 2 and 1.34 at T = 5, but it crosses below one by about T = 26 and reaches <b>0.63 at
+T = 1000</b> &mdash; a 37% improvement on the efficient estimator with nothing misspecified.
+Against L-moments, the stiffer benchmark, the same estimator runs 1.36, 1.35, 1.19, 0.98, 0.94,
+0.91, 0.76 across the columns. So there is no far-tail premium here at all: the tail-weighted
+criteria beat both conventional estimators where the extrapolation matters, and pay for it only
+near the threshold. Under a peaks-over-threshold reading with &zeta; = 0.1 the crossing at T = 26
+is the 260-year level, so the range in which the method loses is the lower part of the design
+range rather than the whole of it.</p>
 </div>
 FIG_CORRECT
 
@@ -686,13 +692,16 @@ losses.</p>
 
 <p>Three qualifications should travel with that conclusion.</p>
 
-<p>First, the method is insurance and should be priced as such. On a correctly specified GEV the
-composite estimators cost 12&ndash;32% in the far tail and two to four times in the body; on a
-correctly specified GPD they cost 20&ndash;35% across the return periods design work occupies, and
-repay only beyond roughly the 250-year level. The question a practitioner must answer first is
-therefore not which loss to use but whether the body model is wrong &mdash; and the argument that
-it usually is, for a catchment with two flood-generating mechanisms, is a physical argument rather
-than a statistical one.</p>
+<p>First, what the method costs when nothing is wrong depends sharply on the setting, and the two
+correctly-specified studies here disagree. Fitting a GEV to block maxima it costs 12&ndash;32% in
+the far tail and two to four times in the body. Fitting a GPD to exceedances it costs nothing in
+the far tail &mdash; the one-sided estimator reaches 0.63 against the MLE and 0.76 against
+L-moments at T = 1000 &mdash; and the cost is confined to short return periods. We do not think
+either number should be quoted as the premium: the difference between them is the fitting setup,
+and the honest summary is that the cost is concentrated near the threshold in both, while the
+far-tail behaviour depends on the configuration. The question a practitioner must answer first is
+still whether the body model is wrong, which for a catchment with two flood-generating mechanisms
+is a physical argument rather than a statistical one.</p>
 
 <p>Second, the errors run the wrong way for design. Every composite estimator we examined
 under-predicts the far tail when the model is correct, because tail-weighted fitting underestimates
