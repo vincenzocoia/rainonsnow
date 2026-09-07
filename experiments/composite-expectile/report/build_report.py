@@ -813,7 +813,7 @@ FIG_SHAPE
 
 S8 = """
 <section id="recommend">
-<h2><span class="num">17</span><span>What to do with this</span></h2>
+<h2><span class="num">18</span><span>What to do with this</span></h2>
 <div class="col">
 <p><strong>The obstacle is variance, not bias.</strong> Both composite estimators solve the bias
 problem completely &mdash; against a body-contaminated truth they remove a 39% underestimate of
@@ -875,7 +875,7 @@ optimise, and by those the case for the method is much stronger than by MSE.</li
 
 S9 = """
 <section id="methods">
-<h2><span class="num">18</span><span>Methods and reproducibility</span></h2>
+<h2><span class="num">19</span><span>Methods and reproducibility</span></h2>
 <div class="col">
 <h3>Machinery</h3>
 <p>The expectile function of the GEV is needed on a grid of levels inside an optimiser, roughly
@@ -1040,6 +1040,16 @@ def build():
             "close to the empirical distribution's own 1.35 (dotted), because the body is doing "
             "the work. The dashed orange line is L-moments, which beats the MLE throughout.",
             "MSE against the GPD MLE for grafted and ungrafted two-parameter composite fits")),
+        SPT.replace("FIG_PT", fig(
+            "fig-pseudotrue-tail.png",
+            "<b>What the estimators converge to above u = 3.16.</b> Left, conditional survival on "
+            "a log scale: the truth (thick grey), one realistic n = 100 sample's exceedances "
+            "(grey steps, ten of them, stopping where the data stop), the carried-back limiting "
+            "GPD (black dashed), and the pseudo-true fit of each estimator. Right, each divided "
+            "by the limiting GPD; flat at one means convergence to the limit. Maximum likelihood "
+            "and L-moments climb away to two and a half times it, while the three composite fits "
+            "track the truth and settle near one.",
+            "Conditional survival functions above a threshold, and their ratio to the limiting GPD")),
         S8, S9, FOOTER,
     ]
     return "".join(body)
@@ -1983,6 +1993,81 @@ is the misspecified case, where they cut error by half to six-fold. The first qu
 loss to use but whether the body model is wrong &mdash; and section 2's argument is that for
 rain-on-snow, with an ordinary-snowmelt population sitting under a rain-driven tail, it usually
 is.</p>
+</div>
+</section>
+"""
+
+
+SPT = """
+<section id="pseudotrue">
+<h2><span class="num">17</span><span>What each estimator converges to above a threshold</span></h2>
+<div class="col">
+<p>Everything so far has compared estimators at a fixed sample size. A different question, and a
+cleaner one, is what each converges to with unlimited data. Fit a GPD to exceedances over
+u = 3.16, the truth's 0.90-quantile, and every estimator has a pseudo-true limit: the GPD that
+minimises its own population criterion against the truth's conditional distribution. Those limits
+differ, and the differences are the whole argument for the method, stripped of sampling noise.</p>
+
+<p>There is a natural target to compare them against. The threshold-stability property of the GPD
+says that if exceedances over u&#8320; are GPD(&sigma;&#8320;, &xi;) then exceedances over any
+u &ge; u&#8320; are GPD(&sigma;&#8320; + &xi;(u &minus; u&#8320;), &xi;) &mdash; the shape is
+invariant and the scale is linear in the threshold. For a GEV(&mu;, &sigma;, &xi;) tail,</p>
+</div>
+<div class="eq">S(x) / S(u)  &rarr;  [ 1 + &xi;(x &minus; u) / (&sigma; + &xi;(u &minus; &mu;)) ]<sup>&minus;1/&xi;</sup>   as u &rarr; &infin;</div>
+<div class="col">
+<p>so the limiting GPD has shape &xi; and scale &sigma; + &xi;(u &minus; &mu;). Taking the limit at
+an arbitrarily large threshold and carrying it back to the u we actually use gives a concrete
+target: <b>scale 1.6323, shape 0.2000</b>. The construction checks out numerically &mdash; the
+truth's conditional survival matches that GPD to a maximum log-ratio of 9.7&times;10<sup>&minus;3</sup>
+at u = 6 and 2.7&times;10<sup>&minus;7</sup> at u = 100.</p>
+</div>
+FIG_PT
+<div class="tablewrap">
+<table>
+<caption><b>Pseudo-true GPD parameters above u = 3.16</b>, from 2&times;10<sup>5</sup> exceedances
+&mdash; the unlimited-data limit up to Monte Carlo error, stable across two independent seeds. The
+last two columns give the maximum absolute log-survival discrepancy over conditional survival 1
+down to 10<sup>&minus;3</sup>, against two references.</caption>
+<thead><tr><th>estimator</th><th>scale</th><th>shape</th><th>vs limiting GPD</th><th>vs the truth</th></tr></thead>
+<tbody>
+<tr><td>POT maximum likelihood</td><td class="lose">1.197</td><td class="lose">0.345</td><td class="lose">0.875</td><td class="lose">1.022</td></tr>
+<tr><td>POT L-moments</td><td class="lose">1.204</td><td class="lose">0.325</td><td class="lose">0.674</td><td class="lose">0.822</td></tr>
+<tr><td>composite L2</td><td>1.407</td><td>0.234</td><td>0.203</td><td class="win">0.136</td></tr>
+<tr><td>&alpha;-elastile, &alpha; = 0.5</td><td>1.399</td><td>0.240</td><td class="win">0.195</td><td>0.201</td></tr>
+<tr><td>one-sided, k = 4</td><td>1.414</td><td>0.231</td><td>0.202</td><td class="win">0.117</td></tr>
+<tr class="ref"><td>the truth's own conditional law</td><td>&mdash;</td><td>&mdash;</td><td>0.166</td><td>0</td></tr>
+<tr class="ref"><td>limiting GPD (the target)</td><td>1.632</td><td>0.200</td><td>0</td><td>0.166</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>The conjecture holds, and by a wide margin. <strong>Maximum likelihood converges to shape 0.345
+against a limiting 0.200</strong>, and L-moments to 0.325; all three composite estimators land
+between 0.231 and 0.240. Measured as log-survival discrepancy the composite fits sit four times
+closer to the limit than maximum likelihood does, and &mdash; the number that matters
+operationally &mdash; between five and nine times closer to the truth's own conditional
+distribution. The pseudo-true MLE was confirmed independently by minimising the
+Kullback&ndash;Leibler divergence by quadrature rather than by simulation, which gives
+(1.1933, 0.3459) against the simulated (1.1965, 0.3450).</p>
+
+<p>The mechanism is visible in the left panel. Just above u the truth still carries the
+contamination, so its conditional survival falls away faster than a GPD would; further out it
+settles onto the GEV tail. No single GPD fits both regimes, and the two criteria resolve the
+conflict differently. Likelihood weights the near-threshold region, where most of the exceedances
+are, and buys the fit there with a scale that is too small and a shape that is too large &mdash; a
+compensation that is invisible near u and compounds badly on extrapolation. The tail-weighted
+criteria give up the near-threshold fit and track the far tail instead.</p>
+
+<div class="note"><span class="lab">The limit is the right shape to aim at, not the right level</span>
+<p>The carried-back limiting GPD is <em>not</em> the truth's conditional distribution, even
+asymptotically. Conditioning on X &gt; u sweeps in the body mass that the contamination adds at the
+threshold, so the ratio tends to a constant below one rather than to one:
+S<sub>cond</sub>(x)/S<sub>limit</sub>(x) &rarr;
+1/[S(u)(1 + &xi;u/&sigma;)<sup>1/&xi;</sup>] = <b>0.8629</b>, matched numerically to four decimals
+at x = 50, 200 and 1000. Equivalently the GEV component carries only 0.827 of the truth's survival
+at u. This is why the table reports both references: a POT fit is ultimately judged against the
+truth, and the limiting GPD is a target for the shape rather than the level. It also means the
+composite fits, which converge towards the limit, slightly overshoot the truth in the far tail
+&mdash; by about 15%, against maximum likelihood's factor of nearly three.</p></div>
 </div>
 </section>
 """
