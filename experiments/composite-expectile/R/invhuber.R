@@ -234,3 +234,77 @@ fit_gpd_onesided <- function(y, grid, w_fun, k) {
   if (o$value >= BIG) return(rep(NA_real_, 3))
   c(o$par[1], exp(o$par[2]), o$par[3])
 }
+
+# --- GEV version ------------------------------------------------------------
+# The one-sided equation p phi(t) = (1-p) [c + phi(t) - phi(t-c)] involves only
+# the partial moment, so it transfers to any family that supplies one. gev.R
+# provides phi in closed form (lower incomplete gamma) and handles x below the
+# lower endpoint as m - x, which is what phi(t-c) needs for small t.
+gev_onesided_g <- function(t, p, mu, sigma, xi, cc) {
+  ph <- gev_partial_moment(t, mu, sigma, xi)
+  p * ph - (1 - p) * (cc + ph - gev_partial_moment(t - cc, mu, sigma, xi))
+}
+
+gev_onesided <- function(p, mu, sigma, xi, cc, tol = 1e-10, maxit = 60) {
+  if (xi >= 1 || !is.finite(gev_mean(mu, sigma, xi))) return(rep(NA_real_, length(p)))
+  q <- qgev(p, mu, sigma, xi)
+  s0 <- sigma + abs(xi) * abs(q - mu)
+  g <- function(t) gev_onesided_g(t, p, mu, sigma, xi, cc)
+  lo <- q - s0; hi <- q + s0
+  glo <- g(lo); ghi <- g(hi)
+  for (it in 1:80) {
+    bad <- !is.finite(glo) | glo <= 0
+    if (!any(bad)) break
+    lo[bad] <- lo[bad] - pmax(hi - lo, 1e-8)[bad]; glo <- g(lo)
+  }
+  for (it in 1:80) {
+    bad <- !is.finite(ghi) | ghi >= 0
+    if (!any(bad)) break
+    hi[bad] <- hi[bad] + pmax(hi - lo, 1e-8)[bad]; ghi <- g(hi)
+  }
+  x <- (lo + hi) / 2
+  act <- rep(TRUE, length(x))
+  for (it in seq_len(maxit)) {
+    if (!any(act)) break
+    i <- which(act); xi_ <- x[i]; pi_ <- p[i]
+    gx <- gev_onesided_g(xi_, pi_, mu, sigma, xi, cc)
+    up <- is.finite(gx) & gx > 0
+    lo[i[up]] <- xi_[up]; hi[i[!up]] <- xi_[!up]
+    Sx <- gev_survival(xi_, mu, sigma, xi)
+    dg <- -pi_ * Sx + (1 - pi_) * (Sx - gev_survival(xi_ - cc, mu, sigma, xi))
+    step <- ifelse(is.finite(dg) & dg < 0, xi_ - gx / dg, (lo[i] + hi[i]) / 2)
+    outside <- !is.finite(step) | step <= lo[i] | step >= hi[i]
+    step[outside] <- ((lo[i] + hi[i]) / 2)[outside]
+    done <- abs(step - xi_) <= tol * (1 + abs(xi_))
+    x[i] <- step
+    act[i[done]] <- FALSE
+  }
+  x
+}
+
+# Composite fitter. The reverse-Huber loss split is family-agnostic -- it only
+# needs the fitted levels tv -- so gpd_onesided_loss() is reused verbatim.
+fit_gev_onesided <- function(y, grid, w_fun, k, start = NULL) {
+  cc <- k * max(1e-8, IQR(y))
+  p <- grid$p; wts <- grid$w_quad * w_fun(p)
+  keep <- wts > 0; p <- p[keep]; wts <- wts[keep]
+  ys <- sort(y); n <- length(ys)
+  C1 <- c(0, cumsum(ys)); C2 <- c(0, cumsum(ys^2)); S1 <- C1[n+1]; S2 <- C2[n+1]
+  obj <- function(par) {
+    mu <- par[1]; sigma <- exp(par[2]); xi <- par[3]
+    if (!is.finite(mu) || !is.finite(sigma) || xi < XI_LO || xi > XI_HI) return(BIG)
+    tv <- gev_onesided(p, mu, sigma, xi, cc)
+    if (any(!is.finite(tv))) return(BIG)
+    gpd_onesided_loss(tv, p, wts, ys, C1, C2, S1, S2, n, cc)
+  }
+  if (is.null(start)) start <- fit_lmom(y)
+  if (any(is.na(start))) start <- c(mean(y), sd(y), 0.1)
+  par0 <- c(start[1], log(max(start[2], 1e-6)), min(max(start[3], XI_LO + .05), 0.6))
+  o <- try(optim(par0, obj, method = "Nelder-Mead",
+                 control = list(maxit = 3000, reltol = 1e-12)), silent = TRUE)
+  if (inherits(o, "try-error") || o$value >= BIG) return(rep(NA_real_, 3))
+  o <- optim(o$par, obj, method = "Nelder-Mead",
+             control = list(maxit = 3000, reltol = 1e-12))
+  if (o$value >= BIG) return(rep(NA_real_, 3))
+  c(o$par[1], exp(o$par[2]), o$par[3])
+}
