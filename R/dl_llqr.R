@@ -26,7 +26,9 @@
 #' @param yname The name of the response variable.
 #' @param xnames The name of the (single) predictor variable.
 #' @param levels Quantile levels at which to fit. The returned distribution is
-#'   a step function with these levels as its jump points.
+#'   a step function with these levels as its jump points. The default is the
+#'   midpoint grid, so the result is the empirical distribution of a stratified
+#'   sample of size 100.
 #' @param span Fraction of the data falling inside the kernel window, as in
 #'   `stats::loess()`. Ignored if `bandwidth` is given.
 #' @param bandwidth Kernel half-width in the units of `x`. If `NULL` (the
@@ -53,7 +55,7 @@
 #' predict(fit, newdata = data.frame(x = c(2, 8)))
 #' @export
 dl_llqr <- function(data, yname, xnames,
-                    levels = seq(0.01, 0.99, by = 0.01),
+                    levels = (seq_len(100) - 0.5) / 100,
                     span = 0.4,
                     bandwidth = NULL,
                     kernel = c("tricube", "epanechnikov", "gaussian"),
@@ -202,6 +204,32 @@ llqr_quantiles <- function(object, x0, levels = NULL, rearrange = TRUE) {
   res
 }
 
+#' Probability mass to attach to each fitted quantile
+#'
+#' A quantile at level `p` stands for the levels closer to it than to any other
+#' fitted level, so its mass is the width of that interval: the midpoints
+#' between neighbouring levels, with the outer edges running to 0 and 1. For an
+#' evenly spaced grid of midpoint levels this gives equal weights, and the
+#' resulting step distribution is then exactly the empirical distribution of a
+#' stratified sample of that size.
+#'
+#' Do not instead pile the leftover mass `1 - max(levels)` onto the largest
+#' knot. That puts an atom at the top of the distribution, and any tail fit
+#' then reads it as a hard upper endpoint and returns a spuriously bounded
+#' shape parameter.
+#'
+#' @param levels Sorted quantile levels.
+#' @returns A numeric vector of weights summing to one.
+#' @examples
+#' llqr_knot_weights(c(0.25, 0.5, 0.75))
+#' @export
+llqr_knot_weights <- function(levels) {
+  k <- length(levels)
+  if (k == 1L) return(1)
+  edges <- c(0, (levels[-1] + levels[-k]) / 2, 1)
+  diff(edges)
+}
+
 #' @describeIn predict.dstlrn Predict from a local linear quantile regression
 #'   distributional learning model. Each prediction is a step distribution
 #'   whose jumps sit at the fitted conditional quantiles.
@@ -220,13 +248,7 @@ predict.dl_llqr <- function(object, newdata = NULL, ...) {
   }
   x0 <- newdata[[xname]][!lgl_na]
   qmat <- llqr_quantiles(object, x0)
-  levels <- object[["levels"]]
-  # Turn the level grid into probability mass: a quantile at level p carries
-  # the mass between it and the previous level, with the first knot taking all
-  # the mass below it. The result is the step survival function that the
-  # tail-grafting machinery expects.
-  steps <- diff(c(0, levels))
-  steps[length(steps)] <- steps[length(steps)] + (1 - levels[length(levels)])
+  steps <- llqr_knot_weights(object[["levels"]])
   dsts <- lapply(seq_len(nrow(qmat)), function(i) {
     q <- qmat[i, ]
     if (anyNA(q)) return(distionary::dst_null())

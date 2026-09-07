@@ -8,7 +8,7 @@ dl_llqr(
   data,
   yname,
   xnames,
-  levels = seq(0.01, 0.99, by = 0.01),
+  levels = (seq_len(100) - 0.5)/100,
   span = 0.4,
   bandwidth = NULL,
   kernel = c("tricube", "epanechnikov", "gaussian"),
@@ -25,7 +25,9 @@ dl_llqr(
 \item{xnames}{The name of the (single) predictor variable.}
 
 \item{levels}{Quantile levels at which to fit. The returned distribution is
-a step function with these levels as its jump points.}
+a step function with these levels as its jump points. The default is the
+midpoint grid, so the result is the empirical distribution of a stratified
+sample of size 100.}
 
 \item{span}{Fraction of the data falling inside the kernel window, as in
 \code{stats::loess()}. Ignored if \code{bandwidth} is given.}
