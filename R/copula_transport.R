@@ -530,3 +530,98 @@ transport_ensemble <- function(
     weights = weights
   )
 }
+
+#' Copula density
+#'
+#' Needed to fit a copula by likelihood on part of the unit square rather than
+#' from a body statistic like Kendall's tau. See [fit_copula_upper()].
+#'
+#' @param u,v Numeric vectors in `(0, 1)`, recycled against each other.
+#' @inheritParams cop_h
+#' @returns A numeric vector.
+#' @examples
+#' cop_density(0.9, 0.95, "gaussian", 0.7)
+#' @export
+cop_density <- function(u, v, family = "gaussian", par = 0.5) {
+  u <- pmin(pmax(u, 1e-12), 1 - 1e-12)
+  v <- pmin(pmax(v, 1e-12), 1 - 1e-12)
+  switch(
+    family,
+    gaussian = {
+      a <- stats::qnorm(u)
+      b <- stats::qnorm(v)
+      r <- par
+      exp(
+        -(r^2 * (a^2 + b^2) - 2 * r * a * b) / (2 * (1 - r^2)) -
+          0.5 * base::log(1 - r^2)
+      )
+    },
+    clayton = clayton_density(u, v, par),
+    survival_clayton = clayton_density(1 - u, 1 - v, par),
+    stop("Unknown copula family: ", family, call. = FALSE)
+  )
+}
+
+#' @noRd
+clayton_density <- function(u, v, theta) {
+  (1 + theta) *
+    (u * v)^(-1 - theta) *
+    (u^-theta + v^-theta - 1)^(-1 / theta - 2)
+}
+
+#' Fit a copula parameter on the upper region only
+#'
+#' Kendall's tau is a statistic of the whole unit square, and the transport
+#' depends on the copula near the top. This fits the parameter by maximum
+#' likelihood restricted to observations with `v` above a threshold, correctly
+#' normalised for that region: the density of `V` given `U = u` and `V > v0` is
+#' `c(u, v) / P(V > v0 | U = u)`.
+#'
+#' The restriction is on `v` alone, across all of `u`. That is deliberate. The
+#' upper-right corner is not the only place the copula shapes the conditional
+#' tail index -- for families with a non-constant conditional extreme value
+#' index the relevant behaviour is spread along the upper edge (Coia, Joe and
+#' Nolde 2024) -- so conditioning on a joint corner would throw away the part of
+#' the sample that carries it.
+#'
+#' @param u,v Pseudo-observations in `(0, 1)`.
+#' @param family Copula family; see [cop_h()].
+#' @param v_threshold Keep observations with `v` above this.
+#' @param bounds Search interval for the parameter.
+#' @returns A single number, `NA` if too few observations remain.
+#' @examples
+#' set.seed(1)
+#' u <- stats::runif(300)
+#' v <- cop_h_inverse(stats::runif(300), u, "gaussian", 0.6)
+#' fit_copula_upper(u, v, "gaussian")
+#' @export
+fit_copula_upper <- function(
+  u,
+  v,
+  family = "gaussian",
+  v_threshold = 0.5,
+  bounds = NULL
+) {
+  keep <- is.finite(u) & is.finite(v) & v > v_threshold
+  if (sum(keep) < 8L) {
+    return(NA_real_)
+  }
+  uu <- u[keep]
+  vv <- v[keep]
+  if (is.null(bounds)) {
+    bounds <- if (identical(family, "gaussian")) c(-0.98, 0.98) else c(0.02, 40)
+  }
+  nllh <- function(par) {
+    d <- cop_density(uu, vv, family, par)
+    norm <- cop_h_surv(1 - v_threshold, uu, family, par)
+    if (any(!is.finite(d)) || any(d <= 0) || any(norm <= 0)) {
+      return(1e10)
+    }
+    -sum(base::log(d) - base::log(norm))
+  }
+  o <- try(stats::optimize(nllh, interval = bounds), silent = TRUE)
+  if (inherits(o, "try-error")) {
+    return(NA_real_)
+  }
+  o$minimum
+}
