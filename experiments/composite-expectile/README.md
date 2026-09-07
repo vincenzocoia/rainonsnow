@@ -182,7 +182,41 @@ exactly the M-quantile of Breckling & Chambers (1988), `E[|p - I(Y<t)| psi(Y-t)]
 the robustness logic inverts here: bounded psi is the "robust" choice, but in tail estimation the
 outliers are the data, and L2 (unbounded psi) has one-half to one-sixth of L1's far-tail error.
 
-**18. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
+**18. Inverted Huber: capping the downside removes the mean anchoring, and that is not why it
+wins.** Huber's psi bounds the influence of large residuals; for tail estimation that is backwards,
+so invert the knot. Two inversions exist: symmetric `psi(u) = sign(u) max(|u|, c)` and one-sided
+`psi(u) = max(u, -c)`. Both are closed form in phi; the one-sided equation
+`p phi(t) = (1-p) [c + phi(t) - phi(t-c)]` contains no model mean at all, because the two mean
+terms cancel - so it removes the section-3 mean anchoring structurally, where finding 9's plug-in
+fix needed a noisy sample mean. Measured at matched *effective* level (small c drifts the
+functional to a much higher level, so matching nominal p flatters it), surviving contamination at
+u = 0.95 is 0.000% against the quantile's 0.569% and the expectile's 15.726%, with fully linear
+upside influence retained.
+
+Finite sample, with `c = k * IQR(y)`, k = 4 is the best far-tail estimator in the project: MSE
+ratios 0.977 / 0.888 / 0.850 / 0.662 / 0.332 / 0.179 across T = 19 to 1000, beating pure L2 at
+T = 107 to 1000 with paired t between -5.8 and -12.5, and beating the alpha = 0.5 elastile at
+T = 529 and 1000. The optimum is interior - k = 4 beats k = Inf, which is pure L2 exactly - and
+wide, since even k = 16 beats L2 at T = 1000 with t = -7.9.
+
+But three things cut against the derivation. The mechanism is not what wins: bias at T = 1000 is
+-2.55 for k = 4 against -1.94 for pure L2 and -0.76 for the elastile, so it is more biased and
+wins on variance; at n = 100 shape underestimation (median xi 0.108 against a true 0.2) swamps the
+asymptotic contamination. The regime where the theory helps is the regime the data cannot support:
+contamination vanishes at k = 0.25-0.5, which give MSE ratios of 4.44 and 2.53 at T = 19, and
+finding 20's trap explains it - 10.1% of the fitting weight lands above the largest observation
+there, against 0.8% for pure L2, and the median shape collapses to -0.176. And the useful regime
+is close to the expectile anyway. Present it as an empirical finding with a suggestive derivation,
+not as theory confirmed by simulation.
+
+**19. The criterion ridge is flat enough to invalidate the asymptotic targets.** The "asymptotic
+target" figures quoted throughout are single-seed n = 5000 fits. Refitting to three independent
+n = 5000 samples gives xi = 0.149, 0.233, 0.405 for the one-sided M-quantile and 0.213, 0.259,
+0.354 for pure L2 - a spread of a quarter in the shape, at fifty times the study's sample size.
+The 2000-replicate medians and the return-level results are unaffected; target-vs-target
+comparisons should not be read at three decimals.
+
+**20. Do not weight past the data.** A weight left at 1 up to p = 1 puts 27% of its mass (n = 100)
 above the largest observation, where the empirical functional has saturated; the fitted shape is
 dragged hard negative in proportion to that share.
 
@@ -203,6 +237,7 @@ R/gpd.R          GPD: closed-form partial moments, expectiles
 R/gpd_estimators.R  peaks-over-threshold, and composite GPD fitting
 R/graft_fast.R   the smooth graft evaluated directly (200x faster, exact)
 R/lpquantile.R   L^a-quantiles: fractional partial moments and the composite L^a fitter
+R/invhuber.R     inverted-Huber M-quantiles, both inversions, and the reverse-Huber fitter
 R/config.R       the settings the scripts share
 src/             C++ port of the expectile solver
 scripts/00-design.R             DGP and weight design, asymptotic targets
@@ -221,6 +256,11 @@ scripts/14-anchored-handoff.R   mean-anchored expectile, and a sweep of the hand
 scripts/15-gpd.R                GPD study: peaks-over-threshold against composite + smooth graft
 scripts/16-gpd-elastile.R       the alpha-elastile inside the GPD study
 scripts/17-lp-quantile.R        the L^a-quantiles at a = 1.5, against L1, L2 and the elastile
+scripts/18-inverted-huber.R     inverted-Huber M-quantiles: the population contamination result
+scripts/19-invhuber-gpd.R       the one-sided inverted Huber in the GPD study, k = 0.25 to 4
+scripts/21-invhuber-wide.R      the same at k = 8 and 16, to locate the interior optimum
+scripts/22-invhuber-figure.R    the knot sweep, drawn
+scripts/20-loss-geometry.R      loss balls in residual space, and influence functions
 scripts/98-validate.R           every correctness check, re-runnable
 report/build_report.py          builds the standalone HTML report
 out/                            results and figures

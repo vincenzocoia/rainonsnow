@@ -800,7 +800,7 @@ FIG_SHAPE
 
 S8 = """
 <section id="recommend">
-<h2><span class="num">15</span><span>What to do with this</span></h2>
+<h2><span class="num">16</span><span>What to do with this</span></h2>
 <div class="col">
 <p><strong>The obstacle is variance, not bias.</strong> Both composite estimators solve the bias
 problem completely &mdash; against a body-contaminated truth they remove a 39% underestimate of
@@ -862,7 +862,7 @@ optimise, and by those the case for the method is much stronger than by MSE.</li
 
 S9 = """
 <section id="methods">
-<h2><span class="num">16</span><span>Methods and reproducibility</span></h2>
+<h2><span class="num">17</span><span>Methods and reproducibility</span></h2>
 <div class="col">
 <h3>Machinery</h3>
 <p>The expectile function of the GEV is needed on a grid of levels inside an optimiser, roughly
@@ -957,12 +957,6 @@ def build():
             "is GEV L-moments. Every expectile curve converges to about 1.05 in the far tail "
             "whatever the weight; every quantile curve diverges upward.",
             "MSE ratio against return period for six weight settings, quantile and expectile")),
-        S6.replace("FIG_SHAPE", fig(
-            "fig-shape.png",
-            "<b>Fitted shape against sample size</b>, with a wider shape bound than the main run "
-            "so the bound itself cannot be the explanation. Both losses converge to the true "
-            "&xi; = 0.2; the small-sample bias is the extrapolation drag described above.",
-            "Boxplots of the fitted shape parameter against sample size")),
         S6B.replace("FIG_SHARP", fig(
             "fig-sharp.png",
             "<b>A near-degenerate body.</b> Left, the truth: a tight normal at 2.5 with a heavy "
@@ -970,6 +964,12 @@ def build():
             "Right, the median fitted return-level curve &mdash; maximum likelihood flattens, the "
             "composite expectile fit tracks the truth.",
             "Density, MSE ratio and median return level for the sharp-contrast setting")),
+        S6.replace("FIG_SHAPE", fig(
+            "fig-shape.png",
+            "<b>Fitted shape against sample size</b>, with a wider shape bound than the main run "
+            "so the bound itself cannot be the explanation. Both losses converge to the true "
+            "&xi; = 0.2; the small-sample bias is the extrapolation drag described above.",
+            "Boxplots of the fitted shape parameter against sample size")),
         S7E.replace("FIG_EL", fig(
             "fig-elastile.png",
             "<b>The &alpha;-sweep.</b> Top row, the well-placed weight (p&#8320; = 0.5); bottom "
@@ -987,7 +987,30 @@ def build():
             "version sitting at 1.15. Right, median absolute error. The red line is the control: "
             "the MLE grafted onto the same body, which gains nothing.",
             "MSE ratio and median error ratio for grafted and ungrafted composite fits")),
-        S10, S11, S12, GPD_SECTION, SM, S8, S9, FOOTER,
+        S10, S11, S12, SGPD,
+        SM.replace("FIG_GEOM", fig(
+            "fig-loss-geometry.png",
+            "<b>Where the elastic-net picture does and does not transfer.</b> Left, the elastic "
+            "net's diamond-and-circle diagram is about a <em>penalty</em>'s level set in "
+            "coefficient space, where a corner means a coefficient pinned at zero. Built instead "
+            "in <em>residual</em> space, the set of r with &Sigma;&#8202;&rho;(r&#8202;<sub>i</sub>) "
+            "&le; 1 gives the same shapes &mdash; and its corner means a <em>residual</em> pinned "
+            "at zero, which is L1 regression's classical exact-fit property. Right, the picture "
+            "that actually governs a loss. The elastile's &psi; is unbounded for every &alpha; "
+            "&gt; 0, so it has infinite gross-error sensitivity; Huber's splice does not, which "
+            "is why robust statistics took the splice and never the mixture.",
+            "Loss balls in residual space, and influence functions for five losses")),
+        SIH.replace("FIG_IH", fig(
+            "fig-invhuber-gpd.png",
+            "<b>The knot sweep.</b> Left, MSE relative to POT&ndash;MLE(0.90) against return "
+            "period, for knots from k = 0.25 to 16, with pure L2 (the k &rarr; &infin; limit) "
+            "dashed in black and the &alpha; = 0.5 elastile dotted in orange. Small knots are "
+            "catastrophic below T = 200 and the damage is section 7's third trap. Right, the "
+            "same numbers read along k at two long return periods: the optimum is interior at "
+            "k = 4, circled, and the curve turns back up towards the pure-L2 dashed line on "
+            "either side.",
+            "MSE against return period for seven knots, and MSE against knot at T = 529 and 1000")),
+        S8, S9, FOOTER,
     ]
     return "".join(body)
 
@@ -1415,8 +1438,6 @@ selection cost charged before the reported gains mean anything.</p>
 """
 
 # Filled in by scripts/15-gpd.R's results once that run completes.
-GPD_SECTION = ""
-
 
 
 SGPD = """
@@ -1667,12 +1688,129 @@ The reason is that in tail estimation the "outliers" <em>are the data</em> &mdas
 observations carry nearly all the information about &xi;, and a bounded &psi; deliberately discards
 it. Whatever is inherited from robust statistics, the usual advice about bounded influence should
 be inverted when the target is the tail.</p></div>
+FIG_GEOM
 
 <p>One caveat about which path to take between L1 and L2. The elastile and the L<sup>a</sup>
 family share endpoints but are different curves: at p = 0.9 for GPD(0, 1, 0.2) the quantile is
 2.925 and the expectile 2.875, while the 1.5-quantile is 2.747 &mdash; outside the interval they
 span. So the two are not reparameterisations of one another, and a result for one does not transfer
 to the other.</p>
+</div>
+</section>
+"""
+
+
+SIH = """
+<section id="invhuber">
+<h2><span class="num">15</span><span>Inverting the knot: capping the downside</span></h2>
+<div class="col">
+<p>If bounded influence is the wrong instinct here, the obvious move is to invert Huber's knot:
+constant influence where Huber is linear, linear influence where Huber is bounded. Two inversions
+are possible and they are not the same estimator.</p>
+</div>
+<div class="eq">(A) symmetric   &psi;(u) = sign(u) max(|u|, c)
+(B) one-sided   &psi;(u) = max(u, &minus;c)</div>
+<div class="col">
+<p>(A) bounds the influence of observations <em>near</em> the fitted level and lets it grow on both
+sides. (B) is what the argument above actually asks for: linear above the fitted level, capped
+below it, because it is the downside that carries the contaminated body. Both reduce to closed
+forms in the partial moment &phi;(x) = E[(Y &minus; x)<sup>+</sup>] the earlier sections already
+provide, so neither needs quadrature:</p>
+</div>
+<div class="eq">(A)  p [c S(t) + &phi;(t+c)] = (1&minus;p) [c F(t) + (t&minus;c) <span class="hl">&minus; m</span> + &phi;(t&minus;c)]
+(B)  p &phi;(t)              = (1&minus;p) [c + &phi;(t) &minus; &phi;(t&minus;c)]</div>
+<div class="col">
+<p>(B) is the interesting one, for a reason visible in the second line. The two mean terms cancel
+between &phi;<sub>L</sub>(t) and &phi;<sub>L</sub>(t&minus;c), so its identification equation
+contains no model mean at all. <strong>Capping the downside removes the mean anchoring
+structurally</strong>, where section 10 had to substitute a noisy sample mean for it and lost at
+n = 100. Both closed forms were checked to 1e&minus;13 against a kink-split reference quadrature at
+&xi; = 0.1, 0.325 and 0.6. The limits hold exactly: (A) runs expectile &rarr; quantile as c goes
+0 &rarr; &infin;, non-monotonically, overshooting past the quantile near c = 10; (B) runs from the
+expectile (c &rarr; &infin;) to a degenerate limit at the upper endpoint (c &rarr; 0), so it never
+reaches the quantile.</p>
+
+<h3>The contamination, measured honestly</h3>
+<p>A first pass showed (B) shedding <em>all</em> the body contamination at every level &mdash;
+better than the quantile, which would have been too good. It was. At c = 0.1 the nominal p = 0.90
+functional sits at t = 11.29, which is the 0.99728 quantile: small c does not shed the
+contamination, it outruns it. Comparing at matched <em>effective</em> level F(t) instead:</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Surviving body contamination, 100(T<sub>truth</sub>/T<sub>GEV</sub> &minus; 1), read at
+matched effective level rather than matched nominal p. Zero means the body has been shed
+entirely.</caption>
+<thead><tr><th>functional</th><th>u = 0.95</th><th>u = 0.99</th><th>u = 0.999</th></tr></thead>
+<tbody>
+<tr><td>quantile</td><td>0.569</td><td>0.000</td><td>0.000</td></tr>
+<tr><td>expectile</td><td class="lose">15.726</td><td class="lose">5.480</td><td class="lose">2.302</td></tr>
+<tr><td>(B) one-sided, c = 0.25&ndash;0.5</td><td class="win">0.000</td><td class="win">0.000</td><td class="win">0.000</td></tr>
+<tr><td>(B) one-sided, c = 1</td><td>0.203</td><td>0.000</td><td>0.000</td></tr>
+<tr class="ref"><td>(A) symmetric, c = 8</td><td>0.567</td><td>0.293</td><td>1.875</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>The result survives the fair comparison. At small c the one-sided M-quantile gives
+quantile-or-better contamination <em>while keeping fully linear upside influence</em> &mdash; the
+combination section 3 said was unavailable. (A) only sheds contamination as it converges to the
+quantile, which is already in this comparison as &alpha; = 0, so it is not pursued further.</p>
+
+<h3>And then n = 100</h3>
+<p>Which is where section 10's lesson repeats itself. The knot is set as
+c = k&nbsp;&times;&nbsp;IQR(y), fixed from the data before optimising so that &rho; does not move
+with &theta;. Same 2000 datasets, same weight, same graft, same reference as sections 8 and 13.</p>
+</div>
+FIG_IH
+<div class="tablewrap">
+<table>
+<caption>MSE relative to POT&ndash;MLE(0.90), n = 100, 2000 replicates, all grafted. k &rarr; &infin;
+recovers pure L2 exactly, so that row is this family's own limit. The t values are paired against
+pure L2 on the same datasets; negative favours the inverted Huber.</caption>
+<thead><tr><th>knot</th><th>T=19</th><th>T=48</th><th>T=107</th><th>T=203</th><th>T=529</th><th>T=1000</th><th>median &xi;&#770;</th></tr></thead>
+<tbody>
+<tr><td>k = 0.25</td><td class="lose">4.440</td><td class="lose">5.023</td><td class="lose">2.993</td><td class="lose">1.490</td><td>0.441</td><td>0.201</td><td class="lose">&minus;0.176</td></tr>
+<tr><td>k = 0.5</td><td class="lose">2.532</td><td class="lose">2.641</td><td class="lose">1.919</td><td class="lose">1.183</td><td>0.422</td><td>0.201</td><td>0.014</td></tr>
+<tr><td>k = 1</td><td class="lose">1.244</td><td class="lose">1.241</td><td class="lose">1.118</td><td>0.825</td><td>0.370</td><td>0.194</td><td>0.095</td></tr>
+<tr><td>k = 2</td><td>0.903</td><td>0.855</td><td>0.855</td><td>0.681</td><td>0.349</td><td>0.189</td><td>0.095</td></tr>
+<tr><td>k = 4</td><td>0.977</td><td>0.888</td><td class="win">0.850</td><td class="win">0.662</td><td class="win">0.332</td><td class="win">0.179</td><td>0.108</td></tr>
+<tr><td class="ind">&nbsp;&nbsp;paired t against L2</td><td class="ind">+14.5</td><td class="ind">+7.2</td><td class="ind">&minus;5.8</td><td class="ind">&minus;12.2</td><td class="ind">&minus;12.5</td><td class="ind">&minus;11.2</td><td class="ind">&mdash;</td></tr>
+<tr><td>k = 8</td><td>0.960</td><td>0.903</td><td>0.870</td><td>0.678</td><td>0.339</td><td>0.183</td><td>0.124</td></tr>
+<tr><td>k = 16</td><td>0.917</td><td>0.877</td><td>0.869</td><td>0.692</td><td>0.353</td><td>0.197</td><td>0.127</td></tr>
+<tr class="ref"><td>pure L2 (k = &infin;)</td><td>0.894</td><td>0.859</td><td>0.866</td><td>0.702</td><td>0.364</td><td>0.209</td><td>0.127</td></tr>
+<tr class="ref"><td>&alpha;-elastile, &alpha; = 0.5</td><td>0.649</td><td>0.740</td><td>0.790</td><td>0.666</td><td>0.388</td><td>0.243</td><td>0.221</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p><strong>k = 4 is the best far-tail estimator in this report.</strong> At T = 1000 it reaches
+0.179 against a previous best of 0.209, and it beats pure L2 at every return period from T = 107
+to 1000 with paired t between &minus;5.8 and &minus;12.5. Against the &alpha; = 0.5 elastile it
+wins at T = 529 and 1000 (t = &minus;8.7 and &minus;10.4), ties at 203 and loses at 107. The
+optimum is genuinely interior &mdash; k = 4 beats k = &infin;, and the curve turns back up at
+k = 8 and 16 &mdash; so this is not "get as close to L2 as possible". It is also wide rather than
+a knife edge: even k = 16 still beats L2 at T = 1000 with t = &minus;7.9.</p>
+
+<div class="note"><span class="lab">Three qualifications, all against the derivation</span>
+<p><b>The mechanism is not what wins.</b> The theory predicted less bias. Finite-sample the bias is
+<em>worse</em>: &minus;2.55 at T = 1000 for k = 4, against &minus;1.94 for pure L2 and &minus;0.76
+for the elastile. It is more biased and wins on variance. At n = 100 the return-level bias is
+dominated by shape underestimation &mdash; median &xi;&#770; = 0.108 against a true 0.2 &mdash;
+which swamps the asymptotic contamination entirely.</p>
+<p><b>The regime where the theory helps is the regime the data cannot support.</b> Contamination
+vanishes at c &le; 0.5, which is k = 0.25 to 0.5, and those give MSE ratios of 4.44 and 2.53 at
+T = 19. Section 7's third trap predicted it: at k = 0.25 fully <b>10.1%</b> of the fitting weight
+lands above the largest observation, against 0.8% for pure L2, and the median fitted shape duly
+collapses to &minus;0.176.</p>
+<p><b>The useful regime is close to the expectile.</b> Since k &rarr; &infin; is pure L2, k = 2 to 4
+is a mild downside cap on L2, not the body immunity the population result advertised.</p></div>
+
+<p>So the verdict is narrower than the derivation promised: a mild cap on the downside is the best
+far-tail estimator here, and the mean-anchoring argument that motivated it is not the reason. That
+is still worth having &mdash; the interior optimum is real, decisive and stable over a wide range
+of k &mdash; but it belongs in a paper as an empirical finding with a suggestive derivation
+attached, not as a theoretical result confirmed by simulation. The gap between the two is the same
+gap as between sections 3 and 10: an obstacle that is genuine asymptotically and invisible at the
+sample sizes flood frequency actually has.</p>
 </div>
 </section>
 """

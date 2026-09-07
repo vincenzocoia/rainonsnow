@@ -1,1 +1,3 @@
-k=8.00 fit ... 
+k=8.00 fit ... 10.2 min, graft ... 0.2 min
+k=16.00 fit ... 9.4 min, graft ... 0.2 min
+wrote out/fits-invhuber-wide.rds
