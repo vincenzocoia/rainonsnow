@@ -1,0 +1,23 @@
+=== Pseudo-true GPD limits above u = 3.1617, solved not simulated ===
+
+limiting GPD (threshold stability):   scale 1.63234  shape 0.20000
+elastile scale s = 1.0238;  one-sided knot c = 4 x IQR = 7.8010
+
+Conventional references, each solved exactly:
+  POT maximum likelihood     scale 1.19328  shape 0.34590   (KL minimiser)
+  POT L-moments              scale 1.20107  shape 0.32472   (L-moment matching)
+
+Composite estimators, solving the estimating equation (*), w(p) = p^6:
+  composite L1 (quantile)    scale 1.38035  shape 0.25484   (|G| = 1.8e-15)
+  composite L2 (expectile)   scale 1.41004  shape 0.23159   (|G| = 3.4e-11)
+  elastile a=0.5             scale 1.40904  shape 0.23263   (|G| = 5.3e-11)
+  one-sided k=4              scale 1.41758  shape 0.22905   (|G| = 2.4e-10)
+
+Weight dependence, composite L2 (expectile), w(p) = p^m:
+  m = 0     scale 1.31298  shape 0.26371   (|G| = 6.1e-10)
+  m = 1     scale 1.34588  shape 0.25196   (|G| = 3.5e-10)
+  m = 2     scale 1.36710  shape 0.24483   (|G| = 2.2e-10)
+  m = 4     scale 1.39359  shape 0.23647   (|G| = 1.7e-10)
+  m = 6     scale 1.41004  shape 0.23159   (|G| = 3.4e-11)
+  m = 10    scale 1.43031  shape 0.22593   (|G| = 6.0e-11)
+  m = 20    scale 1.45533  shape 0.21953   (|G| = 2.2e-11)
