@@ -1718,6 +1718,23 @@ The reason is that in tail estimation the "outliers" <em>are the data</em> &mdas
 observations carry nearly all the information about &xi;, and a bounded &psi; deliberately discards
 it. Whatever is inherited from robust statistics, the usual advice about bounded influence should
 be inverted when the target is the tail.</p></div>
+
+<div class="note"><span class="lab">The right word is tail-robustness, and there is prior art</span>
+<p>Two literatures answer to "robust" here and only one of them is this one. The first applies
+classical robustness to extreme value models &mdash; Dupuis's optimal B-robust estimator for the
+GPD, and the minimum density power divergence estimator, which is indexed by a constant running
+from the MLE at zero to bounded influence above it. That family is structurally the elastile's twin
+&mdash; one dial from efficient to robust &mdash; but it runs the other way: it downweights large
+observations as contamination, where everything here upweights them as signal.</p>
+<p>The second literature is the relevant one, and it is thinner. It calls the problem
+<em>tail-robustness</em>: contamination in the body corrupts the tail extrapolation, so weight the
+fit towards the tail. Fung's maximum weighted likelihood estimator (<em>Insurance: Mathematics and
+Economics</em> <b>107</b>, 180&ndash;198, 2022; arXiv:2108.01356) proves the tail index remains
+consistent under model misspecification for a weighted likelihood, motivated by insurance claim
+severities rather than floods. That is prior art for this report's core claim, and the framing to adopt:
+saying "robust" unqualified invites the Dupuis/MDPDE reading and the objection that &psi; here is
+unbounded. What is not in that work is the composite integration over <em>levels</em> rather than
+observations, the L2 and mixed-loss families, and the finite-sample accounting of section 16.</p></div>
 FIG_GEOM
 
 <p>One caveat about which path to take between L1 and L2. The elastile and the L<sup>a</sup>
