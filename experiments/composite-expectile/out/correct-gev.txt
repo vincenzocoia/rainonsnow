@@ -1,9 +1,3 @@
-GEV MLE          ... 0.0 min
-GEV L-moments    ... 0.0 min
-composite L1     ... 0.1 min
-composite L2     ... 0.9 min
-elastile a=0.5   ... 2.1 min
-inv Huber k=4    ... 8.3 min
 === Correctly specified GEV: iid GEV(0, 1, 0.2), n = 100, 2000 reps ===
 The family is EXACTLY right, so the MLE is efficient and everything else
 should lose. Ratios are against the GEV MLE. > 1 is the price paid.
@@ -58,7 +52,3 @@ failed fits:
              0              0              0              0              0 
  inv Huber k=4 
              0 
-null device 
-          1 
-
-wrote out/fig-correct-gev.png and out/correct-gev.txt
