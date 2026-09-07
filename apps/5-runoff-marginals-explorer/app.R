@@ -18,18 +18,19 @@ library(famish)
 
 repo_root <- here::here()
 devtools::load_all(repo_root, quiet = TRUE)
+source(file.path(repo_root, "apps", "ros_theme.R"))
 
 peaks_path <- path(repo_root, "derived", "era5_land_hourly_alps_peaks.rds")
 marginal_levels_path <- path(repo_root, "derived", "era5_land_hourly_alps_dl_return_levels.rds")
 
 nearest_cell <- function(lon_click, lat_click, cells_tbl) {
-  dx <- cells_tbl$y - lon_click
-  dy <- cells_tbl$x - lat_click
+  dx <- cells_tbl$x - lon_click
+  dy <- cells_tbl$y - lat_click
   idx <- which.min(dx^2 + dy^2)
   cells_tbl$cell_id[idx]
 }
 
-tile_dims <- function(xy_tbl, x_col = "y", y_col = "x") {
+tile_dims <- function(xy_tbl, x_col = "x", y_col = "y") {
   ux <- sort(unique(xy_tbl[[x_col]]))
   uy <- sort(unique(xy_tbl[[y_col]]))
   w <- if (length(ux) > 1) stats::median(diff(ux)) else 0.25
@@ -94,8 +95,8 @@ cells_ref <- if (!is.null(dat)) {
   tibble(cell_id = integer(), x = numeric(), y = numeric())
 }
 
-map_xlim <- if (nrow(cells_ref) > 0) range(cells_ref$y, na.rm = TRUE) + c(-0.5, 0.5) else c(-1, 1)
-map_ylim <- if (nrow(cells_ref) > 0) range(cells_ref$x, na.rm = TRUE) + c(-0.5, 0.5) else c(-1, 1)
+map_xlim <- if (nrow(cells_ref) > 0) range(cells_ref$x, na.rm = TRUE) + c(-0.5, 0.5) else c(-1, 1)
+map_ylim <- if (nrow(cells_ref) > 0) range(cells_ref$y, na.rm = TRUE) + c(-0.5, 0.5) else c(-1, 1)
 map_bbox <- st_bbox(
   c(xmin = map_xlim[1], xmax = map_xlim[2], ymin = map_ylim[1], ymax = map_ylim[2]),
   crs = st_crs(4326)
@@ -132,7 +133,11 @@ map_rp_default <- if (200 %in% map_rp_choices) 200 else max(map_rp_choices)
 map_fill_pal <- rev(c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
 
 ui <- fluidPage(
-  titlePanel("Runoff marginals explorer"),
+  theme = ros_bs_theme(),
+  ros_header(
+    "Runoff marginals",
+    "Frequency–magnitude curves for the distributional-learning mixture against naive POT-only fits."
+  ),
   uiOutput("data_banner"),
   helpText(
     "The map colours cells by the DL ",
@@ -238,7 +243,7 @@ server <- function(input, output, session) {
       NA_real_
     }
     paste0(
-      "lon = ", round(row$y, 3), ", lat = ", round(row$x, 3),
+      "lon = ", round(row$x, 3), ", lat = ", round(row$y, 3),
       "\nPOT peaks: ", nrow(sub),
       if (is.finite(nep)) paste0("; ~", signif(nep, 4), " peaks/year") else "",
       "\n(runoff_hourly in mm)"
@@ -272,7 +277,7 @@ server <- function(input, output, session) {
     d <- map_df() |>
       dplyr::mutate(selected = .data$cell_id == as.integer(input$cell_id))
 
-    ggplot(d, aes(y, x)) +
+    ggplot(d, aes(x, y)) +
       geom_sf(
         data = world_map,
         inherit.aes = FALSE,
@@ -289,7 +294,7 @@ server <- function(input, output, session) {
       ) +
       geom_tile(
         data = dplyr::filter(d, selected),
-        aes(y, x),
+        aes(x, y),
         inherit.aes = FALSE,
         fill = NA,
         colour = "grey10",

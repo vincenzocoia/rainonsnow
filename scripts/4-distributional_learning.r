@@ -62,15 +62,102 @@ forest_models <- models |>
   select(!dl_rqforest) |>
   unnest(c(data, distribution_forest))
 
-peak_hour_distributions <- mutate(
-  forest_models,
-  distribution_gp = map(
-    distribution_forest,
-    fit_and_graft_gp,
-    adaptive_threshold = 0.5,
-    .progress = TRUE
-  )
+# %%
+# GP tail per peak hour.
+#
+# With `shape_pooling: shared` (the default) the shape is fitted once per cell
+# and only the scale varies by hour. Fitting a shape per hour instead makes the
+# cell's marginal -- an equal-weight mixture of these -- inherit max_i(xi_i),
+# which is the maximum of a few hundred noisy estimates. See
+# scripts/experiments/tail-index-pooling.R for what that costs.
+tail_cfg <- meta$gp_tail %||% list()
+shape_pooling <- tail_cfg$shape_pooling %||% "shared"
+adaptive_threshold <- as.numeric(tail_cfg$adaptive_threshold %||% 0.5)
+n_boot <- as.integer(tail_cfg$n_boot %||% 25L)
+bias_correct <- isTRUE(tail_cfg$bias_correct %||% FALSE)
+shape_method <- tail_cfg$shape_method %||% "standardise"
+std_args <- list(
+  p_location = as.numeric(tail_cfg$p_location %||% 0.5),
+  p_scale = as.numeric(tail_cfg$p_scale %||% 0.9),
+  threshold_prob = as.numeric(tail_cfg$threshold_prob %||% 0.7)
 )
+
+# The bootstrap exists to produce the bias correction. Without it there is
+# nothing for 25 extra fits per cell to do (it also returns a standard error for
+# the shape, which nothing downstream consumes).
+if (!bias_correct) {
+  n_boot <- 0L
+}
+
+log_info(paste(
+  "GP tail: shape_pooling =", shape_pooling,
+  "| shape_method =", shape_method
+))
+
+if (identical(shape_pooling, "shared")) {
+  cell_tails <- forest_models |>
+    nest(cell_rows = !c(cell_id, x, y)) |>
+    mutate(
+      tail_fit = map(
+        cell_rows,
+        \(df) do.call(
+          dl_fit_cell_shared_tail,
+          c(
+            list(
+              df$distribution_forest,
+              adaptive_threshold = adaptive_threshold,
+              n_boot = n_boot,
+              bias_correct = bias_correct,
+              method = shape_method,
+              # The standardised route needs the response actually observed at
+              # each peak hour, not just its predictive distribution.
+              observed = df[[rq$yname]]
+            ),
+            if (identical(shape_method, "standardise")) std_args else list()
+          )
+        ),
+        .progress = TRUE
+      )
+    )
+
+  peak_hour_distributions <- cell_tails |>
+    mutate(
+      cell_rows = map2(cell_rows, tail_fit, \(df, tf) {
+        mutate(
+          df,
+          graft_of = tf$graft_of,
+          graft_tail_prob = tf$graft_tail_prob,
+          gp_scale = tf$gp_scale,
+          gp_shape = tf$gp_shape
+        )
+      })
+    ) |>
+    select(!tail_fit) |>
+    unnest(cell_rows) |>
+    mutate(
+      # Diagnostics still want the distribution objects; the RDS stays compact.
+      distribution_gp = pmap(
+        list(distribution_forest, graft_of, gp_scale, gp_shape),
+        \(d, u, s, k) {
+          if (!is.finite(u) || !is.finite(s) || !is.finite(k)) {
+            return(d)
+          }
+          reconstruct_graft_gp(d, u, s, k)
+        },
+        .progress = TRUE
+      )
+    )
+} else {
+  peak_hour_distributions <- mutate(
+    forest_models,
+    distribution_gp = map(
+      distribution_forest,
+      fit_and_graft_gp,
+      adaptive_threshold = adaptive_threshold,
+      .progress = TRUE
+    )
+  )
+}
 
 peak_hour_distributions <- peak_hour_distributions |>
   select(
@@ -81,7 +168,8 @@ peak_hour_distributions <- peak_hour_distributions |>
     rainfall_hourly,
     snowmelt_hourly,
     runoff_hourly,
-    contains("distribution")
+    contains("distribution"),
+    any_of(c("graft_of", "graft_tail_prob", "gp_scale", "gp_shape"))
   )
 
 # %%

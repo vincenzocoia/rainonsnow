@@ -17,6 +17,7 @@ library(distionary)
 
 repo_root <- here::here()
 devtools::load_all(repo_root, quiet = TRUE)
+source(file.path(repo_root, "apps", "ros_theme.R"))
 source(fs::path(repo_root, "apps", "dl_shared.R"))
 
 peaks_path <- fs::path(repo_root, "derived", "era5_land_hourly_alps_peaks.rds")
@@ -29,7 +30,11 @@ models_ok <- file.exists(models_path)
 diagnostics_ok <- file.exists(diag_path)
 
 ui <- fluidPage(
-  titlePanel("Distributional learning — diagnostics (script 4b)"),
+  theme = ros_bs_theme(),
+  ros_header(
+    "Distributional learning — diagnostics",
+    "Calibration, skill against the marginal, and conditional runoff CDFs per cell."
+  ),
   uiOutput("data_banner"),
   helpText(
     "Explore fitted models from script 4. Models load at startup (for CDF clicks on any cell). ",
@@ -244,14 +249,14 @@ server <- function(input, output, session) {
     req(peaks(), input$cell_id)
     row <- cells_ref() |> dplyr::filter(.data$cell_id == as.integer(input$cell_id))
     paste0(
-      "lon = ", round(row$y, 3), ", lat = ", round(row$x, 3),
+      "lon = ", round(row$x, 3), ", lat = ", round(row$y, 3),
       "\nModels: ", if (!is.null(dl_models())) "loaded" else "missing",
       " | Diagnostics: ", if (!is.null(pp_tbl())) "loaded" else "not loaded"
     )
   })
 
-  map_xlim <- reactive(range(cells_ref()$y, na.rm = TRUE) + c(-0.5, 0.5))
-  map_ylim <- reactive(range(cells_ref()$x, na.rm = TRUE) + c(-0.5, 0.5))
+  map_xlim <- reactive(range(cells_ref()$x, na.rm = TRUE) + c(-0.5, 0.5))
+  map_ylim <- reactive(range(cells_ref()$y, na.rm = TRUE) + c(-0.5, 0.5))
 
   world_map <- reactive({
     bb <- st_bbox(
@@ -273,7 +278,7 @@ server <- function(input, output, session) {
     req(!is.null(map_summary()))
     sel <- selected_cell_id()
     d <- map_summary() |> dplyr::mutate(selected = .data$cell_id == sel)
-    ggplot(d, aes(y, x)) +
+    ggplot(d, aes(x, y)) +
       geom_sf(data = world_map(), inherit.aes = FALSE, fill = NA, linewidth = 1) +
       geom_tile(
         aes(fill = skill_median),
@@ -285,7 +290,7 @@ server <- function(input, output, session) {
       ) +
       geom_tile(
         data = dplyr::filter(d, selected),
-        aes(y, x),
+        aes(x, y),
         inherit.aes = FALSE,
         fill = NA,
         colour = "grey10",
@@ -313,7 +318,7 @@ server <- function(input, output, session) {
     req(!is.null(pp_tbl()))
     sel <- selected_cell_id()
     d <- pp_tbl()
-    ggplot(aes(p_empirical, p_model)) +
+    ggplot(mapping = aes(p_empirical, p_model)) +
       geom_line(
         data = dplyr::filter(d, .data$cell_id != sel),
         aes(group = interaction(cell_id, model)),
@@ -337,7 +342,7 @@ server <- function(input, output, session) {
     req(!is.null(skill_tbl()))
     sel <- selected_cell_id()
     d <- skill_tbl()
-    ggplot(aes(tau, skill_score)) +
+    ggplot(mapping = aes(tau, skill_score)) +
       geom_line(
         data = dplyr::filter(d, .data$cell_id != sel),
         aes(group = cell_id),

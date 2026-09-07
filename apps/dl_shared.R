@@ -113,13 +113,13 @@ dl_param_hint <- function(text) {
 dl_pal <- rev(c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
 
 dl_nearest_cell <- function(lon_click, lat_click, cells_tbl) {
-  dx <- cells_tbl$y - lon_click
-  dy <- cells_tbl$x - lat_click
+  dx <- cells_tbl$x - lon_click
+  dy <- cells_tbl$y - lat_click
   idx <- which.min(dx^2 + dy^2)
   cells_tbl$cell_id[idx]
 }
 
-dl_tile_dims <- function(xy_tbl, x_col = "y", y_col = "x") {
+dl_tile_dims <- function(xy_tbl, x_col = "x", y_col = "y") {
   ux <- sort(unique(xy_tbl[[x_col]]))
   uy <- sort(unique(xy_tbl[[y_col]]))
   w <- if (length(ux) > 1) stats::median(diff(ux)) else 0.25

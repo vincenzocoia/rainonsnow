@@ -249,7 +249,7 @@ marginal_density_z <- NA_real_
 
 if (normalize_fz) {
   marg_path <- here::here("derived", "era5_land_hourly_alps_dl_marginals.rds")
-  if (!file.exists(marg_path)) {
+  if (runoff_cond_model != "gp" && !file.exists(marg_path)) {
     stop(
       "`normalize_by_marginal_runoff_density: true` requires ",
       basename(marg_path),
@@ -258,22 +258,37 @@ if (normalize_fz) {
     )
   }
 
-  marg_row <- read_rds(marg_path) |>
-    dplyr::filter(.data$cell_id == .env$cell_id)
-  if (nrow(marg_row) != 1L) {
-    stop("Marginal mixtures: no single row for cell ", cell_id, call. = FALSE)
-  }
-
-  marginal_dst <- if (runoff_cond_model == "gp") {
-    marg_row$marginal_gp[[1]]
+  marginal_density_z <- if (runoff_cond_model == "gp") {
+    # Script 5 stores the GP-tail marginal as a closed-form mixture tail rather
+    # than a distribution object, so the density comes straight from that. It is
+    # only defined above the cell's graft region; below there, fall back to the
+    # empirical body mixture.
+    tails_path <- here::here(
+      "derived",
+      "era5_land_hourly_alps_dl_mixture_tails.rds"
+    )
+    if (!file.exists(tails_path)) {
+      stop(
+        "`runoff_conditional_model: gp` with normalisation requires ",
+        basename(tails_path),
+        " from script 5.",
+        call. = FALSE
+      )
+    }
+    tail_row <- read_rds(tails_path) |>
+      dplyr::filter(.data$cell_id == .env$cell_id)
+    if (nrow(tail_row) != 1L) {
+      stop("Mixture tails: no single row for cell ", cell_id, call. = FALSE)
+    }
+    as.numeric(mixture_tail_density(tail_row$mixture_tail[[1]], z))
   } else {
-    marg_row$marginal_forest[[1]]
+    marg_row <- read_rds(marg_path) |>
+      dplyr::filter(.data$cell_id == .env$cell_id)
+    if (nrow(marg_row) != 1L) {
+      stop("Marginal mixtures: no single row for cell ", cell_id, call. = FALSE)
+    }
+    as.numeric(distionary::eval_density(marg_row$marginal_forest[[1]], at = z))
   }
-
-  marginal_density_z <- as.numeric(distionary::eval_density(
-    marginal_dst,
-    at = z
-  ))
 
   if (!is.finite(marginal_density_z) || marginal_density_z <= 0) {
     warning(

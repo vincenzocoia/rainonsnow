@@ -1,0 +1,29 @@
+
+=====================================================================
+Copula transport with one conditional distribution per x
+=====================================================================
+n = 2000, rho = 0.70, CEVI = 0.51
+true marginal EVI 0.250, true conditional EVI 0.128
+60 of 60 x values gave a usable tail fit
+
+transported marginal EVI across x: median 0.237, IQR 0.140 to 0.333
+   middle 60% of x: sd 0.1314    outer 40%: sd 0.1770
+
+marginal return level, truth vs combined estimate:
+   p = 1e-02   truth     8.65   per-x 10-90%:    6.23 to   10.97
+   p = 1e-03   truth    18.49   per-x 10-90%:    9.82 to   29.71
+   p = 1e-04   truth    36.00   per-x 10-90%:   13.80 to   75.36
+
+shared conditional shape across all x: 0.1287 (true 0.1275)
+  -> transported marginal EVI 0.2524 (true 0.2500)
+
+combined marginal return levels:
+p               truth   median-x     shared
+1e-02            8.65     9.04 (1.05x)     9.20 (1.06x)
+1e-03           18.49    18.49 (1.00x)    20.16 (1.09x)
+1e-04           36.00    34.66 (0.96x)    40.02 (1.11x)
+null device 
+          1 
+
+Wrote /home/user/rainonsnow/plots/copula-transport-by-x.png
+=====================================================================
