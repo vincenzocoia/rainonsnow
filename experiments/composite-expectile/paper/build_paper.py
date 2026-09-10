@@ -491,13 +491,16 @@ w(F&#770;<sub>n</sub>(x))&#8202;S<sub>&theta;&#770;</sub>(x), with the handover 
 the fitting weight; this is the smooth graft described elsewhere, and it is used here only so that
 the graft introduces no second tuning choice.</p>
 
-<div class="note"><p>The smooth handover is not what produces the results. Repeating the
-misspecified comparison with a plain hard graft &mdash; empirical below the sample v-quantile, the
-fitted tail above, rescaled for continuity, which is the ordinary peaks-over-threshold
-construction &mdash; gives 0.16 at T = 1000 against the smooth graft's 0.18 for the one-sided fit,
-and matches or beats it at every return period, provided v &ge; 0.90. At v = 0.50 the same fit is
-eleven times the reference at T = 5, so the hard graft is the more accurate handover and the less
-forgiving one. We report the smooth version throughout because it has no threshold to choose.</p></div>
+<div class="note"><p>The handover is not tuned here, and this understates the results rather
+than flattering them. Taking w to the step I(p &gt; v) recovers the ordinary peaks-over-threshold
+graft at the sample v-quantile, so the hard graft is the step member of the same family. Sweeping
+v with the handover weight held at p<sup>6</sup>, the step at v &ge; 0.90 matches or beats
+p<sup>6</sup> at every return period &mdash; 0.16 against 0.18 at T = 1000 for the one-sided fit
+&mdash; while v = 0.50 is eleven times the reference at T = 5. Reusing the fitting weight for the
+handover is therefore a poor choice, and every grafted number we report is obtained under it. We
+keep it because it introduces no second tuning parameter, and note that a swept handover would
+improve these results; the choice of handover weight is a separate question from the choice of
+fitting criterion, and we do not pursue it.</p></div>
 </div>
 
 <h3><span class="n">5.2</span>Under misspecification</h3>

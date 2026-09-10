@@ -385,12 +385,14 @@ footer {
     model is right, against 12&ndash;32% for the composites. On a two-parameter GPD above a known
     threshold it buys <em>nothing</em> &mdash; 0.99 to 1.03 &mdash; where the inverted Huber
     reaches 0.63. The peaks-over-threshold setting is the one flood practice uses.</p></div>
-  <div class="finding"><div class="verdict-tag t-no">Simpler is better</div>
-    <p><b>The smooth graft was not necessary.</b> A plain hard graft &mdash; empirical body,
-    fitted tail, rescaled at the join &mdash; matches or beats the smooth handover at every return
-    period, provided the join sits at the 0.90-quantile or above (0.16 against 0.18 at T = 1000).
-    Placed badly it is far worse (11&times; at the 5-year level at v = 0.50), so the smooth version
-    remains the safe choice when the join is unknown; it is not the accurate one.</p></div>
+  <div class="finding"><div class="verdict-tag t-mix">Handover, unresolved</div>
+    <p><b>The handover weight w = p&#8310; is a poor one.</b> A plain hard graft at the 0.90- or
+    0.95-quantile matches or beats it at every return period (0.16 against 0.18 at T = 1000). But
+    the hard graft <em>is</em> the step member of the smooth-graft family, and the run swept the
+    join over five values while holding the handover weight at one, so it does not compare the two
+    constructions &mdash; it compares five members of a family against one other member, and finds
+    the one wanting. That w(0.9) = 0.531 gives the tail model majority share at the ten-year level
+    says the fix is a sharper handover weight, not a hard join. Deferred to the graft work.</p></div>
   <div class="finding"><div class="verdict-tag t-yes">Free lunch</div>
     <p><b>The extremile version costs nothing at all.</b> Matching the extremile function instead
     of a loss gives a tail-weighted probability-weighted-moment estimator that, at a short reach,
@@ -2101,16 +2103,23 @@ behaves identically. Below one beats the practitioner's default.</caption>
 </tbody></table>
 </div>
 <div class="col">
-<p><strong>A hard graft is not merely sufficient &mdash; placed well, it is better.</strong> At
-v = 0.90 or 0.95 it matches or beats the smooth graft at every return period in the table,
-including the far tail (0.16 against 0.18 at T = 1000). The smooth handover buys a continuous
-density and nothing else measurable here.</p>
+<p><strong>A hard graft is sufficient, and at v = 0.90 or 0.95 it beats this smooth
+graft</strong> at every return period in the table, including the far tail (0.16 against 0.18 at
+T = 1000). It is also brittle in the join: at v = 0.50 the same tail fit is 11&times; the
+POT&ndash;MLE at the five-year level, worse than not grafting at all, because a hard graft hands
+the model <em>all</em> of the probability above the join and a fit tuned for the 1000-year level
+has no business describing the five-year one. The smooth graft never does anything like that; its
+worst number anywhere is 1.49.</p>
 
-<p><strong>But it is brittle in the join.</strong> At v = 0.50 the same tail fit is 11&times; the
-POT&ndash;MLE at the five-year level &mdash; worse than not grafting at all &mdash; because a hard
-graft hands the model <em>all</em> of the probability above the join, and a fit tuned for the
-1000-year level has no business describing the five-year one. The smooth graft never does anything
-like that: its worst number anywhere is 1.49.</p>
+<div class="note"><span class="lab">What this comparison cannot establish</span>
+<p>It is tempting to read the table as hard beating smooth, and that reading is not available. Take
+the smooth graft's handover weight to the step w(p) = I(p &gt; v) and, with the rescaling folded
+in, the smooth construction <em>is</em> the hard graft at v. The hard grafts are members of the
+same family, not a rival to it. What the run did was sweep the join over five values while holding
+the handover weight fixed at one &mdash; five members of a family against a sixth &mdash; and a
+family cannot be shown inferior to its own elements. The honest statement is narrower and still
+useful: <b>w = p<sup>6</sup> is a poor handover weight</b>, and the reason is visible below. What a
+better one buys is a question for the graft work, not for this report.</p></div>
 
 <div class="note"><span class="lab">Where the smooth graft's bump at T = 10 comes from</span>
 <p>The green curve's one excursion above the hard grafts is at T &asymp; 10, and it is the weight's
@@ -2127,11 +2136,20 @@ anything &mdash; it is the empirical distribution's own performance against POT&
 the two-year level, which is what any graft must reduce to when the join sits above the point being
 predicted. The body number in every grafted table in this report should be read that way.</p>
 
-<h3>The practical answer</h3>
-<p>Use a hard graft at the 0.90&ndash;0.95 quantile. It is the standard POT construction, needs no
-new machinery, and is at least as accurate. Reach for the smooth graft when the join location is
-genuinely unknown and a bad guess must not be catastrophic, or when a continuous density is needed
-downstream &mdash; and if so, weight the handover more sharply than the fit.</p>
+<h3>The practical answer, for now</h3>
+<p>Use a hard graft at the 0.90&ndash;0.95 quantile &mdash; not because hard handovers are better,
+but because it is the only setting in this family that has been tuned. Everything in this report
+that reports a grafted number uses w = p<sup>6</sup> and is therefore reported against a handover
+that section 19 has just shown to be poor; the composite estimators' grafted results would improve,
+not degrade, under a better one.</p>
+
+<p>The question the graft work should answer is not <em>hard or smooth</em> &mdash; that framing
+does not survive the nesting above &mdash; but <em>which handover weight</em>, and whether the
+optimum is interior. Three things point at an interior optimum: the hard graft's collapse at
+v = 0.50 shows the step is not uniformly good; its brittleness in v shows the criterion is not flat;
+and the smooth graft's single excursion sits exactly where the weight hands over too early. A
+handover family indexed from step to gradual, swept properly, is a small experiment and would
+settle it.</p>
 </div>
 </section>
 
@@ -2342,10 +2360,12 @@ for T near the record length, rising to pure L2 for T an order of magnitude beyo
 <strong>build in the loss-difference form before going near heavy tails</strong>, where the raw L2
 criterion is infinite for &xi; &ge; 1/2.</p>
 
-<p><strong>Hand over hard, not smoothly.</strong> Section 19 settles a question this report had
-answered by assumption. A plain rescaled join at the 0.90- or 0.95-quantile matches or beats the
-smooth graft everywhere, and needs none of its machinery. Keep the smooth version only where the
-join location is genuinely uncertain, and if so weight the handover more sharply than the fit.</p>
+<p><strong>Do not reuse the fitting weight as the handover weight.</strong> Section 19 shows
+w = p&#8310; is a poor handover: a plain hard join at the 0.90-quantile beats it everywhere. It does
+not show that hard beats smooth &mdash; the hard graft is the step member of the same family, and
+only the join was swept &mdash; so the open question is which handover weight is best, not which
+construction. Until that is settled, a hard join at v &isin; [0.90, 0.95] is the safe default
+because it is the one setting that has been tuned.</p>
 
 <p><strong>If nothing but a better default is wanted, use the composite extremile.</strong> At a
 short reach (&alpha; &asymp; 0.02) it dominates L-moments on a correctly specified GPD at no cost
