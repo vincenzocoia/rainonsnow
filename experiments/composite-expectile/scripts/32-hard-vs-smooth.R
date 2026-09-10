@@ -75,7 +75,6 @@ for (nm in names(FITS)) {
   plot(Tp, rep(1, length(Tp)), type = "n", log = "xy", ylim = c(0.15, 12),
        xlab = "return period T", ylab = "MSE relative to POT-MLE(0.90)", main = nm)
   abline(h = 1, col = "grey55", lwd = 1.5)
-  lines(Tp, summ(RL[[paste0(nm, " | ungrafted")]]) -> junk, col = NA)
   ok <- complete.cases(REF)
   full <- function(r) { o <- complete.cases(r) & ok
     e <- sweep(r[o, , drop = FALSE], 2, truth_rl, "-")

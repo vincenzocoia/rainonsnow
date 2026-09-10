@@ -406,6 +406,25 @@ VERDICT = """
     &mdash; the composite expectile estimator's typical error at the 1000-year level is
     <b>0.58&times;</b> the MLE's, and it is the closer of the two on <b>84%</b> of datasets. The
     composite quantile estimator is <em>worse</em> than the MLE there, winning 38%.</p></div>
+  <div class="finding"><div class="verdict-tag t-mix">The competitor</div>
+    <p><b>Fung's weighted likelihood wins the GEV comparison and loses the GPD one.</b> MWLE tilts
+    the likelihood rather than the loss, and on a three-parameter GEV it takes the best far-tail
+    number here (0.86&times; the MLE under contamination) while paying only 4&ndash;5% when the
+    model is right, against 12&ndash;32% for the composites. On a two-parameter GPD above a known
+    threshold it buys <em>nothing</em> &mdash; 0.99 to 1.03 &mdash; where the inverted Huber
+    reaches 0.63. The peaks-over-threshold setting is the one flood practice uses.</p></div>
+  <div class="finding"><div class="verdict-tag t-no">Simpler is better</div>
+    <p><b>The smooth graft was not necessary.</b> A plain hard graft &mdash; empirical body,
+    fitted tail, rescaled at the join &mdash; matches or beats the smooth handover at every return
+    period, provided the join sits at the 0.90-quantile or above (0.16 against 0.18 at T = 1000).
+    Placed badly it is far worse (11&times; at the 5-year level at v = 0.50), so the smooth version
+    remains the safe choice when the join is unknown; it is not the accurate one.</p></div>
+  <div class="finding"><div class="verdict-tag t-yes">Free lunch</div>
+    <p><b>The extremile version costs nothing at all.</b> Matching the extremile function instead
+    of a loss gives a tail-weighted probability-weighted-moment estimator that, at a short reach,
+    sits <em>at</em> the MLE in the body (0.98 at T = 2) and takes 26% off the far-tail MSE,
+    beating L-moments throughout. It does not reach the M-estimator composites' gains under
+    contamination, but it is a strictly better default than L-moments.</p></div>
 </div>
 </section>
 """
@@ -815,7 +834,7 @@ FIG_SHAPE
 
 S8 = """
 <section id="recommend">
-<h2><span class="num">18</span><span>What to do with this</span></h2>
+<h2><span class="num">21</span><span>What to do with this</span></h2>
 <div class="col">
 <p><strong>The obstacle is variance, not bias.</strong> Both composite estimators solve the bias
 problem completely &mdash; against a body-contaminated truth they remove a 39% underestimate of
@@ -841,6 +860,16 @@ for T near the record length, rising to pure L2 for T an order of magnitude beyo
 <strong>build in the loss-difference form before going near heavy tails</strong>, where the raw L2
 criterion is infinite for &xi; &ge; 1/2.</p>
 
+<p><strong>Hand over hard, not smoothly.</strong> Section 19 settles a question this report had
+answered by assumption. A plain rescaled join at the 0.90- or 0.95-quantile matches or beats the
+smooth graft everywhere, and needs none of its machinery. Keep the smooth version only where the
+join location is genuinely uncertain, and if so weight the handover more sharply than the fit.</p>
+
+<p><strong>If nothing but a better default is wanted, use the composite extremile.</strong> At a
+short reach (&alpha; &asymp; 0.02) it dominates L-moments on a correctly specified GPD at no cost
+in the body, is explicit rather than iterative, and cannot fail to converge. It is the only
+estimator here with no downside to report.</p>
+
 <h3>Where the method earns its keep</h3>
 <p>The contest is governed by
 (&xi;<sub>true</sub> &minus; &xi;<sub>MLE</sub>) / sd(&xi;&#770;<sub>composite</sub>), not by the
@@ -865,6 +894,17 @@ empirical target would remove L2's one structural disadvantage against L1.</li>
 fit recovers &xi; = 0.209 against a true 0.20 where likelihood returns 0.054. On the question
 "does the fitted tail have the right heaviness", the two are not close, and an estimator that ties
 on squared error while getting &xi; right is a different and arguably more useful product.</li>
+<li><strong>Settle the MWLE comparison properly.</strong> Section 18 has the two methods
+splitting the two families &mdash; Fung's weighted likelihood ahead on the three-parameter GEV, the
+composites ahead on the two-parameter GPD. That is one data-generating process each, and the
+explanation offered (efficiency left on the table in a non-regular problem, none in a regular one)
+is a hypothesis, not a result. It needs a sweep over &xi;, n and contamination type before either
+claim can be made in print.</li>
+<li><strong>Chase the extremile's shape recovery.</strong> Under contamination the composite
+extremile returns a median &xi;&#770; of 0.198 against a true 0.20, better than anything else here,
+and still does not win the far tail &mdash; the location and scale absorb the contamination
+instead. An estimator that matched extremiles for the shape and something else for the remaining
+two parameters is the obvious thing to try next.</li>
 <li><strong>Choose the loss criterion deliberately.</strong> Squared error at a 1000-year return
 level is dominated by a handful of replicates. If an occasional overestimate of a design flood is
 less costly than a systematic underestimate of every one &mdash; which in flood frequency it
@@ -877,7 +917,7 @@ optimise, and by those the case for the method is much stronger than by MSE.</li
 
 S9 = """
 <section id="methods">
-<h2><span class="num">19</span><span>Methods and reproducibility</span></h2>
+<h2><span class="num">22</span><span>Methods and reproducibility</span></h2>
 <div class="col">
 <h3>Machinery</h3>
 <p>The expectile function of the GEV is needed on a grid of levels inside an optimiser, roughly
@@ -1002,7 +1042,17 @@ def build():
             "version sitting at 1.15. Right, median absolute error. The red line is the control: "
             "the MLE grafted onto the same body, which gains nothing.",
             "MSE ratio and median error ratio for grafted and ungrafted composite fits")),
-        S10, S11, S12, SGPD,
+        S10, S11, S12,
+        SGPD.replace("FIG_GPD", fig(
+            "fig-gpd.png",
+            "<b>The GPD study.</b> Left, MSE relative to POT&ndash;MLE(0.90) against return "
+            "period; right, median absolute error on the same scale. Coloured solid lines are "
+            "composite tail fits at three weights, grafted onto an empirical body; the dashed and "
+            "dot-dashed lines are the practitioner's alternatives &mdash; the same POT&ndash;MLE at "
+            "two other thresholds, POT&ndash;L-moments, and the raw empirical distribution. The "
+            "w = p&#178; and p&#8310; composite fits fall away from the reference beyond about "
+            "T = 200; the smoothstep weight pays for its late start in the 5- to 20-year band.",
+            "MSE ratio and median error curves for the GPD study")),
         SM.replace("FIG_GEOM", fig(
             "fig-loss-geometry.png",
             "<b>Where the elastic-net picture does and does not transfer.</b> Left, the elastic "
@@ -1052,6 +1102,25 @@ def build():
             "convergence to the limit. Maximum likelihood and L-moments climb away to two and a "
             "half times it, while the composite limits track the truth and settle near one.",
             "Conditional survival functions above a threshold, and their ratio to the limiting GPD")),
+        SMW,
+        SHG.replace("FIG_HG", fig(
+            "fig-hard-vs-smooth.png",
+            "<b>Five ways to hand over.</b> MSE relative to POT&ndash;MLE(0.90) against return "
+            "period, for the composite L2 fit (left) and the inverted Huber at k = 4 (right). "
+            "Dotted blue is the ungrafted fit, the orange-to-red ramp is a hard graft at joins "
+            "from the 0.50- to the 0.95-quantile, and the thick green line is the smooth graft of "
+            "section 09. The two darkest hard grafts sit at or below green almost everywhere; the "
+            "palest is worse than not grafting at all through the five- and ten-year levels.",
+            "MSE ratio against return period for ungrafted, five hard grafts and the smooth graft")),
+        SEX.replace("FIG_EX", fig(
+            "fig-extremile.png",
+            "<b>The reach sweep.</b> MSE relative to each family's maximum likelihood estimator "
+            "against return period, for reaches from &alpha; = 0.02 (palest) to 0.50 (darkest), "
+            "with L-moments dashed in orange. Left, a correctly specified GPD: the short reaches "
+            "sit on L-moments through the body and below it from about T = 30 outward. Right, the "
+            "contaminated GEV: the ordering reverses, long reaches win the near tail and nothing "
+            "wins the far tail.",
+            "MSE ratio against return period for five extremile reaches, two settings")),
         S8, S9, FOOTER,
     ]
     return "".join(body)
@@ -2148,6 +2217,417 @@ against maximum likelihood's factor of nearly three.</p></div>
 </section>
 """
 
+
+SMW = """
+<section id="mwle">
+<h2><span class="num">18</span><span>The other way to tilt: weighting the likelihood</span></h2>
+<div class="col">
+<p>Section 16 closed on a question this report cannot dodge: if the point is tail-weighted fitting
+under misspecification, there is already a method for that. Fung's <em>maximum weighted likelihood
+estimator</em> (MWLE) does the tilting inside the likelihood rather than inside a loss, and it is
+the closest thing in the literature to what is being proposed here. It deserves to be run on the
+same data, not cited and left alone.</p>
+
+<h3>What MWLE is</h3>
+<p>Take a weight function w, non-decreasing, bounded away from zero and rising to one, and define
+a <em>tilted</em> density from the model density h:</p>
+</div>
+<div class="eq">f(y; &theta;) = h(y; &theta;)&#8202;w(y) / C(&theta;),    C(&theta;) = &#8747; h(u; &theta;)&#8202;w(u)&#8202;du
+
+&#8467;(&theta;) = &Sigma;&#8202;<sub>i</sub> w(y&#8202;<sub>i</sub>)&#8202;log h(y&#8202;<sub>i</sub>; &theta;) &minus; [&Sigma;&#8202;<sub>i</sub> w(y&#8202;<sub>i</sub>)]&#8202;log C(&theta;)</div>
+<div class="col">
+<p>The normaliser is what makes this more than heuristic reweighting. Without it, weighting the
+log-likelihood is just a weighted M-estimator with no probabilistic meaning. With it,
+&#8467;(&theta;) is a genuine log-likelihood &mdash; for the tilted family &mdash; so under
+misspecification the estimator converges to the Kullback&ndash;Leibler projection <em>measured in the
+tilted metric</em>. That is precisely a tail-weighted KL projection, and it is the same objective
+this report has been pursuing by other means.</p>
+
+<div class="note"><span class="lab">Bridging the two weight functions</span>
+<p>Fung's w acts on the raw value y; the weight used throughout this report acts on the
+probability level p. The two are made comparable through the quantile transform: set
+w<sup>Fung</sup>(y) = &epsilon; + (1&minus;&epsilon;)&#8202;w(F&#770;(y)) with F&#770; the empirical
+distribution function, and &epsilon; = 10<sup>&minus;3</sup> to meet the positivity requirement. The
+normaliser is then exact rather than quadrature: with y<sub>(1)</sub> &lt; &hellip; &lt;
+y<sub>(n)</sub> and w<sub>j</sub> = w(j/n) constant between consecutive order statistics,
+C(&theta;) = &Sigma;<sub>j=0</sub><sup>n</sup> w<sub>j</sub>&#8202;[H(y<sub>(j+1)</sub>;&theta;)
+&minus; H(y<sub>(j)</sub>;&theta;)] with the endpoints at 0 and 1. Two checks: with w &equiv; 1 the
+routine reproduces the ordinary MLE to five decimals in both families, and the exact C(&theta;)
+matches Monte Carlo integration of &#8747;hw.</p></div>
+
+<h3>The GEV study</h3>
+<p>Same data, same weight w(p) = p<sup>6</sup>, same 2000 replicates at n = 100.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Contaminated truth, max(GEV(0,1,0.2), N(1.5,0.8)). MSE relative to the GEV MLE; below one
+beats it. Last column is the median fitted shape against a true &xi; = 0.2.</caption>
+<thead><tr><th>estimator</th><th>T = 2</th><th>10</th><th>48</th><th>203</th><th>529</th><th>1000</th><th>median &xi;&#770;</th></tr></thead>
+<tbody>
+<tr class="ref"><td>GEV MLE</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td class="lose">0.054</td></tr>
+<tr><td>GEV L-moments</td><td>1.24</td><td>0.95</td><td>1.30</td><td>1.10</td><td>1.09</td><td>1.11</td><td class="lose">0.095</td></tr>
+<tr><td><b>MWLE (Fung)</b></td><td class="lose">32.50</td><td class="lose">2.19</td><td class="lose">2.62</td><td>1.24</td><td class="win">0.96</td><td class="win">0.86</td><td class="win">0.224</td></tr>
+<tr><td>composite L1</td><td class="lose">2.83</td><td class="win">0.44</td><td>1.38</td><td class="lose">1.82</td><td class="lose">3.42</td><td class="lose">5.66</td><td class="lose">0.371</td></tr>
+<tr><td>composite L2</td><td class="lose">4.83</td><td>1.56</td><td>1.71</td><td>1.03</td><td>1.00</td><td>1.04</td><td>0.189</td></tr>
+<tr><td>&alpha;-elastile, &alpha; = 0.5</td><td>1.83</td><td>0.64</td><td>1.23</td><td class="win">0.88</td><td class="win">0.96</td><td>1.12</td><td>0.275</td></tr>
+<tr><td>inverted Huber, k = 4</td><td class="lose">6.11</td><td>1.92</td><td>1.85</td><td>1.00</td><td>0.90</td><td>0.89</td><td>0.168</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>MWLE takes the best far-tail number in the table &mdash; 0.86 at T = 1000, against 0.89 for the
+inverted Huber and 1.04 for pure L2 &mdash; and it recovers the shape better than anything else
+here, a median &xi;&#770; of 0.224 against a true 0.2 while maximum likelihood sits at 0.054. On the
+criterion that matters for extrapolation it is the strongest competitor this report has met.</p>
+
+<p>It also has the worst body in the table by a factor of five: 32.5&times; the MLE at T = 2. The
+cause is structural. Fung's weight multiplies the density pointwise, so at w(p) = p<sup>6</sup>
+floored at 10<sup>&minus;3</sup> the entire body contributes a thousandth of the tail's influence,
+and nothing in the objective pins the location. This is the same failure mode the composite
+estimators have &mdash; and it has the same repair, the graft of section 09.</p>
+
+<h3>When nothing is wrong</h3>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Exactly correct GEV(0, 1, 0.2), where the MLE is efficient. MSE relative to the GEV MLE.</caption>
+<thead><tr><th>estimator</th><th>T = 2</th><th>10</th><th>48</th><th>203</th><th>529</th><th>1000</th><th>median &xi;&#770;</th></tr></thead>
+<tbody>
+<tr class="ref"><td>GEV MLE</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>0.198</td></tr>
+<tr><td>GEV L-moments</td><td>1.05</td><td>0.95</td><td>0.94</td><td>0.98</td><td>1.01</td><td>1.03</td><td>0.184</td></tr>
+<tr><td><b>MWLE (Fung)</b></td><td class="lose">43.14</td><td class="lose">3.35</td><td>1.25</td><td>1.05</td><td>1.04</td><td>1.05</td><td>0.151</td></tr>
+<tr><td>composite L1</td><td class="lose">3.68</td><td>1.20</td><td>1.11</td><td class="lose">1.64</td><td class="lose">2.24</td><td class="lose">2.83</td><td>0.167</td></tr>
+<tr><td>composite L2</td><td class="lose">2.03</td><td class="lose">2.03</td><td>1.30</td><td>1.28</td><td>1.31</td><td>1.32</td><td class="lose">0.095</td></tr>
+<tr><td>&alpha;-elastile, &alpha; = 0.5</td><td class="lose">2.01</td><td>1.51</td><td>0.98</td><td>1.04</td><td>1.15</td><td>1.25</td><td>0.122</td></tr>
+<tr><td>inverted Huber, k = 4</td><td class="lose">2.47</td><td class="lose">2.28</td><td>1.43</td><td>1.26</td><td>1.18</td><td>1.12</td><td class="lose">0.085</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>Read this one carefully. <strong>Beyond T = 48, MWLE's tail premium is 4 to 5%</strong> &mdash;
+close to free &mdash; while the composite estimators pay 12 to 32%. Weighting a likelihood keeps
+much of a likelihood's efficiency; weighting a loss does not. In the GEV setting, then, MWLE gets
+the larger gain under misspecification <em>and</em> pays less for it under correct specification,
+everywhere except the body &mdash; and the body is repairable by grafting for both.</p>
+
+<h3>The GPD study reverses it</h3>
+<p>The same comparison in the peaks-over-threshold setting of section 13 comes out the other way,
+and that turns out to be the more informative half.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Contaminated truth, three-parameter GPD fitted to exceedances over the sample
+0.90-quantile, all estimators grafted onto an empirical body. MSE relative to POT&ndash;MLE(0.90),
+the practitioner's default.</caption>
+<thead><tr><th>estimator</th><th>T = 2</th><th>10</th><th>48</th><th>203</th><th>529</th><th>1000</th></tr></thead>
+<tbody>
+<tr class="ref"><td>POT&ndash;MLE, u = 0.90</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+<tr><td>MWLE (Fung) + graft</td><td class="win">0.97</td><td>1.06</td><td class="win">0.90</td><td class="win">0.79</td><td class="win">0.43</td><td class="win">0.23</td></tr>
+<tr><td>composite L2 + graft</td><td class="win">0.98</td><td class="lose">1.38</td><td class="win">0.86</td><td class="win">0.70</td><td class="win">0.36</td><td class="win">0.21</td></tr>
+<tr><td><b>inverted Huber, k = 4 + graft</b></td><td class="win">0.98</td><td class="lose">1.49</td><td class="win">0.89</td><td class="win">0.66</td><td class="win">0.33</td><td class="win">0.18</td></tr>
+</tbody></table>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Exactly correct GPD(0, 0.5, 0.2), threshold known, two parameters for every method.
+MSE relative to the GPD MLE, which is efficient here.</caption>
+<thead><tr><th>estimator</th><th>T = 2</th><th>10</th><th>48</th><th>203</th><th>529</th><th>1000</th></tr></thead>
+<tbody>
+<tr class="ref"><td>GPD MLE</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+<tr><td>GPD L-moments</td><td class="win">0.95</td><td class="win">0.97</td><td class="win">0.89</td><td class="win">0.86</td><td class="win">0.84</td><td class="win">0.83</td></tr>
+<tr><td>MWLE (Fung)</td><td class="lose">16.34</td><td class="lose">5.24</td><td>1.17</td><td>0.99</td><td>1.01</td><td>1.03</td></tr>
+<tr><td>MWLE (Fung) + graft</td><td>1.31</td><td>1.42</td><td>1.04</td><td class="lose">1.26</td><td class="lose">1.38</td><td class="lose">1.41</td></tr>
+<tr><td>composite L2 + graft</td><td>1.29</td><td>1.16</td><td class="win">0.87</td><td class="win">0.88</td><td class="win">0.85</td><td class="win">0.80</td></tr>
+<tr><td><b>inverted Huber, k = 4 + graft</b></td><td>1.29</td><td>1.16</td><td class="win">0.84</td><td class="win">0.77</td><td class="win">0.71</td><td class="win">0.63</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>Two reversals. Under contamination the composite estimators now edge ahead &mdash; 0.18 for the
+inverted Huber against MWLE's 0.23 at T = 1000 &mdash; and on <em>correctly specified</em> GPD data
+MWLE buys nothing at all: 0.99 to 1.03 from T = 200 outward, exactly the neutral result a tilted
+likelihood should give when the untilted one is already efficient, while the inverted Huber
+reaches 0.63.</p>
+
+<div class="note"><span class="lab">Why grafting helps one and hurts the other</span>
+<p>MWLE ungrafted has the smaller far-tail error of the two MWLE rows (1.03 against 1.41), which is
+the opposite of the pattern for every composite estimator, where grafting improves the tail as well
+as the body. The graft rescales the fitted survival function by its own value at the join, so it
+inherits the noise in S&#8202;<sub>&theta;&#770;</sub>(u). For MWLE that quantity is badly
+determined: the weight multiplies the density pointwise and floors at 10<sup>&minus;3</sup>, so
+essentially nothing in the objective constrains the fit near the 0.90-quantile, and the rescaling
+divides by a noisy number. The composite criterion, by contrast, still integrates over levels below
+the join with small but non-zero weight, and its fitted survival there is stable.</p></div>
+
+<h3>What to take from it</h3>
+<p>MWLE is the stronger method where the fitting problem is hard &mdash; the three-parameter GEV,
+where the shape is poorly identified and a tilted likelihood's efficiency is worth having. The
+composite estimators are stronger where the problem is regular &mdash; the two-parameter GPD above a
+known threshold, where a likelihood has no efficiency left to give away and what remains to be won
+is the choice of <em>which</em> discrepancy to minimise. Since the peaks-over-threshold setting is
+the one flood-frequency practice actually uses, that second regime is the one that matters for the
+application; but the GEV result is a real limitation and belongs in any honest account.</p>
+
+<div class="note"><span class="lab">Where the composite construction still has ground</span>
+<p>Three things survive the comparison. MWLE needs the model density in closed form and its
+normaliser integrated &mdash; here exactly, but not in general; the composite estimators need only
+the model's functional curve, which exists for families with no tractable density. MWLE inherits
+the likelihood's fragility when the family's support depends on &theta;, which is the GEV's usual
+numerical complaint. And its weight, acting on y, has no scale-free reading: w(p) = p<sup>6</sup>
+means the same thing on any data, w(y) does not, which is why the bridge above had to run through
+F&#770;. None of that overturns the GEV efficiency comparison; all of it should appear alongside
+it.</p></div>
+</div>
+</section>
+"""
+
+SEX = """
+<section id="extremile">
+<h2><span class="num">20</span><span>Extremiles: the same idea in L-space</span></h2>
+<div class="col">
+<p>Every estimator so far has been an M-estimator: a functional defined implicitly as the root of
+an expectation. <em>Extremiles</em> (Daouia, Gijbels and Stupfler) are the other kind &mdash; an
+L-functional, defined explicitly as a weighted integral of the quantile function. They deserve a
+place here because they were built for exactly the purpose this report is about: a tail-sensitive
+location functional that is smoother than a quantile and reaches further than an expectile.</p>
+
+<p>Fix &tau; &isin; (0,1) and set r(&tau;) = log(&frac12;)/log(&tau;), so r = 1 at &tau; = &frac12;
+and r &rarr; &infin; as &tau; &rarr; 1. The extremile is</p>
+</div>
+<div class="eq">&xi;&#8202;<sub>&tau;</sub> = &#8747;&#8320;&sup1; J&#8202;<sub>&tau;</sub>(t)&#8202;q&#8202;<sub>t</sub>&#8202;dt,     J&#8202;<sub>&tau;</sub>(t) = r&#8202;t&#8202;<sup>r&minus;1</sup>,     r = r(&tau;)</div>
+<div class="col">
+<p>and when r is an integer this is nothing but <b>the expected maximum of r independent
+copies</b> of Y, because r&#8202;t<sup>r&minus;1</sup> is the density of the largest of r uniforms.
+That is the whole idea in one line: the &tau;-extremile of a daily series is the mean annual
+maximum when r = 365, and the reach into the tail is controlled by how many copies you take the
+maximum of, not by how far out a probability you name.</p>
+
+<h3>How it sits next to the others</h3>
+<p>The four families answer the same question &mdash; <em>where is the distribution, seen from the
+tail?</em> &mdash; with four different notions of "where".</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Four ways to ask where a distribution sits, seen from the tail. The first three
+are M-functionals, defined as roots; the extremile is an L-functional, defined as an integral.</caption>
+<thead><tr><th>Family</th><th>Defined by</th><th>Uses</th><th>Tail reach</th></tr></thead>
+<tbody>
+<tr><td>Quantile q<sub>p</sub></td><td>E[&#8202;p &minus; I(Y&lt;t)&#8202;] = 0</td><td>one point of F</td><td>all of it, by fiat</td></tr>
+<tr><td>Expectile e<sub>p</sub></td><td>E[&#8202;|p &minus; I(Y&lt;t)|&#8202;(Y&minus;t)&#8202;] = 0</td><td>partial means</td><td>needs E|Y| &lt; &infin;</td></tr>
+<tr><td>M-quantile (elastile, inv. Huber)</td><td>E[&#8202;|p &minus; I(Y&lt;t)|&#8202;&psi;(Y&minus;t)&#8202;] = 0</td><td>partial &psi;-means</td><td>set by &psi;</td></tr>
+<tr><td>Extremile &xi;<sub>&tau;</sub></td><td>&#8747; r&#8202;t<sup>r&minus;1</sup>q<sub>t</sub>&#8202;dt, explicit</td><td>all of F, polynomially reweighted</td><td>needs E|Y| &lt; &infin;</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>Two structural differences matter. First, the extremile is <em>explicit</em>: no root-finding,
+no estimating equation, and the sample version is a plain linear combination of order statistics
+with fixed weights &mdash; a probability-weighted moment with a tail-tilted kernel. Second, the
+extremile's weight is on <em>probability</em>, whereas &psi; reweights on <em>residual</em>. The
+composite construction in this report already weights on probability; extremiles do it inside the
+functional as well, and stack the two.</p>
+
+<p>Both model families have closed forms. For the GEV the derivation is one line: the maximum of r
+copies of GEV(&mu;, &sigma;, &xi;) is GEV(&mu; + &sigma;(r<sup>&xi;</sup>&minus;1)/&xi;,
+&sigma;r<sup>&xi;</sup>, &xi;), and taking its mean gives the result. For the GPD the integral is a
+Beta function.</p>
+</div>
+<div class="eq">GEV:  &xi;&#8202;<sub>&tau;</sub> = &mu; + (&sigma;/&xi;)&#8202;[&#8202;r<sup>&xi;</sup>&#8202;&Gamma;(1&minus;&xi;) &minus; 1&#8202;]
+GPD:  &xi;&#8202;<sub>&tau;</sub> = &mu; + (&sigma;/&xi;)&#8202;[&#8202;&Gamma;(r+1)&#8202;&Gamma;(1&minus;&xi;)&#8202;/&#8202;&Gamma;(r+1&minus;&xi;) &minus; 1&#8202;]                (&xi; &lt; 1)</div>
+<div class="col">
+<p>Both were checked against numerical integration of J&#8202;<sub>&tau;</sub>q<sub>t</sub> to
+better than 10<sup>&minus;8</sup>, and the "expected maximum of r copies" reading was confirmed by
+simulation (r = 5, GEV(0,1,0.2): 3.0316 in closed form against 3.0304 from 2&times;10<sup>6</sup>
+draws).</p>
+
+<h3>What a composite extremile estimator can and cannot be</h3>
+<p>The composite estimators in this report all minimise a weighted integral of a
+<em>loss</em>. Extremiles have no such loss to integrate: they are L-functionals, and
+Newey&ndash;Powell-style asymmetric losses do not generate them. So the composite recipe does not
+transfer. What does transfer is the other half of the idea &mdash; matching a whole curve of
+functionals rather than a likelihood &mdash; as <b>minimum-distance matching on the extremile
+function</b>:</p>
+</div>
+<div class="eq">&theta;&#770; = argmin&#8202;<sub>&theta;</sub> &#8747; w(&tau;)&#8202;[&#8202;&xi;&#770;&#8202;<sub>&tau;</sub> &minus; &xi;&#8202;<sub>&tau;</sub>(&theta;)&#8202;]&sup2;&#8202;d&tau;</div>
+<div class="col">
+<p>with &xi;&#770;<sub>&tau;</sub> = &Sigma;<sub>i</sub>&#8202;[&#8202;(i/n)<sup>r</sup> &minus;
+((i&minus;1)/n)<sup>r</sup>&#8202;]&#8202;y<sub>(i)</sub> the empirical extremile. That is a
+<em>tail-weighted probability-weighted-moment estimator</em>, and its honest comparison is not the
+M-estimator family at all &mdash; it is Hosking and Wallis. L-moments match
+&#8747;P<sub>k</sub>(t)q<sub>t</sub>dt for the first few shifted Legendre polynomials; this matches
+&#8747;r&#8202;t<sup>r&minus;1</sup>q<sub>t</sub>dt over a continuum of r. Same machinery, tail-tilted
+kernel.</p>
+
+<div class="note"><span class="lab">The reach has to be an intermediate sequence</span>
+<p>The obvious grid &mdash; run &tau; up to where r(&tau;) = n &mdash; produces an
+<em>inconsistent</em> estimator, and it took a while to see why. The empirical extremile at r = n
+puts weight 1 &minus; (1&minus;1/n)<sup>n</sup> &asymp; 0.63 on the sample maximum alone, and the
+sample maximum is a badly biased estimate of E[max of n] for a heavy tail. Measuring that bias
+directly:</p>
+</div>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Relative bias of the empirical extremile against the truth, GPD(0, 0.6, 0.25),
+20&#8202;000 replicates. At fixed r/n the bias does not shrink with n, which is why the reach must
+be capped by an intermediate sequence.</caption>
+<thead><tr><th>relative bias of &xi;&#770;<sub>&tau;</sub></th><th>r/n = 0.02</th><th>0.05</th><th>0.10</th><th>0.20</th><th>0.40</th><th>1.00</th></tr></thead>
+<tbody>
+<tr><td>n = 100</td><td>&minus;0.001</td><td>&minus;0.008</td><td>&minus;0.025</td><td>&minus;0.037</td><td>&minus;0.071</td><td class="lose">&minus;0.149</td></tr>
+<tr><td>n = 1000</td><td>&minus;0.003</td><td>&minus;0.009</td><td>&minus;0.018</td><td>&minus;0.028</td><td>&minus;0.056</td><td class="lose">&minus;0.129</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>The bias at fixed r/n does <em>not</em> shrink with n, so the reach must grow slower than the
+sample: r<sub>max</sub> = &alpha;n with &alpha; &rarr; 0, the same intermediate-sequence condition
+(k &rarr; &infin;, k/n &rarr; 0) that governs every tail-index estimator. With the cap in place the
+estimator converges: at n = 10<sup>5</sup>, GPD(0, 0.6, 0.25) recovers (0.615, 0.246), and an
+&alpha;-sweep at n = 2&times;10<sup>4</sup> runs from (0.618, 0.243) at &alpha; = 0.01 to
+(0.683, 0.205) at &alpha; = 1 &mdash; the uncapped version's bias, visible.</p>
+
+<h3>What it does</h3>
+<p>Run on the same data as everything else, with the same w(&tau;) = &tau;<sup>6</sup> over the
+capped grid, and &alpha; as the only new knob.</p>
+</div>
+FIG_EX
+<div class="tablewrap">
+<table>
+<caption>Exactly correct GPD(0, 0.5, 0.2), threshold known, two parameters. MSE relative to the GPD
+MLE. The two right-hand rows are the M-estimator composites from section 16, ungrafted, for scale.</caption>
+<thead><tr><th>estimator</th><th>T = 2</th><th>10</th><th>48</th><th>203</th><th>529</th><th>1000</th><th>median &xi;&#770;</th></tr></thead>
+<tbody>
+<tr class="ref"><td>GPD MLE</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>0.181</td></tr>
+<tr><td>GPD L-moments</td><td class="win">0.95</td><td class="win">0.97</td><td class="win">0.89</td><td class="win">0.86</td><td class="win">0.84</td><td class="win">0.83</td><td>0.195</td></tr>
+<tr><td><b>extremile, &alpha; = 0.02</b></td><td class="win">0.98</td><td class="win">0.99</td><td class="win">0.88</td><td class="win">0.81</td><td class="win">0.77</td><td class="win">0.74</td><td>&mdash;</td></tr>
+<tr><td>extremile, &alpha; = 0.05</td><td>1.01</td><td class="win">0.98</td><td class="win">0.89</td><td class="win">0.83</td><td class="win">0.78</td><td class="win">0.76</td><td>0.171</td></tr>
+<tr><td>extremile, &alpha; = 0.20</td><td class="lose">1.44</td><td>1.05</td><td class="win">0.91</td><td class="win">0.87</td><td class="win">0.84</td><td class="win">0.82</td><td>0.146</td></tr>
+<tr><td>extremile, &alpha; = 0.50</td><td class="lose">2.10</td><td>1.20</td><td class="win">0.93</td><td class="win">0.89</td><td class="win">0.86</td><td class="win">0.83</td><td class="lose">0.121</td></tr>
+<tr><td>composite L2</td><td class="lose">1.93</td><td>1.29</td><td class="win">0.96</td><td class="win">0.89</td><td class="win">0.85</td><td class="win">0.82</td><td>0.131</td></tr>
+<tr><td>inverted Huber, k = 4</td><td class="lose">2.03</td><td class="lose">1.47</td><td>1.02</td><td class="win">0.85</td><td class="win">0.75</td><td class="win">0.69</td><td>0.124</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>This is the cleanest result in the report. At &alpha; = 0.02 the composite extremile
+<strong>costs nothing in the body</strong> &mdash; 0.98 at the two-year level, marginally better
+than the MLE rather than 1.9 to 2.0&times; worse &mdash; and still takes 26% off the far-tail MSE.
+It beats L-moments at every return period from 48 outward while matching it below. No graft, no
+knot, no weight tuning beyond the reach.</p>
+
+<p>It does not, however, reach the inverted Huber's 0.69, and grafted the inverted Huber goes to
+0.63 (section 18). The extremile buys a smaller gain with no risk attached; the M-estimator
+composites buy a larger one and need a graft to pay for it.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Contaminated truth, GEV family. MSE relative to the GEV MLE, and the median fitted shape
+against a true &xi; = 0.2.</caption>
+<thead><tr><th>estimator</th><th>T = 2</th><th>10</th><th>48</th><th>203</th><th>529</th><th>1000</th><th>median &xi;&#770;</th></tr></thead>
+<tbody>
+<tr class="ref"><td>GEV MLE</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td class="lose">0.054</td></tr>
+<tr><td>GEV L-moments</td><td>1.24</td><td class="win">0.95</td><td class="lose">1.30</td><td>1.10</td><td>1.09</td><td>1.11</td><td class="lose">0.095</td></tr>
+<tr><td>extremile, &alpha; = 0.02</td><td class="win">0.97</td><td>1.00</td><td class="lose">1.39</td><td>1.21</td><td>1.18</td><td>1.17</td><td>&mdash;</td></tr>
+<tr><td>extremile, &alpha; = 0.05</td><td>1.35</td><td class="win">0.74</td><td>1.25</td><td>1.05</td><td>1.08</td><td>1.13</td><td>0.139</td></tr>
+<tr><td>extremile, &alpha; = 0.10</td><td>1.41</td><td class="win">0.58</td><td>1.16</td><td>1.00</td><td>1.10</td><td>1.24</td><td class="win">0.198</td></tr>
+<tr><td>extremile, &alpha; = 0.20</td><td>1.29</td><td class="win">0.58</td><td>1.13</td><td class="win">0.96</td><td>1.09</td><td>1.27</td><td class="win">0.224</td></tr>
+<tr><td>composite L2</td><td class="lose">4.83</td><td>1.56</td><td class="lose">1.71</td><td>1.03</td><td>1.00</td><td>1.04</td><td>0.189</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>Under contamination the picture inverts. The extremile now recovers the shape better than
+anything in the report &mdash; a median &xi;&#770; of 0.198 at &alpha; = 0.10 against a true 0.2,
+where maximum likelihood returns 0.054 &mdash; and it owns the ten-year level at 0.58. But it does
+not convert that into far-tail accuracy: 1.13 to 1.27 at T = 1000, no better than L-moments and
+worse than composite L2's 1.04. Getting &xi; right is necessary and not sufficient; the location and
+scale absorb the contamination instead, and the extrapolation carries their error.</p>
+
+<div class="note"><span class="lab">&alpha; is the whole trade-off</span>
+<p>The two tables move in opposite directions in &alpha;, and that is the intermediate-sequence
+condition showing up as a bias&ndash;variance choice rather than a theorem. Small &alpha; keeps the
+empirical extremiles nearly unbiased and the estimator efficient, which is what a correctly
+specified family rewards. Large &alpha; pushes the matched functionals out past the contaminated
+body, which is what misspecification rewards. There is no setting that does both, and unlike the
+elastile's &alpha; there is no interior optimum &mdash; the ordering is monotone in each table and
+simply reversed between them.</p></div>
+
+<h3>Verdict</h3>
+<p>The composite extremile is the <em>safe</em> member of this family. It is an L-estimator, so it
+inherits L-moments' good behaviour at small n; it is explicit, so it needs no root-finding and
+cannot fail to converge; and at a short reach it strictly improves on L-moments in the tail at no
+cost in the body. What it does not do is deliver the large misspecification gains that motivated
+this report. Its natural place is as a drop-in replacement for L-moments &mdash; a strictly better
+default &mdash; rather than as a competitor to the grafted M-estimator composites.</p>
+</div>
+</section>
+"""
+
+
+SHG = """
+<section id="hardgraft">
+<h2><span class="num">19</span><span>Does the handover have to be smooth?</span></h2>
+<div class="col">
+<p>Section 09 repairs the composite fit's body by blending it with an empirical body through the
+same weight w that defined the estimator. That is machinery: a mixture in the survival function, a
+derivative term, a numerical inversion. The simpler alternative is a <em>hard graft</em> &mdash;
+empirical below a join at the v-quantile, the fitted tail above, rescaled so the survival function
+is continuous:</p>
+</div>
+<div class="eq">S&#770;(x) = 1 &minus; F&#770;<sub>n</sub>(x)                     x &le; y&#8202;<sub>(&lceil;vn&rceil;)</sub>
+S&#770;(x) = (1&minus;v)&#8202;S&#8202;<sub>&theta;&#770;</sub>(x)&#8202;/&#8202;S&#8202;<sub>&theta;&#770;</sub>(u)     x &gt; u = y&#8202;<sub>(&lceil;vn&rceil;)</sub></div>
+<div class="col">
+<p>which is nothing but the standard peaks-over-threshold construction, and continuous by
+construction at the join. If that already fixes the body, the smooth handover is machinery without
+a purpose. The two were run on the same 2000 datasets and the same fitted parameters, so the only
+thing varying is the handover.</p>
+</div>
+FIG_HG
+<div class="tablewrap">
+<table>
+<caption>Contaminated truth, n = 100, MSE relative to POT&ndash;MLE(0.90). One tail fit &mdash; the
+inverted Huber at k = 4 &mdash; handed over five different ways; the composite-L2 half of the run
+behaves identically. Below one beats the practitioner's default.</caption>
+<thead><tr><th>handover</th><th>T = 2</th><th>5</th><th>10</th><th>26</th><th>48</th><th>107</th><th>529</th><th>1000</th></tr></thead>
+<tbody>
+<tr class="ref"><td>POT&ndash;MLE, u = 0.90</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+<tr><td>ungrafted</td><td class="lose">10.25</td><td class="lose">3.05</td><td class="lose">3.98</td><td class="lose">1.48</td><td class="lose">1.23</td><td>1.03</td><td class="win">0.36</td><td class="win">0.19</td></tr>
+<tr><td>hard, v = 0.50</td><td class="win">0.98</td><td class="lose">11.01</td><td class="lose">10.35</td><td class="lose">2.98</td><td class="lose">2.13</td><td class="lose">1.53</td><td class="win">0.46</td><td class="win">0.25</td></tr>
+<tr><td>hard, v = 0.70</td><td class="win">0.98</td><td class="lose">3.48</td><td class="lose">5.38</td><td class="lose">1.83</td><td class="lose">1.43</td><td class="lose">1.15</td><td class="win">0.39</td><td class="win">0.21</td></tr>
+<tr><td>hard, v = 0.80</td><td class="win">0.98</td><td class="win">0.99</td><td class="lose">2.34</td><td>1.09</td><td>1.00</td><td class="win">0.91</td><td class="win">0.34</td><td class="win">0.19</td></tr>
+<tr><td><b>hard, v = 0.90</b></td><td class="win">0.98</td><td class="win">1.00</td><td class="win">0.99</td><td class="win">0.55</td><td class="win">0.69</td><td class="win">0.75</td><td class="win">0.30</td><td class="win">0.17</td></tr>
+<tr><td><b>hard, v = 0.95</b></td><td class="win">0.98</td><td class="win">1.00</td><td class="win">0.99</td><td class="win">0.79</td><td class="win">0.80</td><td class="win">0.77</td><td class="win">0.29</td><td class="win">0.16</td></tr>
+<tr><td>smooth, w = p<sup>6</sup></td><td class="win">0.98</td><td>1.06</td><td class="lose">1.49</td><td class="win">0.89</td><td class="win">0.89</td><td class="win">0.85</td><td class="win">0.33</td><td class="win">0.18</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p><strong>A hard graft is not merely sufficient &mdash; placed well, it is better.</strong> At
+v = 0.90 or 0.95 it matches or beats the smooth graft at every return period in the table,
+including the far tail (0.16 against 0.18 at T = 1000). The smooth handover buys a continuous
+density and nothing else measurable here.</p>
+
+<p><strong>But it is brittle in the join.</strong> At v = 0.50 the same tail fit is 11&times; the
+POT&ndash;MLE at the five-year level &mdash; worse than not grafting at all &mdash; because a hard
+graft hands the model <em>all</em> of the probability above the join, and a fit tuned for the
+1000-year level has no business describing the five-year one. The smooth graft never does anything
+like that: its worst number anywhere is 1.49.</p>
+
+<div class="note"><span class="lab">Where the smooth graft's bump at T = 10 comes from</span>
+<p>The green curve's one excursion above the hard grafts is at T &asymp; 10, and it is the weight's
+own doing. The smooth graft gives the fitted tail a share w(p) of the blend, and w(p) = p<sup>6</sup>
+at p = 0.9 is 0.531 &mdash; over half. So at the ten-year level the smooth graft is already
+majority-model, precisely where the model is worst relative to the empirical distribution, while a
+hard graft at v = 0.90 gives it exactly zero. The fix, if one wants smoothness, is a sharper weight
+for the handover than for the fitting; there is no reason the two have to be the same function, and
+this report used the same one only for tidiness.</p></div>
+
+<p>One row deserves separate note. Every grafted estimator reads <b>0.98 at T = 2</b>, identical
+to three decimals across five handovers and two tail models. That is not the tail model doing
+anything &mdash; it is the empirical distribution's own performance against POT&ndash;MLE(0.90) at
+the two-year level, which is what any graft must reduce to when the join sits above the point being
+predicted. The body number in every grafted table in this report should be read that way.</p>
+
+<h3>The practical answer</h3>
+<p>Use a hard graft at the 0.90&ndash;0.95 quantile. It is the standard POT construction, needs no
+new machinery, and is at least as accurate. Reach for the smooth graft when the join location is
+genuinely unknown and a bad guess must not be catastrophic, or when a continuous density is needed
+downstream &mdash; and if so, weight the handover more sharply than the fit.</p>
+</div>
+</section>
+"""
 
 if __name__ == "__main__":
     html = build()

@@ -1,0 +1,55 @@
+=== MWLE in the GPD setting, n = 100, 2000 replicates ===
+  MWLE (Fung) + graft    0.6 min   median xi 0.116
+  composite L2 + graft   0.8 min   median xi 0.127
+  inv Huber k=4 + graft  14.5 min   median xi 0.108
+
+--- CONTAMINATED: MSE relative to POT-MLE(0.90) ---
+                             T=2     T=10     T=48    T=203    T=529   T=1000
+POT-MLE u=0.90             1.000    1.000    1.000    1.000    1.000    1.000
+MWLE (Fung) + graft        0.974    1.056    0.897    0.789    0.427    0.229
+composite L2 + graft       0.978    1.381    0.859    0.702    0.364    0.209
+inv Huber k=4 + graft      0.977    1.494    0.888    0.662    0.332    0.179
+
+bias:
+POT-MLE u=0.90            -0.009   -0.009   -0.207   -0.624    0.027    1.596
+MWLE (Fung) + graft       -0.003    0.062   -0.254   -0.908   -1.728   -2.689
+composite L2 + graft      -0.001    0.154   -0.089   -0.776   -1.466   -1.942
+inv Huber k=4 + graft     -0.000    0.171   -0.069   -0.907   -1.804   -2.547
+
+failed:
+       POT-MLE u=0.90   MWLE (Fung) + graft  composite L2 + graft 
+                    0                     0                     0 
+inv Huber k=4 + graft 
+                    0 
+  MWLE (Fung)            0.5 min   median xi 0.113
+  composite L2           0.5 min   median xi 0.131
+  inv Huber k=4          7.0 min   median xi 0.124
+
+--- CORRECT GPD: MSE relative to the GPD MLE ---
+                             T=2     T=10     T=48    T=203    T=529   T=1000
+GPD MLE                    1.000    1.000    1.000    1.000    1.000    1.000
+GPD L-moments              0.948    0.973    0.890    0.859    0.844    0.832
+MWLE (Fung)               16.335    5.239    1.172    0.987    1.010    1.029
+MWLE (Fung) + graft        1.310    1.417    1.042    1.263    1.384    1.412
+composite L2               1.934    1.286    0.964    0.892    0.848    0.818
+composite L2 + graft       1.288    1.161    0.871    0.878    0.847    0.803
+inv Huber k=4              2.027    1.468    1.017    0.848    0.751    0.687
+inv Huber k=4 + graft      1.289    1.161    0.835    0.765    0.706    0.633
+
+bias:
+GPD MLE                    0.007   -0.005   -0.029   -0.003    0.096    0.230
+GPD L-moments              0.002   -0.009   -0.011    0.059    0.199    0.366
+MWLE (Fung)                0.084    0.103   -0.072   -0.328   -0.491   -0.560
+MWLE (Fung) + graft        0.006    0.015   -0.065   -0.164   -0.212   -0.210
+composite L2               0.029    0.026   -0.082   -0.258   -0.398   -0.486
+composite L2 + graft       0.005   -0.006   -0.080   -0.205   -0.352   -0.442
+inv Huber k=4              0.037    0.041   -0.080   -0.310   -0.527   -0.697
+inv Huber k=4 + graft      0.005   -0.005   -0.097   -0.286   -0.510   -0.694
+
+failed:
+              GPD MLE         GPD L-moments           MWLE (Fung) 
+                    0                     0                     3 
+  MWLE (Fung) + graft          composite L2  composite L2 + graft 
+                    3                     0                     0 
+        inv Huber k=4 inv Huber k=4 + graft 
+                    0                     0 
