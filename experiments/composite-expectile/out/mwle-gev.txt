@@ -1,0 +1,11 @@
+=== MWLE in the GEV setting, n = 100, 2000 replicates ===
+Weight: the composite study's own, floored at eps = 1e-3 for Fung's
+positivity requirement, and mapped from p to y through Fhat.
+
+CONTAMINATED TRUTH  max(GEV(0,1,0.2), N(1.5,0.8))
+  GEV MLE          0.0 min
+  GEV L-moments    0.0 min
+  MWLE (Fung)      0.2 min
+  composite L1     0.1 min
+  composite L2     1.1 min
+  elastile a=0.5   
