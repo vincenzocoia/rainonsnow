@@ -107,11 +107,15 @@ factor of two to six, at the cost of a structural obstacle: the expectile identi
 contains the distribution's mean, so no weight makes the estimator asymptotically unbiased under
 body contamination. A one-sided inverted-Huber influence function removes the mean exactly, giving
 a functional that depends on the distribution only above a knot, and it is the most accurate
-far-tail estimator we examine. Against that, we report what the approach costs when the model is
+far-tail member of the family. Against that, we report what the approach costs when the model is
 correct &mdash; 12&ndash;32% in the far tail of a correctly specified GEV, more at short return
 periods, with bias in the unsafe direction &mdash; and show that 68% of the apparent gain over
 peaks-over-threshold in a misspecified study is present with no misspecification at all, because
-the conventional reference discards nine tenths of the sample.</p>
+the conventional reference discards nine tenths of the sample. Compared directly against a
+tail-weighted likelihood, the composite criteria lead when fitting a generalized Pareto tail above
+a known threshold and trail when fitting a generalized extreme value distribution to block maxima,
+which we read as efficiency recovered on a poorly identified problem rather than as a verdict on
+either construction.</p>
 </div>
 <p class="keywords"><b>Keywords:</b> tail robustness &middot; expectiles &middot; M-quantiles
 &middot; generalized extreme value &middot; generalized Pareto &middot; return level &middot;
@@ -248,18 +252,18 @@ by g<sub>p</sub><sup>F<sub>&theta;</sub></sup>(T<sub>p</sub>(&theta;)) = 0. Diff
 &theta; &mdash; the indicator contributes nothing, &rho; being continuous at zero &mdash; the
 pseudo-true &theta;* solves</p>
 </div>
-<div class="eq"><div class="body">&#8747;&#8320;&sup1; w(p) g&#8202;<sub>p</sub><sup>F</sup>(T&#8202;<sub>p</sub>(&theta;)) &nabla;&#8202;<sub>&theta;</sub>T&#8202;<sub>p</sub>(&theta;) dp = 0</div><div class="tag">(6)</div></div>
+<div class="eq"><div class="body">&#8747;&#8320;&sup1; w(p) g&#8202;<sub>p</sub><sup>F</sup>(T&#8202;<sub>p</sub>(&theta;)) &nabla;&#8202;<sub>&theta;</sub>T&#8202;<sub>p</sub>(&theta;) dp = 0</div><div class="tag">(4)</div></div>
 <div class="col">
 <p>with the sensitivity following by implicit differentiation of the defining equation,</p>
 </div>
-<div class="eq"><div class="body">&nabla;&#8202;<sub>&theta;</sub>T&#8202;<sub>p</sub>(&theta;) = &minus; [&part;g&#8202;<sub>p</sub><sup>F<sub>&theta;</sub></sup>/&part;&theta;] / [&part;g&#8202;<sub>p</sub><sup>F<sub>&theta;</sub></sup>/&part;t]   at t = T&#8202;<sub>p</sub>(&theta;)</div><div class="tag">(7)</div></div>
+<div class="eq"><div class="body">&nabla;&#8202;<sub>&theta;</sub>T&#8202;<sub>p</sub>(&theta;) = &minus; [&part;g&#8202;<sub>p</sub><sup>F<sub>&theta;</sub></sup>/&part;&theta;] / [&part;g&#8202;<sub>p</sub><sup>F<sub>&theta;</sub></sup>/&part;t]   at t = T&#8202;<sub>p</sub>(&theta;)</div><div class="tag">(5)</div></div>
 <div class="col">
 <p>The same function g appears twice, at two distributions. At the model it defines the functional
 and its sensitivity; at the truth it measures the discrepancy, vanishing exactly when
-T<sub>p</sub>(&theta;) is the truth's own level-p M-quantile. So (6) says the pseudo-true parameter
+T<sub>p</sub>(&theta;) is the truth's own level-p M-quantile. So (4) says the pseudo-true parameter
 sets a weighted average of the level-by-level discrepancies to zero, weighted by w and by the
 sensitivity. The target therefore depends on the weight, and on &psi; only through which functional
-is matched. Section 5.5 solves (6) numerically and finds that concentrating w drives &theta;*
+is matched. Section 5.5 solves (4) numerically and finds that concentrating w drives &theta;*
 towards the limiting GPD, which is the asymptotic justification for tail weighting.</p>
 
 <p>For the pinball loss on GPD(0, &sigma;, &xi;) exceedances the system is elementary. With
@@ -267,9 +271,9 @@ T<sub>p</sub> = &sigma;[(1&minus;p)<sup>&minus;&xi;</sup> &minus; 1]/&xi; one ha
 &part;T/&part;&sigma; = T/&sigma;, and eliminating that equation from the other leaves two explicit
 integral equations in (&sigma;, &xi;):</p>
 </div>
-<div class="eq"><div class="body">&#8747; w(p)[p &minus; F(T&#8202;<sub>p</sub>)] T&#8202;<sub>p</sub> dp = 0,   &#8747; w(p)[p &minus; F(T&#8202;<sub>p</sub>)] (1&minus;p)<sup>&minus;&xi;</sup> log[1/(1&minus;p)] dp = 0</div><div class="tag">(8)</div></div>
+<div class="eq"><div class="body">&#8747; w(p)[p &minus; F(T&#8202;<sub>p</sub>)] T&#8202;<sub>p</sub> dp = 0,   &#8747; w(p)[p &minus; F(T&#8202;<sub>p</sub>)] (1&minus;p)<sup>&minus;&xi;</sup> log[1/(1&minus;p)] dp = 0</div><div class="tag">(6)</div></div>
 <div class="col">
-<p>For the other members T<sub>p</sub> has no elementary form, but (7) still delivers
+<p>For the other members T<sub>p</sub> has no elementary form, but (5) still delivers
 &nabla;<sub>&theta;</sub>T in closed form from the identification equation, so no numerical
 differentiation is required anywhere.</p>
 </div>
@@ -279,13 +283,13 @@ differentiation is required anywhere.</p>
 <p>Equation (2) is tractable for both extreme-value families because each identification equation
 reduces to the first partial moment</p>
 </div>
-<div class="eq"><div class="body">&phi;(x) = E[(Y &minus; x)<sup>+</sup>]</div><div class="tag">(4)</div></div>
+<div class="eq"><div class="body">&phi;(x) = E[(Y &minus; x)<sup>+</sup>]</div><div class="tag">(7)</div></div>
 <div class="col">
 <p>which is available in closed form: for the GPD,
 &phi;(x) = (&sigma; + &xi;(x &minus; &mu;))&#8202;S(x)/(1 &minus; &xi;); for the GEV, in terms of a
 lower incomplete gamma function. The expectile is then the unique root of</p>
 </div>
-<div class="eq"><div class="body">k&#8202;&phi;(t) + m &minus; t = 0,    k = (2p &minus; 1)/(1 &minus; p),   m = E[Y]</div><div class="tag">(5)</div></div>
+<div class="eq"><div class="body">k&#8202;&phi;(t) + m &minus; t = 0,    k = (2p &minus; 1)/(1 &minus; p),   m = E[Y]</div><div class="tag">(8)</div></div>
 <div class="col">
 <p>a strictly decreasing function of t admitting a safeguarded Newton solution in a handful of
 iterations. The elastile requires only the same ingredients. In consequence the composite criterion
@@ -356,7 +360,7 @@ the weight must be chosen relative to the sample size, not in the abstract.</p>
 <h2><span class="n">4</span><span>Mean anchoring, and a loss that removes it</span></h2>
 <div class="col">
 <p>The expectile's advantage over the quantile &mdash; that it uses magnitudes &mdash; is also the
-source of a structural problem, visible in (5).</p>
+source of a structural problem, visible in (8).</p>
 </div>
 <div class="prop"><span class="lab">Proposition 1 &mdash; mean anchoring</span>
 <p>The level-p expectile solves p&#8202;E[(Y &minus; t)<sup>+</sup>] =
@@ -374,7 +378,7 @@ expectile estimator is not. The effect is not negligible. For the contaminated G
 the truth's expectile at p = 0.98 sits 9.73% above its own GEV component's, and at p = 0.99 still
 7.03%, while the corresponding quantile figures are zero to four decimals.</p>
 
-<p>One obvious repair is to substitute the sample mean for the model's in (5). This works
+<p>One obvious repair is to substitute the sample mean for the model's in (8). This works
 asymptotically &mdash; it reduces the surviving contamination at p = 0.98 from 9.73% to 0.0001% and
 puts the estimator's asymptotic target on the true parameters &mdash; and fails in practice, because
 at n = 100 the sample mean of a heavy-tailed sample is too noisy: the corrected estimator loses on
@@ -384,7 +388,7 @@ every finite-sample criterion we measured. A structural repair is available inst
 <p>Take the one-sided influence function &psi;<sub>c</sub>(u) = max(u, &minus;c), linear above the
 fitted level and capped at &minus;c below it. Substituting into (2) and using the identity above,
 the two mean terms cancel and the identification equation becomes</p>
-<div class="eq" style="margin:14px 0"><div class="body">p&#8202;&phi;(t) = (1 &minus; p)&#8202;[ c + &phi;(t) &minus; &phi;(t &minus; c) ]</div><div class="tag">(6)</div></div>
+<div class="eq" style="margin:14px 0"><div class="body">p&#8202;&phi;(t) = (1 &minus; p)&#8202;[ c + &phi;(t) &minus; &phi;(t &minus; c) ]</div><div class="tag">(9)</div></div>
 <p>which involves F only through &phi; at t and at t &minus; c. Since
 &phi;(x) = &#8747;<sub>x</sub><sup>&infin;</sup> S(u) du, the level-p functional
 t<sub>p</sub>(F) depends on F only through its restriction to [t<sub>p</sub> &minus; c, &infin;). It
@@ -428,9 +432,19 @@ contamination and L-moments by 32%.</p>
 <p>Throughout, n = 100 &mdash; a long annual-maximum record &mdash; with 2000 Monte Carlo
 replicates, return periods on a log grid from 2 to 1000 years, and paired standard errors for all
 comparisons between estimators, since every estimator sees the same datasets. Where a graft onto an
-empirical body is used, the construction is the smooth graft of [<span
-style="color:var(--accent-2)">smooth-graft reference</span>], with the handover weight taken equal
-to the fitting weight.</p>
+empirical body is used, the construction blends the empirical survival function with the fitted
+one, S&#770;(x) = [1 &minus; w(F&#770;<sub>n</sub>(x))]&#8202;[1 &minus; F&#770;<sub>n</sub>(x)] +
+w(F&#770;<sub>n</sub>(x))&#8202;S<sub>&theta;&#770;</sub>(x), with the handover weight taken equal to
+the fitting weight; this is the smooth graft described elsewhere, and it is used here only so that
+the graft introduces no second tuning choice.</p>
+
+<div class="note"><p>The smooth handover is not what produces the results. Repeating the
+misspecified comparison with a plain hard graft &mdash; empirical below the sample v-quantile, the
+fitted tail above, rescaled for continuity, which is the ordinary peaks-over-threshold
+construction &mdash; gives 0.16 at T = 1000 against the smooth graft's 0.18 for the one-sided fit,
+and matches or beats it at every return period, provided v &ge; 0.90. At v = 0.50 the same fit is
+eleven times the reference at T = 5, so the hard graft is the more accurate handover and the less
+forgiving one. We report the smooth version throughout because it has no threshold to choose.</p></div>
 </div>
 
 <h3><span class="n">5.2</span>Under misspecification</h3>
@@ -584,7 +598,7 @@ parametric fit, and is a cost of grafting rather than of the loss.</p>
 
 <h3><span class="n">5.5</span>What the estimators converge to</h3>
 <div class="col">
-<p>The comparisons above are at a fixed sample size. Solving (6) removes the sampling noise and
+<p>The comparisons above are at a fixed sample size. Solving (4) removes the sampling noise and
 isolates what each criterion targets. Fit to exceedances over u = 3.16, the truth's 0.90-quantile,
 where threshold stability fixes the asymptotic target: if exceedances over u&#8320; are
 GPD(&sigma;&#8320;, &xi;), then over u they are GPD(&sigma;&#8320; + &xi;(u &minus; u&#8320;), &xi;),
@@ -595,7 +609,7 @@ matches that to a maximum log-ratio of 2.7&times;10<sup>&minus;7</sup> at u = 10
 <div class="tablewrap">
 <table>
 <caption><b>Table 4.</b> Pseudo-true GPD limits above u = 3.16 with w(p) = p<sup>6</sup>, solved
-from (6) to a residual below 10<sup>&minus;10</sup>. The likelihood limit minimises
+from (4) to a residual below 10<sup>&minus;10</sup>. The likelihood limit minimises
 Kullback&ndash;Leibler divergence and the L-moment limit matches the first two L-moments; both are
 obtained exactly. The right-hand block sweeps the weight for the asymmetric square.</caption>
 <thead><tr><th>estimator</th><th>scale</th><th>shape</th><th>&nbsp;&nbsp;w = p<sup>m</sup></th><th>scale</th><th>shape</th></tr></thead>
@@ -633,17 +647,104 @@ S<sub>cond</sub>/S<sub>limit</sub> &rarr; 1/[S(u)(1 + &xi;u/&sigma;)<sup>1/&xi;<
 here. The limit is a target for the shape; the truth is the target for the level.</p></div>
 </div>
 
+
+<h3><span class="n">5.6</span>Against a weighted likelihood</h3>
+<div class="col">
+<p>The closest existing method is Fung's (2022) maximum weighted likelihood estimator, which tilts
+the likelihood rather than the loss. For a model density h and a non-decreasing weight
+&omega; bounded away from zero, MWLE maximises</p>
+</div>
+<div class="eq"><div class="body">&#8467;(&theta;) = &Sigma;<sub>i</sub>&#8202;&omega;(y<sub>i</sub>)&#8202;log h(y<sub>i</sub>; &theta;) &minus; [&Sigma;<sub>i</sub>&#8202;&omega;(y<sub>i</sub>)]&#8202;log C(&theta;),    C(&theta;) = &#8747; h(u; &theta;)&#8202;&omega;(u)&#8202;du</div><div class="tag">(10)</div></div>
+<div class="col">
+<p>The normaliser makes (10) a genuine log-likelihood for the tilted density h&omega;/C, so under
+misspecification it converges to a Kullback&ndash;Leibler projection taken in the tilted metric
+&mdash; a tail-weighted version of the same target maximum likelihood aims at. It is therefore a
+direct competitor rather than a related idea, and a comparison is owed.</p>
+
+<p>The two weights live on different axes: &omega; acts on the observed value, w on the probability
+level. We bridge them through the quantile transform, setting
+&omega;(y) = &epsilon; + (1 &minus; &epsilon;)&#8202;w(F&#770;<sub>n</sub>(y)) with
+&epsilon; = 10<sup>&minus;3</sup> for Fung's positivity requirement. The normaliser is then exact
+rather than quadrature: with &omega; constant between consecutive order statistics,
+C(&theta;) = &Sigma;<sub>j</sub> &omega;<sub>j</sub>&#8202;[H(y<sub>(j+1)</sub>; &theta;) &minus;
+H(y<sub>(j)</sub>; &theta;)]. Setting w &equiv; 1 recovers the ordinary maximum likelihood estimator
+to five decimal places in both families.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption><b>Table 5.</b> GEV family, n = 100, 2000 replicates, MSE relative to the GEV maximum
+likelihood estimator. Left block, the contaminated truth of Section 5.1; right block, exactly
+correct GEV(0, 1, 0.2). The last column is the median fitted shape under contamination against a
+true &xi; = 0.2.</caption>
+<thead><tr><th rowspan="2">estimator</th><th colspan="3">contaminated</th><th colspan="3">correct</th><th rowspan="2">&xi;&#770;</th></tr>
+<tr><th>T=2</th><th>T=48</th><th>T=1000</th><th>T=2</th><th>T=48</th><th>T=1000</th></tr></thead>
+<tbody>
+<tr class="ref"><td>GEV maximum likelihood</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td class="lose">0.054</td></tr>
+<tr class="ref"><td>GEV L-moments</td><td>1.24</td><td>1.30</td><td>1.11</td><td>1.05</td><td>0.94</td><td>1.03</td><td class="lose">0.095</td></tr>
+<tr><td>MWLE, Fung (2022)</td><td class="lose">32.50</td><td class="lose">2.62</td><td class="win">0.86</td><td class="lose">43.14</td><td>1.25</td><td>1.05</td><td class="win">0.224</td></tr>
+<tr><td>composite, asymmetric square</td><td class="lose">4.83</td><td class="lose">1.71</td><td>1.04</td><td class="lose">2.03</td><td>1.30</td><td class="lose">1.32</td><td>0.189</td></tr>
+<tr><td>one-sided, k = 4</td><td class="lose">6.11</td><td class="lose">1.85</td><td class="win">0.89</td><td class="lose">2.47</td><td>1.43</td><td class="lose">1.12</td><td>0.168</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>In the GEV setting MWLE wins on both counts we care about. It takes the lowest far-tail error
+under contamination, 0.86 against 0.89 for the one-sided loss and 1.04 for the asymmetric square,
+and it recovers the shape best by a clear margin. More tellingly, its premium under correct
+specification is 4 to 5% beyond T = 48 where the composite estimators pay 12 to 32%: weighting a
+likelihood retains much of a likelihood's efficiency, and weighting a loss does not. Its body error
+is far worse than anything else here, for the reason the composite estimators' is &mdash; the weight
+has discarded the body &mdash; and it is repaired the same way, by grafting.</p>
+
+<p>The peaks-over-threshold setting reverses the conclusion.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption><b>Table 6.</b> GPD family, n = 100. Left block, exceedances over the sample
+0.90-quantile of the contaminated truth, three parameters, relative to POT&ndash;MLE(0.90). Right
+block, exactly correct GPD(0, 0.5, 0.2) with the threshold known, two parameters, relative to the
+GPD MLE. Rows are grafted onto an empirical body except where marked ungrafted; the two reference
+rows are not grafted.</caption>
+<thead><tr><th rowspan="2">estimator</th><th colspan="3">contaminated, POT</th><th colspan="3">correct GPD</th></tr>
+<tr><th>T=2</th><th>T=48</th><th>T=1000</th><th>T=2</th><th>T=48</th><th>T=1000</th></tr></thead>
+<tbody>
+<tr class="ref"><td>reference (POT&ndash;MLE / GPD MLE)</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+<tr class="ref"><td>GPD L-moments</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td class="win">0.95</td><td class="win">0.89</td><td class="win">0.83</td></tr>
+<tr><td>MWLE, ungrafted</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td class="lose">16.34</td><td>1.17</td><td>1.03</td></tr>
+<tr><td>MWLE, Fung (2022), grafted</td><td class="win">0.97</td><td class="win">0.90</td><td class="win">0.23</td><td>1.31</td><td>1.04</td><td class="lose">1.41</td></tr>
+<tr><td>composite, asymmetric square, grafted</td><td class="win">0.98</td><td class="win">0.86</td><td class="win">0.21</td><td>1.29</td><td class="win">0.87</td><td class="win">0.80</td></tr>
+<tr><td>one-sided, k = 4, grafted</td><td class="win">0.98</td><td class="win">0.89</td><td class="win">0.18</td><td>1.29</td><td class="win">0.84</td><td class="win">0.63</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>Fitting a two-parameter GPD above a known threshold, MWLE buys nothing: 0.99 to 1.03 from
+T = 200 outward, which is the neutral result a tilted likelihood should give when the untilted one
+is already efficient on a regular problem. The one-sided loss reaches 0.63 in the same comparison,
+and under contamination the composite estimators edge ahead as well. The two studies together
+suggest that the tilted likelihood's advantage is efficiency recovered on a hard estimation problem
+&mdash; the three-parameter GEV, whose shape is poorly identified &mdash; and that on a regular
+problem where no efficiency is available, what remains to be won is the choice of which discrepancy
+to minimise, where the composite criteria are better placed. We stress that this is one
+data-generating process in each family and offer the reading as a hypothesis.</p>
+
+<div class="note"><p>Grafting behaves differently for the two. It improves every composite fit in
+both body and tail, and improves MWLE's body while <em>worsening</em> its tail, 1.03 to 1.41. The
+graft rescales the fitted survival by its own value at the join, so it inherits the noise in
+S<sub>&theta;&#770;</sub>(u); MWLE's pointwise weight leaves that quantity almost unconstrained,
+whereas a composite criterion still integrates over levels below the join with small but non-zero
+weight.</p></div>
+</div>
+
 <h2><span class="n">6</span><span>Discussion</span></h2>
 <div class="col">
 <p>Tail-weighted composite losses do what they are designed to do. Under body misspecification of
 the kind that rain-on-snow catchments produce, they remove essentially all of the asymptotic bias
 that likelihood and L-moments incur, and the change from the pinball loss to the asymmetric square
 removes most of the variance penalty that made the L1 construction unattractive. The one-sided
-influence function of Proposition 2 is the most accurate far-tail member we examined, and it has
+influence function of Proposition 2 is the most accurate far-tail member of the family, and it has
 the distinction of being derived from the obstacle rather than interpolated between two existing
 losses.</p>
 
-<p>Three qualifications should travel with that conclusion.</p>
+<p>Four qualifications should travel with that conclusion.</p>
 
 <p>First, what the method costs when nothing is wrong depends sharply on the setting, and the two
 correctly-specified studies here disagree. Fitting a GEV to block maxima it costs 12&ndash;32% in
@@ -669,6 +770,16 @@ do not think this is peculiar to our estimators; any whole-sample method compare
 high-threshold POT fit will inherit the same advantage, and the practice of reporting only the
 misspecified comparison makes it invisible.</p>
 
+<p>Fourth, the closest existing method is ahead of ours in one of the two settings we tried.
+Section 5.6 puts Fung's weighted likelihood at the lowest far-tail error on the three-parameter GEV
+and at a far smaller premium under correct specification, while the composite criteria lead on the
+two-parameter GPD above a known threshold. We take the reading that a tilted likelihood recovers
+efficiency where an untilted one leaves some on the table, and that on a regular problem where it
+does not, the choice of discrepancy is what remains &mdash; but this rests on one data-generating
+process in each family, and settling it needs a sweep over the shape, the sample size and the form
+of contamination. Any claim that a tail-weighted loss improves on tail-weighted likelihood should
+wait for that.</p>
+
 <p>A further direction is the interaction with penultimate approximation. This paper takes the
 extreme-value family as exactly correct in the tail and asks only how to protect that fit from the
 body; penultimate theory says the family is never exactly correct at a finite level, and that the
@@ -679,6 +790,20 @@ Allowing &xi; to vary with p in a manner consistent with second-order regular va
 address both problems at once, and would also give a principled reason to weight the far tail more
 heavily than the near tail beyond the contamination argument &mdash; the tail model gets better as
 one moves out.</p>
+
+<p>A last direction moves outside the M-estimator family altogether. Extremiles (Daouia, Gijbels
+and Stupfler, 2019) are L-functionals &mdash; the &tau;-extremile is the expected maximum of
+r(&tau;) = log&#8202;&frac12;&#8202;/&#8202;log&#8202;&tau; independent copies &mdash; so the
+composite loss does not generate them, but the other half of the construction does transfer:
+minimising a weighted distance between the empirical and model extremile functions gives a
+tail-weighted probability-weighted-moment estimator, whose natural comparison is Hosking and
+Wallis (1987) rather than maximum likelihood. Both extreme-value families have closed-form
+extremiles. In our study this estimator is the only one with no cost anywhere: at a short reach it
+matches the MLE in the body of a correctly specified GPD and removes 26% of the far-tail error,
+beating L-moments throughout, though it does not reach the composite estimators' gains under
+contamination. The reach must be an intermediate sequence &mdash; capping it at the sample size
+leaves the estimator inconsistent, since the empirical extremile then places most of its weight on
+the sample maximum.</p>
 
 <p>Several other directions remain. The exponent of the loss can be varied continuously between one and
 two, giving the L<sup>a</sup>-quantiles; we found these dominated by the elastile on accuracy at
@@ -701,6 +826,9 @@ ultrahigh dimensional variable selection. <i>Journal of the Royal Statistical So
 <b>73</b>, 325&ndash;349.</li>
 <li><b>Breckling, J. and Chambers, R.</b> (1988). M-quantiles. <i>Biometrika</i> <b>75</b>,
 761&ndash;771.</li>
+<li><b>Daouia, A., Gijbels, I. and Stupfler, G.</b> (2019). Extremiles: a new perspective on
+asymmetric least squares. <i>Journal of the American Statistical Association</i> <b>114</b>,
+1366&ndash;1381.</li>
 <li><b>Dupuis, D. J.</b> (1998). Exceedances over high thresholds: a guide to threshold selection.
 <i>Extremes</i> <b>1</b>, 251&ndash;261.</li>
 <li><b>Fung, T. C.</b> (2022). Maximum weighted likelihood estimator for robust heavy-tail
