@@ -123,6 +123,28 @@ an independent check that ERA5-Land's Alpine snow seasonality is not drifting ov
 record — relevant because a POT model fitted over 75 years assumes the driver fields are
 homogeneous in time.
 
+### 5. CLMS Soil Water Index / Surface Soil Moisture, and Sentinel-3 Snow Cover Extent
+
+Not in the original assessment, added because they cover the *other* half of
+preconditioning — how wet the ground already was — at a resolution the ESA CCI
+Soil Moisture record cannot reach.
+
+- **Soil Water Index (SWI)**, 1 km, Europe, daily, from SCATSAR (Sentinel-1 +
+  ASCAT). Root-zone moisture, propagated forward in time from past observations,
+  so it degrades more gracefully across gaps than raw surface retrievals. The
+  better of the two for antecedent wetness.
+- **Surface Soil Moisture (SSM)**, 1 km, Europe, daily, Sentinel-1.
+- **Snow Cover Extent (SCE)**, 1 km, global, daily, Sentinel-3 SLSTR (produced by
+  ENVEO). Coarser than GFSC but a different sensor and a daily global cadence —
+  useful as an independent cross-check on snow presence.
+
+The honest limit on the soil moisture pair is the same one that rules out CCI
+Soil Moisture below: retrieval is impossible over snow-covered or frozen ground.
+What they give you is the *antecedent* state — autumn and early-winter wetness
+before the pack establishes, and shoulder-season events — not the state during a
+mid-winter rain-on-snow event. At 1 km rather than 0.25°, that is still worth
+having.
+
 ## Products that look relevant but are not usable here
 
 | Product | Why not |
@@ -135,40 +157,58 @@ homogeneous in time.
 
 ## Implementation paths
 
-The pipeline is already Google Earth Engine based (`scripts/1-download_data-eo.py` via
-`xee`), which splits the options cleanly:
+Three downloaders now exist, all configured from `inputs/data_specifications.yaml`,
+all resumable, all with a dry-run that reports product counts and volume before
+anything is fetched.
 
-**Path A — Sentinel-1 wet snow computed in Earth Engine (smallest change).**
-`COPERNICUS/S1_GRD` is in the Earth Engine catalogue, already terrain-corrected and in dB.
-Wet snow follows the standard Nagler–Rott change detection: ratio the wet-season
-backscatter against a dry-snow/snow-free reference and threshold at about −3 dB (−2 dB
-also used), with a layover/shadow and steep-slope mask. Reduce to the 0.1° ERA5-Land grid
-as a per-cell wet fraction, and emit the same tabular shape `scripts/2` produces. New
-script `scripts/1b-download_data-s1.py` plus a merge in `scripts/2`; add an `s1` block to
-`inputs/data_specifications.yaml` alongside `download`.
+**`scripts/1b-download_data-hrwsi.py` — the operational Copernicus products.**
+Pulls SWS, GFSC, WDS or FSC from the public HR-WSI S3 bucket at CloudFerro. No
+account is needed: the endpoint, bucket and read keys are the ones published in
+the [official EEA client](https://github.com/eea/clms-hrwsi-api-client-python),
+whose S3 key layout (`<PRODUCT>/<tile>/<YYYY>/<MM>/<DD>/<product>/<layers>`) this
+script follows. Tile selection comes from the config, or is derived from
+`download.bbox` against the MGRS grid using the GeoPackage R-tree index via
+`sqlite3` — no geopandas needed. The dry run prints the layer filenames actually
+present so `hrwsi.layer_patterns` can be narrowed before a bulk pull. Best
+provenance: this is the official Copernicus product, which is the stronger claim
+in an ESA report.
 
-Pros: reuses the existing Earth Engine auth, bbox and scale config. Cons: you are
-reimplementing a classifier rather than using the validated operational one.
+**`scripts/1c-download_data-s1_wetsnow.py` — analysis-ready, on your own grid.**
+Runs the Nagler–Rott change detection inside Earth Engine on `COPERNICUS/S1_GRD`
+and returns the wet-snow *fraction of each 0.1° cell* at every Sentinel-1
+overpass, as one CSV per year. The reference is built per relative orbit and pass
+direction from mid-winter dry-snow months, so viewing geometry is matched; pixels
+are masked for permanent water and for local incidence angles outside 20–70°,
+computed from the Copernicus DEM, which removes most layover and shadow. It reads
+the cell coordinates from an existing `derived/eo/era5_land_hourly_alps_*.nc` when
+one is there, so the output joins onto the ERA5-Land table on `(x, y)` with no
+half-cell offset. This is the path that needs no new accounts and no local
+regridding, and it gives a homogeneous series now, while the HR-WSI pre-2025
+archive is still being reprocessed.
 
-**Path B — download the operational HR-WSI products (better provenance).**
-SWS / FSC / GFSC are not in the Earth Engine catalogue; they come from the Copernicus
-Data Space Ecosystem (OData API) or WEkEO (HDA API), free of charge, as per-tile rasters
-that need mosaicking and reprojection onto the 0.1° grid. More plumbing, but the product
-is the official Copernicus one — which is the stronger claim in an ESA report.
+**`scripts/1d-download_data-clms.py` — the other preconditioning fields.**
+CLMS Soil Water Index (1 km, Europe, daily, root zone from SCATSAR), Surface Soil
+Moisture (1 km, Sentinel-1) and Snow Cover Extent (1 km, global, daily,
+Sentinel-3 SLSTR) through the CDSE OData API. Needs a free CDSE account via
+`CDSE_USERNAME` / `CDSE_PASSWORD`. Files are pan-European or global dailies, so
+the volume is real — dry-run and narrow the months first.
 
-**Recommended:** Path B for SWS and GFSC (provenance matters to the funder), with Path A
-as a fallback if the archive access turns out to be awkward.
+Use 1b and 1c together rather than choosing: 1c gives the covariate in modelling
+form immediately, 1b gives the citable operational product to validate it
+against.
 
-**Model-side design.** Keep the 1950–2025 ERA5-only model as the primary result. Fit a
-parallel EO-informed model on the 2016/2017–present overlap, with
-`xnames: [rainfall_hourly, snowmelt_hourly, wet_snow_fraction, fsc]`, and compare using
-the skill machinery that already exists (`dl_skill_scores`, `dl_build_diagnostics`,
-`apps/4b-distributional-learning-diagnostics`). That is a clean experimental design and
-it uses ESA data to answer a real question rather than decoratively.
+**Model-side design.** Keep the 1950–2025 ERA5-only model as the primary result.
+Fit a parallel EO-informed model on the 2016/2017–present overlap, with
+`xnames: [rainfall_hourly, snowmelt_hourly, wet_snow_fraction, fsc]`, and compare
+using the skill machinery that already exists (`dl_skill_scores`,
+`dl_build_diagnostics`, `apps/4b-distributional-learning-diagnostics`). That is a
+clean experimental design and it uses ESA data to answer a real question rather
+than decoratively.
 
-Be honest about the sample-size cost: q99 hourly POT with 72 h declustering over ~9
-seasons leaves on the order of tens of peak events per cell. Enough for a skill
-comparison on a subset of cells; not enough for the GP tail fits in `scripts/5`.
+Be honest about the sample-size cost: q99 hourly POT with 72 h declustering over
+~9 seasons leaves on the order of tens of peak events per cell. Enough for a
+skill comparison on a subset of cells; not enough for the GP tail fits in
+`scripts/5`.
 
 ## Specific caveats for the current setup
 
@@ -210,6 +250,13 @@ of extreme runoff.
 - Licence and citation terms for the KU Leuven C-SNOW snow depth and for ALPSNOW /
   Digital Twin Alps products; the Copernicus HR-WSI products themselves are free and open.
 - Whether the ESA–Polimi grant names specific products or missions it expects to see.
+- The three downloaders were written against the official client's source and the
+  published API shapes, but the network paths could not be exercised where they
+  were written: the CloudFerro S3 and CDSE hosts were unreachable from that
+  environment. Run each one with `--dry-run` first and confirm the product counts
+  look sane before any bulk pull. In particular, the HR-WSI layer filenames per
+  product type are asserted from documentation, not observed — the dry run prints
+  what is actually there.
 
 ## Sources
 

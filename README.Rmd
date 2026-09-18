@@ -30,13 +30,38 @@ The repo consists of:
 
 Scripts are numbered in pipeline order (`scripts/1-*` … `scripts/7-*`). Intermediate files land under `derived/` (and yearly NetCDF under `derived/eo/`).
 
-1. **`scripts/1-download_data-eo.py`** — Download hourly ERA5-Land from Google Earth Engine to `derived/eo/era5_land_hourly_alps_<year>.nc` (bands and years from `inputs/data_specifications.yaml`).
+1. **`scripts/1-download_data-eo.py`** — Download hourly ERA5-Land from Google Earth Engine to `derived/eo/era5_land_hourly_alps_<year>.nc` (bands and years from `inputs/data_specifications.yaml`). Optional ESA/Copernicus add-ons, all resumable and all with a dry-run mode: **`1b-download_data-hrwsi.py`** (HR-WSI wet snow and snow cover rasters), **`1c-download_data-s1_wetsnow.py`** (Sentinel-1 wet-snow fraction per ERA5 cell), **`1d-download_data-clms.py`** (soil moisture and snow cover extent). See [Earth observation add-ons](#earth-observation-add-ons) and `docs/esa-satellite-data-options.md`.
 2. **`scripts/2-tablify_spatial_eo.r`** — Raster NetCDF → tabular hourly series; writes `derived/era5_land_hourly_alps_all.rds`.
 3. **`scripts/3-pot_spatial_eo.r`** — Peaks over threshold per cell (`derived/era5_land_hourly_alps_peaks.rds`, thresholds, metadata).
 4. **`scripts/4-distributional_learning.r`** — Quantile regression forest on POT peak hours (models and predictions used by later apps).
 5. **`scripts/5-runoff_marginals.r`** — Marginal return-level tables for runoff (`derived/era5_land_hourly_alps_dl_*`).
 6. **`scripts/6-drivers_joint_distribution.r`** — Joint rainfall–snowmelt model per cell.
 7. **`scripts/7-likeliest_rain_snow.r`** — Conditional rain–snow structure given extreme runoff (optional follow-on).
+
+## Earth observation add-ons
+
+ERA5-Land drives the hourly POT and extreme-value steps. Three optional downloaders add observed **snowpack preconditioning** from ESA/Copernicus missions, from September 2016 onward at satellite revisit frequency. Each is configured from its own block in `inputs/data_specifications.yaml`, skips what is already on disk, and supports a dry run reporting how many products and how many GB a query matches. **Always dry-run first.** Rationale and product trade-offs are in `docs/esa-satellite-data-options.md`.
+
+```bash
+# Copernicus HR-WSI rasters (SAR Wet Snow, Gap-filled Fractional Snow Cover).
+# Public S3 bucket, no account needed.
+uv run python scripts/1b-download_data-hrwsi.py --dry-run
+uv run python scripts/1b-download_data-hrwsi.py
+
+# Sentinel-1 wet-snow fraction reduced to the ERA5-Land grid, in Earth Engine.
+# Reuses the existing `earthengine authenticate` credentials.
+uv run python scripts/1c-download_data-s1_wetsnow.py
+
+# CLMS Soil Water Index / Surface Soil Moisture / Snow Cover Extent via CDSE
+# OData. Needs a free account: export CDSE_USERNAME and CDSE_PASSWORD.
+uv run python scripts/1d-download_data-clms.py --dry-run
+```
+
+`1b` needs MGRS tile identifiers. The tiles for the current test window are already in the config; leave `hrwsi.tiles` empty to derive them from `download.bbox` instead, which needs `MGRS_tiles.gpkg` from the [official EEA client](https://github.com/eea/clms-hrwsi-api-client-python) placed at `inputs/MGRS_tiles.gpkg`.
+
+`1c` writes one CSV per year giving the wet-snow fraction of each grid cell at every Sentinel-1 overpass, plus the valid-pixel count. It reads cell coordinates from an existing `derived/eo/era5_land_hourly_alps_*.nc` when one is present, so the result joins onto the ERA5-Land table on `(x, y)`.
+
+Copernicus data are free, full and open under Regulation (EU) No 1159/2013. Publications must name the source, state that the data were produced with funding by the European Union, and flag any modification.
 
 ## Dependency management
 

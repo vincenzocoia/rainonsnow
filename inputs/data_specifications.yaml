@@ -46,3 +46,87 @@ download:
 
 tablify:
   epsilon_mm: 0.0001
+
+# ---------------------------------------------------------------------------
+# ESA / Copernicus Earth-observation add-ons (scripts 1b, 1c, 1d).
+#
+# ERA5-Land stays the hourly driver of the POT and extreme-value steps; these
+# products supply observed snowpack *preconditioning* at satellite revisit
+# frequency from September 2016. See docs/esa-satellite-data-options.md.
+# ---------------------------------------------------------------------------
+
+# scripts/1b-download_data-hrwsi.py -- Copernicus HR-WSI rasters from the public
+# CloudFerro S3 bucket (no account needed).
+hrwsi:
+  # SWS  = SAR Wet Snow, 60 m, Sentinel-1, high mountains  <- the wet-snow layer
+  # GFSC = Gap-filled Fractional Snow Cover, 60 m, daily, S1+S2
+  # WDS / FSC = Sentinel-2 wet-dry snow and fractional snow cover, 20 m (cloud limited)
+  product_types:
+    - SWS
+    - GFSC
+  # MGRS tiles to fetch. Leave empty to derive them from download.bbox, which
+  # needs MGRS_tiles.gpkg from github.com/eea/clms-hrwsi-api-client-python at the
+  # path in `mgrs_gpkg`. The list below is the derived answer for the current
+  # 2x2 central-Alps test window.
+  #
+  # Full Alps bbox [5.0, 43.0, 16.5, 48.5] needs all 77 of:
+  #   31TFH 31TFJ 31TFK 31TFL 31TFM 31TFN 31TGH 31TGJ 31TGK 31TGL 31TGM 31TGN
+  #   31UFP 31UGP 32TLN 32TLP 32TLQ 32TLR 32TLS 32TLT 32TMN 32TMP 32TMQ 32TMR
+  #   32TMS 32TMT 32TNN 32TNP 32TNQ 32TNR 32TNS 32TNT 32TPN 32TPP 32TPQ 32TPR
+  #   32TPS 32TPT 32TQN 32TQP 32TQQ 32TQR 32TQS 32TQT 32ULU 32UMU 32UNU 32UPU
+  #   32UQU 33TUH 33TUJ 33TUK 33TUL 33TUM 33TUN 33TVH 33TVJ 33TVK 33TVL 33TVM
+  #   33TVN 33TWH 33TWJ 33TWK 33TWL 33TWM 33TWN 33TXH 33TXJ 33TXK 33TXL 33TXM
+  #   33TXN 33UUP 33UVP 33UWP 33UXP
+  tiles:
+    - 32TPS
+    - 32TPT
+  mgrs_gpkg: inputs/MGRS_tiles.gpkg
+  # HR-WSI starts 2016-09-01; earlier dates are clamped. last_date null -> today.
+  first_date: 2016-09-01
+  last_date: null
+  # Snow season only, to keep the volume down. Empty/null -> all months.
+  months: [10, 11, 12, 1, 2, 3, 4, 5, 6]
+  # Which layer files to pull from each product directory. Run with --dry-run
+  # first: it prints the filename suffixes actually present, so this can be
+  # narrowed (e.g. ["*WSM.tif", "*QCWSM.tif"] for SWS) before a bulk download.
+  layer_patterns:
+    - '*'
+  output_dir: derived/eo/hrwsi
+  max_workers: 4
+
+# scripts/1c-download_data-s1_wetsnow.py -- Nagler-Rott wet-snow change detection
+# run in Earth Engine and reduced to the ERA5-Land grid. Reuses earth_engine
+# and download.bbox / download.scale above.
+s1_wetsnow:
+  first_year: 2017
+  last_year: 2025
+  months: [10, 11, 12, 1, 2, 3, 4, 5, 6]
+  # VH (cross-pol) is the usual choice for wet snow; VV also works.
+  polarisation: VH
+  # Wet snow where the backscatter power ratio against the dry-snow reference
+  # drops below this (dB). -3 is standard; -2 is also used in the literature.
+  threshold_db: -3.0
+  # Mid-winter months used to build the per-track dry-snow reference.
+  reference_months: [12, 1, 2]
+  reference_percentile: 50
+  # Usable local incidence angle range (deg); excludes most layover and shadow.
+  lia_range: [20.0, 70.0]
+  # Reduction scale in metres. 60 matches the HR-WSI SWS grid.
+  reduce_scale: 60
+  cells_per_request: 200
+  output_dir: derived/eo/s1_wetsnow
+
+# scripts/1d-download_data-clms.py -- CLMS soil moisture and snow cover via the
+# CDSE OData API. Needs a free CDSE account (CDSE_USERNAME / CDSE_PASSWORD).
+clms:
+  # swi = Soil Water Index 1 km Europe daily (root zone, SCATSAR S1+ASCAT)
+  # ssm = Surface Soil Moisture 1 km Europe daily (Sentinel-1)
+  # sce = Snow Cover Extent 1 km global daily (Sentinel-3 SLSTR)
+  datasets:
+    - swi
+    - sce
+  first_date: 2016-09-01
+  last_date: null
+  months: [10, 11, 12, 1, 2, 3, 4, 5, 6]
+  output_dir: derived/eo/clms
+  page_size: 500
