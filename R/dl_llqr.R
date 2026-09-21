@@ -125,7 +125,8 @@ llqr_nn_bandwidth <- function(x, x0, span) {
 # Weighted local polynomial quantile regression at a single x0, for a whole
 # vector of levels, by the MM algorithm of Hunter and Lange (2000): the pinball
 # loss is majorised by a quadratic, so each iteration is a weighted least
-# squares solve. Two (or one) parameters, so each solve is closed form.
+# squares solve. With one or two parameters that solve is written out in
+# closed form, and each level starts from the previous level's solution.
 #
 # Minimise  sum_i w_i rho_p(y_i - a - b (x_i - x0))  over (a, b); return a.
 llqr_solve_one <- function(xc, y, w, levels, degree,
@@ -134,40 +135,59 @@ llqr_solve_one <- function(xc, y, w, levels, degree,
   xc <- xc[keep]; y <- y[keep]; w <- w[keep]
   n <- length(y)
   if (n < 3L) return(rep(NA_real_, length(levels)))
-  X <- if (degree == 1L) cbind(1, xc) else cbind(rep(1, n))
-  Xw <- X * w
-  cw <- colSums(Xw)                       # X'w, reused at every level
+  if (degree == 0L) xc <- rep(0, n)
   eps0 <- 1e-4 * stats::sd(y)
   if (!is.finite(eps0) || eps0 <= 0) eps0 <- 1e-6
-  # Start from the weighted least squares fit; refine per level.
-  beta_ls <- tryCatch(
-    solve(crossprod(X, Xw), crossprod(Xw, y)),
-    error = function(e) NULL
-  )
-  if (is.null(beta_ls)) return(rep(NA_real_, length(levels)))
+  sw <- sum(w)
+  swx <- sum(w * xc)
+  # Start from the weighted least squares fit.
+  s2 <- sum(w * xc^2)
+  t0 <- sum(w * y)
+  t1 <- sum(w * xc * y)
+  if (degree == 0L) {
+    a <- t0 / sw
+    b <- 0
+  } else {
+    det <- sw * s2 - swx^2
+    if (!is.finite(det) || abs(det) < 1e-12) return(rep(NA_real_, length(levels)))
+    a <- (s2 * t0 - swx * t1) / det
+    b <- (sw * t1 - swx * t0) / det
+  }
   out <- numeric(length(levels))
-  for (j in seq_along(levels)) {
+  slope <- numeric(length(levels))
+  for (j in order(levels)) {
     p <- levels[j]
-    beta <- beta_ls
     eps <- eps0
     for (it in seq_len(maxit)) {
-      r <- as.numeric(y - X %*% beta)
+      r <- y - a - b * xc
       v <- w / (eps + abs(r))
-      Xv <- X * v
-      A <- crossprod(X, Xv)
-      b <- crossprod(Xv, y) - (1 - 2 * p) * cw
-      beta_new <- tryCatch(solve(A, b), error = function(e) NULL)
+      vx <- v * xc
+      A0 <- sum(v)
+      A1 <- sum(vx)
+      B0 <- sum(v * y) - (1 - 2 * p) * sw
+      if (degree == 0L) {
+        a_new <- B0 / A0
+        b_new <- 0
+      } else {
+        A2 <- sum(vx * xc)
+        B1 <- sum(vx * y) - (1 - 2 * p) * swx
+        dt <- A0 * A2 - A1^2
+        a_new <- (A2 * B0 - A1 * B1) / dt
+        b_new <- (A0 * B1 - A1 * B0) / dt
+      }
       # A ties-heavy predictor can drive residuals to zero and the solve to a
-      # non-finite answer; keep the last good beta rather than propagating NA.
-      if (is.null(beta_new) || !all(is.finite(beta_new))) break
-      delta <- max(abs(beta_new - beta))
-      beta <- beta_new
-      if (!is.finite(delta)) break
+      # non-finite answer; keep the last good fit rather than propagating NA.
+      if (!is.finite(a_new) || !is.finite(b_new)) break
+      delta <- max(abs(a_new - a), abs(b_new - b))
+      a <- a_new
+      b <- b_new
       eps <- max(eps * 0.7, 1e-9)
       if (delta < tol) break
     }
-    out[j] <- if (is.finite(beta[1])) beta[1] else NA_real_
+    out[j] <- if (is.finite(a)) a else NA_real_
+    slope[j] <- b
   }
+  attr(out, "slope") <- slope
   out
 }
 

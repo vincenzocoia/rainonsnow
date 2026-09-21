@@ -1,0 +1,38 @@
+title: Runoff given rainfall and snowmelt (quantile regression forest)
+question: >
+  For a T-year hourly runoff peak, how much rainfall is enough to trigger it
+  when a given amount of snowmelt is already happening? (Baseline for the
+  earlier rain + snowmelt forest analysis; snowmelt stands in for "available
+  water in the snowpack" until that predictor exists.)
+status: active
+
+response: runoff_hourly
+predictors: [rainfall_hourly, snowmelt_hourly]
+
+model:
+  type: rqforest
+  args:
+    ntree: 500
+    mtry: 1
+    nodesize: 23
+    min_obs: 23
+    nthreads: 1
+
+tail:
+  type: gp
+  adaptive_threshold: 0.5
+
+drivers:
+  marginal_family: gamma
+  family_set: parametric
+
+queries:
+  return_periods: [2, 5, 10, 20, 50, 100]
+  trigger:
+    target: rainfall_hourly     # solve for rain; condition on snowmelt
+    probs: [0.1, 0.5, 0.9]
+  grid:
+    n: 50                       # 50 x 50 grid over (rainfall, snowmelt)
+    mult: 1.1
+
+focus_cell: null

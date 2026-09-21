@@ -99,11 +99,16 @@ fit_and_graft_gp <- function(dst, adaptive_threshold) {
   outs <- parms$outcomes
   trim_point2 <- quantile(outs, adaptive_threshold)
   trim_point <- min(trim_point1, trim_point2)
-  upper_empirical <- distplyr::trim_left(
-    dst,
-    of = trim_point,
-    include = FALSE
-  )
+  upper_empirical <- distplyr::trim_left(dst, of = trim_point, knot = "discard")
   gp <- convert_emp_to_gp(upper_empirical)
-  distplyr::graft_right(dst, gp, threshold = trim_point, include = FALSE)
+  res <- distplyr::graft_right(dst, of = trim_point, tail_absolute = gp)
+  shifted <- distionary::parameters(gp)
+  gp_pars <- distionary::parameters(shifted$distribution)
+  attr(res, "gp_tail") <- list(
+    of = unname(trim_point),
+    location = shifted$shift,
+    scale = gp_pars$scale,
+    shape = gp_pars$shape
+  )
+  res
 }

@@ -1,0 +1,33 @@
+title: Runoff given rainfall (local linear quantile regression)
+question: >
+  How much hourly rainfall does it take to produce a T-year hourly runoff
+  peak, ignoring snowmelt?
+status: active
+
+response: runoff_hourly
+predictors: [rainfall_hourly]
+
+model:
+  type: llqr            # see dl_model_registry() in R/dl_fit.R
+  args:
+    span: 0.4           # fraction of peaks inside each local window
+    kernel: tricube
+    degree: 1
+
+tail:
+  type: gp              # graft a GP tail onto every predictive distribution
+  adaptive_threshold: 0.5
+
+drivers:
+  marginal_family: gamma
+
+queries:
+  return_periods: [2, 5, 10, 20, 50, 100]
+  trigger:
+    target: rainfall_hourly
+    probs: [0.1, 0.5, 0.9]
+  grid:
+    n: 120
+    mult: 1.1
+
+focus_cell: null        # null = cell with the most rain+snowmelt peaks

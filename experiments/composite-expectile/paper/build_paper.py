@@ -1,5 +1,7 @@
-"""Builds the manuscript as a single self-contained HTML file."""
+"""Builds the manuscript as a single self-contained HTML file, and a PDF of it."""
 import base64
+import shutil
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -129,6 +131,17 @@ footer{margin-top:70px;padding-top:20px;border-top:1px solid var(--rule);
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:640px){.eq{flex-direction:column;align-items:stretch;gap:6px}
   .eq .tag{text-align:right}}
+@page{size:A4;margin:18mm 16mm 20mm}
+@media print{
+  :root{--ground:#ffffff}
+  body{font-size:10.5pt;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page{max-width:none;padding:0}
+  header.title{padding-top:0}
+  h2,h3{break-after:avoid}
+  figure,table,.abstract,.eq,pre{break-inside:avoid}
+  img{max-width:100%;height:auto}
+  p{orphans:3;widows:3}
+}
 </style>
 
 <div class="page">
@@ -696,7 +709,32 @@ def build():
     ])
 
 
+CHROME_CANDIDATES = [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "google-chrome", "chromium", "chromium-browser",
+]
+
+
+def write_pdf(html_path, pdf_path):
+    """Print the HTML to PDF with headless Chrome (uses the @media print rules)."""
+    chrome = next((c for c in CHROME_CANDIDATES
+                   if Path(c).exists() or shutil.which(c)), None)
+    if chrome is None:
+        print("skipped PDF: no Chrome or Chromium found")
+        return
+    subprocess.run(
+        [chrome, "--headless=new", "--disable-gpu", "--no-pdf-header-footer",
+         "--virtual-time-budget=8000", f"--print-to-pdf={pdf_path}",
+         html_path.resolve().as_uri()],
+        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    print("wrote paper/manuscript.pdf")
+
+
 if __name__ == "__main__":
     html = build()
-    (ROOT / "paper" / "manuscript.html").write_text(html)
+    html_path = ROOT / "paper" / "manuscript.html"
+    html_path.write_text(html)
     print("wrote paper/manuscript.html  (%.2f MB)" % (len(html) / 1e6))
+    write_pdf(html_path, ROOT / "paper" / "manuscript.pdf")

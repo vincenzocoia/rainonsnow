@@ -11,7 +11,7 @@ dl_predictions_is_encoded(x)
 }
 \arguments{
 \item{peak_hour_distributions}{Tibble with \code{distribution_gp} (and
-\code{distribution_forest}).}
+\code{distribution_raw}).}
 }
 \value{
 Compact tibble without \code{distribution_gp}.

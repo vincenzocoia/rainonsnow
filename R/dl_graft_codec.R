@@ -3,7 +3,7 @@
 #' @description
 #' Grafted distributions from [fit_and_graft_gp()] are large when stored as a
 #' list column. This module stores only the GPD tail (`graft_of`, `gp_scale`,
-#' `gp_shape`) and rebuilds `distribution_gp` from `distribution_forest` when
+#' `gp_shape`) and rebuilds `distribution_gp` from `distribution_raw` when
 #' needed.
 #'
 #' @section Which function to use:
@@ -21,40 +21,36 @@ NULL
 
 graft_gp_parameters <- function(dst) {
   checkmate::assert_class(dst, "dst")
-  pars <- distionary::parameters(dst)
-  dists <- pars$distributions
-  checkmate::assert_list(dists, len = 2L, types = "dst")
-
-  tail_pars <- distionary::parameters(dists[[2L]])
-  gp_pars <- distionary::parameters(tail_pars$distribution)
-  ss <- unlist(gp_pars[c("scale", "shape")])
-
+  tail <- attr(dst, "gp_tail")
+  if (is.null(tail)) {
+    return(list(graft_of = NA_real_, gp_location = NA_real_,
+                gp_scale = NA_real_, gp_shape = NA_real_))
+  }
   list(
-    graft_of = tail_pars$shift,
-    gp_scale = unname(ss[["scale"]]),
-    gp_shape = unname(ss[["shape"]])
+    graft_of = tail$of,
+    gp_location = tail$location,
+    gp_scale = tail$scale,
+    gp_shape = tail$shape
   )
 }
 
 reconstruct_graft_gp <- function(
-  distribution_forest,
+  distribution_raw,
   graft_of,
+  gp_location,
   gp_scale,
-  gp_shape,
-  include = FALSE
+  gp_shape
 ) {
-  checkmate::assert_class(distribution_forest, "dst")
-  checkmate::assert_number(graft_of)
-  checkmate::assert_number(gp_scale, lower = 0)
-  checkmate::assert_number(gp_shape)
-
-  tail <- distionary::dst_gp(gp_scale, gp_shape) + graft_of
-  distplyr::graft_right(
-    distribution_forest,
-    tail,
-    threshold = graft_of,
-    include = include
+  checkmate::assert_class(distribution_raw, "dst")
+  if (anyNA(c(graft_of, gp_location, gp_scale, gp_shape))) {
+    return(distionary::dst_null())
+  }
+  tail <- distionary::dst_gp(gp_scale, gp_shape) + gp_location
+  res <- distplyr::graft_right(distribution_raw, of = graft_of, tail_absolute = tail)
+  attr(res, "gp_tail") <- list(
+    of = graft_of, location = gp_location, scale = gp_scale, shape = gp_shape
   )
+  res
 }
 
 #' Encode peak-hour distributional-learning predictions (in memory)
@@ -63,7 +59,7 @@ reconstruct_graft_gp <- function(
 #' [dl_write_peak_hour_predictions()] when writing to disk.
 #'
 #' @param peak_hour_distributions Tibble with `distribution_gp` (and
-#'   `distribution_forest`).
+#'   `distribution_raw`).
 #' @return Compact tibble without `distribution_gp`.
 #' @seealso [dl_decode_peak_hour_distributions()], [dl_write_peak_hour_predictions()]
 #' @export
@@ -89,18 +85,17 @@ dl_encode_peak_hour_distributions <- function(peak_hour_distributions) {
 #'
 #' @param encoded Tibble from [dl_encode_peak_hour_distributions()] or
 #'   [dl_read_peak_hour_predictions()] (before decoding).
-#' @param include Passed to `graft_right()`; default `FALSE` (same as
-#'   [fit_and_graft_gp()]).
 #' @return Tibble with `distribution_gp`.
 #' @seealso [dl_encode_peak_hour_distributions()], [dl_read_peak_hour_predictions()]
 #' @export
-dl_decode_peak_hour_distributions <- function(encoded, include = FALSE) {
+dl_decode_peak_hour_distributions <- function(encoded) {
   checkmate::assert_data_frame(encoded)
   checkmate::assert_names(
     names(encoded),
     must.include = c(
-      "distribution_forest",
+      "distribution_raw",
       "graft_of",
+      "gp_location",
       "gp_scale",
       "gp_shape"
     )
@@ -109,13 +104,13 @@ dl_decode_peak_hour_distributions <- function(encoded, include = FALSE) {
     dplyr::mutate(
       distribution_gp = purrr::pmap(
         list(
-          .data$distribution_forest,
+          .data$distribution_raw,
           .data$graft_of,
+          .data$gp_location,
           .data$gp_scale,
           .data$gp_shape
         ),
-        reconstruct_graft_gp,
-        include = include
+        reconstruct_graft_gp
       )
     )
 }

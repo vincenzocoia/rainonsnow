@@ -1,17 +1,17 @@
 #' P–P calibration table for distributional-learning predictions
 #'
 #' @param peak_hour_distributions Tibble with `cell_id`, `x`, `y`,
-#'   `runoff_hourly`, `distribution_forest`, and `distribution_gp`.
-#' @return Long tibble with `p_empirical`, `p_model`, and `model` (`forest` / `gp`).
+#'   `runoff_hourly`, `distribution_raw`, and `distribution_gp`.
+#' @return Long tibble with `p_empirical`, `p_model`, and `model` (`raw` / `gp`).
 #' @export
 dl_pp_long <- function(peak_hour_distributions) {
   peak_hour_distributions |>
     dplyr::group_by(cell_id, x, y) |>
     dplyr::mutate(
-      p_model_forest = purrr::map2_dbl(distribution_forest, runoff_hourly, eval_cdf),
-      p_empirical_forest = uscore(p_model_forest),
-      p_model_gp = purrr::map2_dbl(distribution_gp, runoff_hourly, eval_cdf),
-      p_empirical_gp = uscore(p_model_gp)
+      p_model_raw = purrr::map2_dbl(distribution_raw, runoff_hourly, distionary::eval_cdf),
+      p_empirical_raw = famish::uscore(p_model_raw),
+      p_model_gp = purrr::map2_dbl(distribution_gp, runoff_hourly, distionary::eval_cdf),
+      p_empirical_gp = famish::uscore(p_model_gp)
     ) |>
     dplyr::ungroup() |>
     dplyr::select(cell_id, x, y, dplyr::starts_with("p_")) |>
@@ -35,8 +35,8 @@ dl_skill_scores <- function(peak_hour_distributions, peaks_dat) {
   qscores_model <- peak_hour_distributions |>
     dplyr::mutate(
       df = purrr::map(
-        distribution_forest,
-        enframe_quantile,
+        distribution_raw,
+        distionary::enframe_quantile,
         at = 1:99 / 100,
         arg_name = "tau"
       )
@@ -44,7 +44,7 @@ dl_skill_scores <- function(peak_hour_distributions, peaks_dat) {
     tidyr::unnest(df) |>
     dplyr::group_by(cell_id, x, y, tau) |>
     dplyr::summarise(
-      qscore_model = mean(quantile_score(
+      qscore_model = mean(famish::quantile_score(
         runoff_hourly,
         xhat = quantile,
         tau = tau
@@ -55,11 +55,11 @@ dl_skill_scores <- function(peak_hour_distributions, peaks_dat) {
   null_model <- peaks_dat |>
     dplyr::group_by(cell_id, x, y) |>
     dplyr::summarise(runoff_hourly = list(runoff_hourly), .groups = "drop") |>
-    dplyr::mutate(marginal = purrr::map(runoff_hourly, dst_empirical))
+    dplyr::mutate(marginal = purrr::map(runoff_hourly, distionary::dst_empirical))
 
   null_quantiles <- null_model |>
     dplyr::mutate(
-      df = purrr::map(marginal, enframe_quantile, at = 1:99 / 100, arg_name = "tau")
+      df = purrr::map(marginal, distionary::enframe_quantile, at = 1:99 / 100, arg_name = "tau")
     ) |>
     dplyr::select(!marginal) |>
     tidyr::unnest(df)
@@ -68,7 +68,7 @@ dl_skill_scores <- function(peak_hour_distributions, peaks_dat) {
     dplyr::mutate(
       qscore_null = purrr::pmap_dbl(
         list(runoff_hourly, quantile, tau),
-        \(y, q, p) mean(quantile_score(y, xhat = q, tau = p))
+        \(y, q, p) mean(famish::quantile_score(y, xhat = q, tau = p))
       )
     ) |>
     dplyr::select(x, y, tau, qscore_null)

@@ -6,7 +6,7 @@
 \description{
 Grafted distributions from \code{\link[=fit_and_graft_gp]{fit_and_graft_gp()}} are large when stored as a
 list column. This module stores only the GPD tail (\code{graft_of}, \code{gp_scale},
-\code{gp_shape}) and rebuilds \code{distribution_gp} from \code{distribution_forest} when
+\code{gp_shape}) and rebuilds \code{distribution_gp} from \code{distribution_raw} when
 needed.
 }
 \section{Which function to use}{

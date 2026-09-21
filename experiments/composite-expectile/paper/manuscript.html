@@ -113,6 +113,17 @@ footer{margin-top:70px;padding-top:20px;border-top:1px solid var(--rule);
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:640px){.eq{flex-direction:column;align-items:stretch;gap:6px}
   .eq .tag{text-align:right}}
+@page{size:A4;margin:18mm 16mm 20mm}
+@media print{
+  :root{--ground:#ffffff}
+  body{font-size:10.5pt;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page{max-width:none;padding:0}
+  header.title{padding-top:0}
+  h2,h3{break-after:avoid}
+  figure,table,.abstract,.eq,pre{break-inside:avoid}
+  img{max-width:100%;height:auto}
+  p{orphans:3;widows:3}
+}
 </style>
 
 <div class="page">

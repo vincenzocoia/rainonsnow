@@ -8,10 +8,10 @@ dl_pp_long(peak_hour_distributions)
 }
 \arguments{
 \item{peak_hour_distributions}{Tibble with \code{cell_id}, \code{x}, \code{y},
-\code{runoff_hourly}, \code{distribution_forest}, and \code{distribution_gp}.}
+\code{runoff_hourly}, \code{distribution_raw}, and \code{distribution_gp}.}
 }
 \value{
-Long tibble with \code{p_empirical}, \code{p_model}, and \code{model} (\code{forest} / \code{gp}).
+Long tibble with \code{p_empirical}, \code{p_model}, and \code{model} (\code{raw} / \code{gp}).
 }
 \description{
 P–P calibration table for distributional-learning predictions

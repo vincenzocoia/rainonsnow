@@ -4,14 +4,11 @@
 \alias{dl_decode_peak_hour_distributions}
 \title{Decode compact peak-hour predictions (in memory)}
 \usage{
-dl_decode_peak_hour_distributions(encoded, include = FALSE)
+dl_decode_peak_hour_distributions(encoded)
 }
 \arguments{
 \item{encoded}{Tibble from \code{\link[=dl_encode_peak_hour_distributions]{dl_encode_peak_hour_distributions()}} or
 \code{\link[=dl_read_peak_hour_predictions]{dl_read_peak_hour_predictions()}} (before decoding).}
-
-\item{include}{Passed to \code{graft_right()}; default \code{FALSE} (same as
-\code{\link[=fit_and_graft_gp]{fit_and_graft_gp()}}).}
 }
 \value{
 Tibble with \code{distribution_gp}.

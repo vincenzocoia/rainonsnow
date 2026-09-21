@@ -17,17 +17,23 @@ License: MIT + file LICENSE
 Imports:
     checkmate,
     datasets,
-    distionary,
-    distplyr,
+    distionary (>= 0.2.0),
+    distplyr (>= 0.3.0),
     dplyr,
     famish,
+    here,
     rvinecopulib,
     ellipsis,
     graphics,
     quantregForest,
     rlang,
     stats,
-    tibble
+    purrr,
+    tibble,
+    tidyr,
+    utils,
+    vctrs,
+    yaml
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.3
@@ -35,8 +41,7 @@ Roxygen: list(markdown = TRUE)
 Suggests: 
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0),
-    yaml
+    testthat (>= 3.0.0)
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 URL: https://github.com/vincenzocoia/alps-data-explorer
