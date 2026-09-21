@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "boto3>=1.38.23",
     "earthengine-api>=1.7.19",
     "pyyaml>=6.0.2",
     "matplotlib>=3.10.8",
