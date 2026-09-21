@@ -88,6 +88,11 @@ case "${1:-status}" in
   status)
     if pid="$(running_pid)"; then
       echo "RUNNING (pid $pid)"
+    elif [[ -f "$log_file" ]] \
+         && [[ "$(grep -n -e '^Done:' -e '^--- started' "$log_file" | tail -1)" == *Done:* ]]; then
+      # The last thing the log recorded was a completed run, not an interruption.
+      echo "COMPLETE"
+      grep '^Done:' "$log_file" | tail -1
     else
       echo "PAUSED / not running"
     fi
