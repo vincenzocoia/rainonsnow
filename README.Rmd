@@ -160,6 +160,8 @@ Run from the **repository root**.
 - **`apps/explorer`** — every analysis in one place: pick the analysis, cell and T-year event; tabs for the model (including the local-fit picture for `llqr`), trigger rain, likeliest drivers, a cross-analysis comparison, and diagnostics.
 - **`apps/3-pot-explorer`** — inspect the shared POT extraction: hourly runoff with threshold and peaks for one cell and year, and event timing.
 
+The eight pre-restructure explorers are kept, unmaintained and not re-tested, under [`superseded/apps/`](superseded/apps); see [`superseded/README.md`](superseded/README.md) and the `apps-0.1.0` tag.
+
 ## R Package Demonstration
 
 ```{r}

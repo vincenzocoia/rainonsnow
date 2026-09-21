@@ -1,0 +1,62 @@
+
+=====================================================================
+SWEEP  median ratio to truth, and RMSE of the log ratio
+       150 replicates, true marginal EVI 0.25
+       'cond EVI fitted' is the free-scale fit; transport+smooth uses the
+       log-linear scale model instead (true value = CEVI x 0.25).
+=====================================================================
+
+rho    n      bins   CEVI     cond EVI     p=1e-03                   p=1e-04                   
+                              fitted             median     RMSE(log)      median     RMSE(log)
+---------------------------------------------------------------------------------------------------- 
+0.5    300    5      0.75     0.176               0.95x          0.39       0.89x          0.67   direct_pot
+                                                  0.94x          0.28       0.84x          0.45   dl_mixture
+                                                  0.97x          0.47       0.94x          0.74   transport
+                                                  1.06x          0.46       1.11x          0.72   transport+smooth
+
+0.7    300    5      0.51     0.080               0.88x          0.40       0.83x          0.70   direct_pot
+                                                  0.82x          0.32       0.67x          0.55   dl_mixture
+                                                  0.85x          0.80       0.74x          1.19   transport
+                                                  1.06x          0.79       1.08x          1.18   transport+smooth
+
+0.9    300    5      0.19     -0.013              0.92x          0.38       0.88x          0.65   direct_pot
+                                                  0.75x          0.37       0.55x          0.70   dl_mixture
+                                                  1.67x          1.78       1.85x          2.64   transport
+                                                  2.76x          2.25       4.07x          3.34   transport+smooth
+
+0.5    1000   5      0.75     0.185               1.02x          0.22       1.01x          0.38   direct_pot
+                                                  0.96x          0.17       0.88x          0.29   dl_mixture
+                                                  1.01x          0.28       1.00x          0.44   transport
+                                                  1.07x          0.29       1.08x          0.45   transport+smooth
+
+0.7    1000   5      0.51     0.129               0.98x          0.19       1.00x          0.33   direct_pot
+                                                  0.88x          0.18       0.75x          0.34   dl_mixture
+                                                  1.10x          0.42       1.10x          0.63   transport
+                                                  1.24x          0.47       1.33x          0.70   transport+smooth
+
+0.9    1000   5      0.19     0.027               0.97x          0.21       0.98x          0.36   direct_pot
+                                                  0.80x          0.27       0.59x          0.56   dl_mixture
+                                                  1.14x          1.03       1.04x          1.48   transport
+                                                  3.41x          1.63       5.17x          2.37   transport+smooth
+
+0.5    3000   5      0.75     0.194               1.01x          0.13       1.02x          0.21   direct_pot
+                                                  0.96x          0.11       0.89x          0.19   dl_mixture
+                                                  1.06x          0.17       1.06x          0.26   transport
+                                                  1.08x          0.18       1.11x          0.27   transport+smooth
+
+0.7    3000   5      0.51     0.131               1.02x          0.12       1.03x          0.20   direct_pot
+                                                  0.92x          0.13       0.78x          0.28   dl_mixture
+                                                  1.17x          0.26       1.19x          0.37   transport
+                                                  1.25x          0.32       1.34x          0.45   transport+smooth
+
+0.9    3000   5      0.19     0.041               1.00x          0.12       0.98x          0.20   direct_pot
+                                                  0.81x          0.22       0.61x          0.51   dl_mixture
+                                                  1.33x          0.67       1.28x          0.94   transport
+                                                  3.51x          1.38       5.54x          1.94   transport+smooth
+
+=====================================================================
+Read the median column for bias and the RMSE column for total error.
+The transport's case rests on rho: at rho = 0.3 the copula explains
+almost none of the tail heaviness (CEVI 0.91) and there is nothing to
+gain; at rho = 0.9 it explains most of it (CEVI 0.19).
+=====================================================================

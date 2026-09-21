@@ -1,0 +1,263 @@
+
+=====================================================================
+Decomposition at hydrological sample sizes and return periods
+=====================================================================
+
+<two_process_dgp>
+  A (snowmelt-driven) ~ GP(1, -0.25), bounded above by 4.000
+  X (rainfall)        ~ GP(1, 0.25)
+  B | X = x           ~ GP(0.5 * x, 0.1)
+  Y = max(A, B); marginal tail index 0.250
+
+True return levels, T = 20 / 50 / 100 / 200 years: 3.12  5.27  7.53  10.40
+Local tail index there: 0.483 0.549 0.488 0.444 (asymptotically 0.25)
+
+200 replicates per sample size.
+  ... n =    50 done
+  ... n =   100 done
+  ... n =   200 done
+  ... n =   500 done
+  ... n =  2000 done
+
+
+=====================================================================
+MEDIAN RATIO TO THE TRUE RETURN LEVEL   (1.00 is unbiased) 
+=====================================================================
+
+n = 50 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 1.12    1.02    0.96    0.91 
+  GP-POT on the peak, top 50%                         1.09    0.90    0.79    0.71 
+  POT regression on rainfall, shape varies            0.96    0.78    0.68    0.62 
+  POT regression on rainfall, one shared shape        1.08    0.84    0.72    0.62 
+  structure fitted, integrated over fitted F_X        0.98    0.96    0.94    0.92 
+  structure fitted, averaged over observed x          0.99    0.96    0.93    0.90 
+  drivers observed, each fitted marginally            1.10    1.49    1.94    2.59 
+  drivers observed, rain driver fitted on rainfall    0.97    0.95    0.94    0.93 
+  transport, true copula                              0.94    0.79    0.61    0.48 
+  transport, Gaussian from Kendall tau                0.75    0.52    0.40    0.32 
+  transport, Gaussian from the upper half             0.82    0.57    0.44    0.35 
+  transport, survival Clayton, upper half             0.85    0.59    0.46    0.37 
+
+n = 100 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 1.12    0.99    0.93    0.90 
+  GP-POT on the peak, top 50%                         1.08    0.90    0.79    0.72 
+  POT regression on rainfall, shape varies            1.00    0.83    0.73    0.67 
+  POT regression on rainfall, one shared shape        1.05    0.85    0.73    0.63 
+  structure fitted, integrated over fitted F_X        0.98    0.96    0.93    0.92 
+  structure fitted, averaged over observed x          0.98    0.97    0.93    0.89 
+  drivers observed, each fitted marginally            1.08    1.49    1.91    2.50 
+  drivers observed, rain driver fitted on rainfall    0.99    0.97    0.97    0.96 
+  transport, true copula                              0.98    0.90    0.78    0.65 
+  transport, Gaussian from Kendall tau                0.80    0.55    0.42    0.34 
+  transport, Gaussian from the upper half             0.85    0.59    0.46    0.36 
+  transport, survival Clayton, upper half             0.86    0.61    0.48    0.39 
+
+n = 200 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 1.13    1.02    0.96    0.92 
+  GP-POT on the peak, top 50%                         1.09    0.94    0.85    0.80 
+  POT regression on rainfall, shape varies            1.02    0.82    0.71    0.65 
+  POT regression on rainfall, one shared shape        1.08    0.89    0.77    0.69 
+  structure fitted, integrated over fitted F_X        0.98    0.97    0.97    0.97 
+  structure fitted, averaged over observed x          0.99    0.98    0.97    0.96 
+  drivers observed, each fitted marginally            1.07    1.44    1.83    2.42 
+  drivers observed, rain driver fitted on rainfall    1.00    1.00    0.99    1.00 
+  transport, true copula                              1.00    0.91    0.80    0.75 
+  transport, Gaussian from Kendall tau                0.81    0.56    0.43    0.34 
+  transport, Gaussian from the upper half             0.87    0.61    0.47    0.37 
+  transport, survival Clayton, upper half             0.88    0.62    0.49    0.40 
+
+n = 500 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 1.13    1.01    0.94    0.91 
+  GP-POT on the peak, top 50%                         1.09    0.94    0.85    0.78 
+  POT regression on rainfall, shape varies            1.03    0.84    0.73    0.66 
+  POT regression on rainfall, one shared shape        1.07    0.89    0.77    0.67 
+  structure fitted, integrated over fitted F_X        1.00    0.99    0.97    0.96 
+  structure fitted, averaged over observed x          1.00    0.99    0.98    0.97 
+  drivers observed, each fitted marginally            1.08    1.47    1.91    2.56 
+  drivers observed, rain driver fitted on rainfall    1.00    0.99    0.99    0.98 
+  transport, true copula                              0.99    0.93    0.89    0.87 
+  transport, Gaussian from Kendall tau                0.81    0.56    0.43    0.33 
+  transport, Gaussian from the upper half             0.88    0.61    0.47    0.37 
+  transport, survival Clayton, upper half             0.88    0.61    0.48    0.41 
+
+n = 2000 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 1.15    1.03    0.97    0.94 
+  GP-POT on the peak, top 50%                         1.11    0.97    0.89    0.83 
+  POT regression on rainfall, shape varies            1.05    0.87    0.76    0.69 
+  POT regression on rainfall, one shared shape        1.09    0.91    0.79    0.71 
+  structure fitted, integrated over fitted F_X        1.00    1.00    1.00    0.99 
+  structure fitted, averaged over observed x          1.00    1.00    1.00    1.00 
+  drivers observed, each fitted marginally            1.10    1.51    1.98    2.67 
+  drivers observed, rain driver fitted on rainfall    1.00    1.00    0.99    1.00 
+  transport, true copula                              1.00    0.98    0.97    0.97 
+  transport, Gaussian from Kendall tau                0.82    0.57    0.43    0.33 
+  transport, Gaussian from the upper half             0.89    0.62    0.47    0.37 
+  transport, survival Clayton, upper half             0.89    0.61    0.48    0.42 
+
+
+=====================================================================
+ROOT MEAN SQUARE LOG RATIO   (total error; lower is better) 
+=====================================================================
+
+n = 50 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 0.28    0.37    0.46    0.55 
+  GP-POT on the peak, top 50%                         0.25    0.39    0.54    0.70 
+  POT regression on rainfall, shape varies            0.26    0.45    0.63    0.83 
+  POT regression on rainfall, one shared shape        0.25    0.37    0.52    0.66 
+  structure fitted, integrated over fitted F_X        0.27    0.40    0.48    0.55 
+  structure fitted, averaged over observed x          0.28    0.40    0.47    0.54 
+  drivers observed, each fitted marginally            0.34    0.67    0.95    1.26 
+  drivers observed, rain driver fitted on rainfall    0.20    0.30    0.35    0.40 
+  transport, true copula                              0.26    0.82    1.09    1.14 
+  transport, Gaussian from Kendall tau                0.35    0.69    0.94    1.16 
+  transport, Gaussian from the upper half             0.31    0.62    0.86    1.09 
+  transport, survival Clayton, upper half             0.29    0.60    0.84    1.06 
+
+n = 100 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 0.22    0.26    0.32    0.39 
+  GP-POT on the peak, top 50%                         0.20    0.28    0.40    0.53 
+  POT regression on rainfall, shape varies            0.26    0.43    0.60    0.76 
+  POT regression on rainfall, one shared shape        0.19    0.29    0.43    0.57 
+  structure fitted, integrated over fitted F_X        0.20    0.29    0.34    0.38 
+  structure fitted, averaged over observed x          0.20    0.29    0.34    0.39 
+  drivers observed, each fitted marginally            0.28    0.59    0.86    1.16 
+  drivers observed, rain driver fitted on rainfall    0.15    0.22    0.25    0.28 
+  transport, true copula                              0.16    0.51    0.75    0.94 
+  transport, Gaussian from Kendall tau                0.25    0.61    0.86    1.09 
+  transport, Gaussian from the upper half             0.21    0.54    0.78    1.00 
+  transport, survival Clayton, upper half             0.20    0.52    0.75    0.95 
+
+n = 200 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 0.18    0.18    0.23    0.28 
+  GP-POT on the peak, top 50%                         0.16    0.19    0.29    0.39 
+  POT regression on rainfall, shape varies            0.12    0.24    0.38    0.49 
+  POT regression on rainfall, one shared shape        0.14    0.20    0.33    0.46 
+  structure fitted, integrated over fitted F_X        0.13    0.20    0.23    0.26 
+  structure fitted, averaged over observed x          0.13    0.20    0.23    0.26 
+  drivers observed, each fitted marginally            0.20    0.50    0.77    1.07 
+  drivers observed, rain driver fitted on rainfall    0.10    0.15    0.17    0.19 
+  transport, true copula                              0.10    0.39    0.59    0.75 
+  transport, Gaussian from Kendall tau                0.23    0.59    0.85    1.07 
+  transport, Gaussian from the upper half             0.16    0.50    0.75    0.96 
+  transport, survival Clayton, upper half             0.16    0.48    0.70    0.89 
+
+n = 500 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 0.15    0.10    0.13    0.17 
+  GP-POT on the peak, top 50%                         0.12    0.12    0.21    0.29 
+  POT regression on rainfall, shape varies            0.08    0.20    0.33    0.43 
+  POT regression on rainfall, one shared shape        0.10    0.15    0.28    0.41 
+  structure fitted, integrated over fitted F_X        0.07    0.11    0.12    0.13 
+  structure fitted, averaged over observed x          0.07    0.11    0.12    0.14 
+  drivers observed, each fitted marginally            0.12    0.42    0.68    0.98 
+  drivers observed, rain driver fitted on rainfall    0.05    0.08    0.09    0.11 
+  transport, true copula                              0.06    0.26    0.42    0.57 
+  transport, Gaussian from Kendall tau                0.21    0.58    0.85    1.09 
+  transport, Gaussian from the upper half             0.14    0.50    0.76    0.98 
+  transport, survival Clayton, upper half             0.14    0.49    0.72    0.89 
+
+n = 2000 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 0.14    0.06    0.07    0.10 
+  GP-POT on the peak, top 50%                         0.11    0.06    0.14    0.21 
+  POT regression on rainfall, shape varies            0.06    0.15    0.28    0.38 
+  POT regression on rainfall, one shared shape        0.10    0.10    0.23    0.35 
+  structure fitted, integrated over fitted F_X        0.04    0.06    0.06    0.07 
+  structure fitted, averaged over observed x          0.04    0.06    0.06    0.07 
+  drivers observed, each fitted marginally            0.11    0.42    0.69    0.99 
+  drivers observed, rain driver fitted on rainfall    0.03    0.05    0.05    0.06 
+  transport, true copula                              0.03    0.14    0.20    0.26 
+  transport, Gaussian from Kendall tau                0.20    0.57    0.84    1.09 
+  transport, Gaussian from the upper half             0.12    0.48    0.75    0.99 
+  transport, survival Clayton, upper half             0.12    0.50    0.73    0.88 
+
+
+=====================================================================
+SHARE OF REPLICATES RETURNING NOTHING 
+=====================================================================
+
+n = 50 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 0.00    0.00    0.00    0.00 
+  GP-POT on the peak, top 50%                         0.00    0.00    0.00    0.00 
+  POT regression on rainfall, shape varies            0.28    0.28    0.28    0.28 
+  POT regression on rainfall, one shared shape        0.03    0.03    0.03    0.03 
+  structure fitted, integrated over fitted F_X        0.00    0.00    0.00    0.00 
+  structure fitted, averaged over observed x          0.00    0.00    0.00    0.00 
+  drivers observed, each fitted marginally            0.00    0.00    0.00    0.00 
+  drivers observed, rain driver fitted on rainfall    0.00    0.00    0.00    0.00 
+  transport, true copula                              0.00    0.01    0.02    0.07 
+  transport, Gaussian from Kendall tau                0.00    0.00    0.00    0.00 
+  transport, Gaussian from the upper half             0.00    0.00    0.00    0.00 
+  transport, survival Clayton, upper half             0.00    0.00    0.00    0.00 
+
+n = 100 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 0.00    0.00    0.00    0.00 
+  GP-POT on the peak, top 50%                         0.00    0.00    0.00    0.00 
+  POT regression on rainfall, shape varies            0.12    0.12    0.12    0.12 
+  POT regression on rainfall, one shared shape        0.01    0.01    0.01    0.01 
+  structure fitted, integrated over fitted F_X        0.00    0.00    0.00    0.00 
+  structure fitted, averaged over observed x          0.00    0.00    0.00    0.00 
+  drivers observed, each fitted marginally            0.00    0.00    0.00    0.00 
+  drivers observed, rain driver fitted on rainfall    0.00    0.00    0.00    0.00 
+  transport, true copula                              0.00    0.00    0.00    0.01 
+  transport, Gaussian from Kendall tau                0.00    0.00    0.00    0.00 
+  transport, Gaussian from the upper half             0.00    0.00    0.00    0.00 
+  transport, survival Clayton, upper half             0.00    0.00    0.00    0.00 
+
+n = 200 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 0.00    0.00    0.00    0.00 
+  GP-POT on the peak, top 50%                         0.00    0.00    0.00    0.00 
+  POT regression on rainfall, shape varies            0.09    0.09    0.09    0.09 
+  POT regression on rainfall, one shared shape        0.00    0.00    0.00    0.00 
+  structure fitted, integrated over fitted F_X        0.00    0.00    0.00    0.00 
+  structure fitted, averaged over observed x          0.00    0.00    0.00    0.00 
+  drivers observed, each fitted marginally            0.00    0.00    0.00    0.00 
+  drivers observed, rain driver fitted on rainfall    0.00    0.00    0.00    0.00 
+  transport, true copula                              0.00    0.00    0.00    0.01 
+  transport, Gaussian from Kendall tau                0.00    0.00    0.00    0.00 
+  transport, Gaussian from the upper half             0.00    0.00    0.00    0.00 
+  transport, survival Clayton, upper half             0.00    0.00    0.00    0.00 
+
+n = 500 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 0.00    0.00    0.00    0.00 
+  GP-POT on the peak, top 50%                         0.00    0.00    0.00    0.00 
+  POT regression on rainfall, shape varies            0.01    0.01    0.01    0.01 
+  POT regression on rainfall, one shared shape        0.00    0.00    0.00    0.00 
+  structure fitted, integrated over fitted F_X        0.00    0.00    0.00    0.00 
+  structure fitted, averaged over observed x          0.00    0.00    0.00    0.00 
+  drivers observed, each fitted marginally            0.00    0.00    0.00    0.00 
+  drivers observed, rain driver fitted on rainfall    0.00    0.00    0.00    0.00 
+  transport, true copula                              0.00    0.00    0.00    0.00 
+  transport, Gaussian from Kendall tau                0.00    0.00    0.00    0.00 
+  transport, Gaussian from the upper half             0.00    0.00    0.00    0.00 
+  transport, survival Clayton, upper half             0.00    0.00    0.00    0.00 
+
+n = 2000 years
+  T (years)                                             20      50     100     200 
+  GEV on the peak (standard practice)                 0.00    0.00    0.00    0.00 
+  GP-POT on the peak, top 50%                         0.00    0.00    0.00    0.00 
+  POT regression on rainfall, shape varies            0.00    0.00    0.00    0.00 
+  POT regression on rainfall, one shared shape        0.00    0.00    0.00    0.00 
+  structure fitted, integrated over fitted F_X        0.00    0.00    0.00    0.00 
+  structure fitted, averaged over observed x          0.00    0.00    0.00    0.00 
+  drivers observed, each fitted marginally            0.00    0.00    0.00    0.00 
+  drivers observed, rain driver fitted on rainfall    0.00    0.00    0.00    0.00 
+  transport, true copula                              0.00    0.00    0.00    0.00 
+  transport, Gaussian from Kendall tau                0.00    0.00    0.00    0.00 
+  transport, Gaussian from the upper half             0.00    0.00    0.00    0.00 
+  transport, survival Clayton, upper half             0.00    0.00    0.00    0.00 
+
+=====================================================================
+EXIT 0

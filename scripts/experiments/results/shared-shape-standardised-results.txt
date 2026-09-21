@@ -1,0 +1,55 @@
+
+=====================================================================
+PART 1  The two estimators, against sample size
+        rho = 0.70, marginal EVI 0.25, so the CONDITIONAL EVI is 0.1275
+=====================================================================
+
+n = 500
+   pool_predictive (free scale per hour)      bias -0.0239  sd 0.0573  RMSE 0.0617
+   standardise (q0.50/q0.90, threshold 60%)   bias +0.0164  sd 0.0820  RMSE 0.0832
+
+n = 2000
+   pool_predictive (free scale per hour)      bias -0.0212  sd 0.0339  RMSE 0.0398
+   standardise (q0.50/q0.90, threshold 60%)   bias -0.0149  sd 0.0439  RMSE 0.0460
+
+Read the ordering off the numbers above rather than assuming one: which
+estimator has less bias depends on the sample size and on how each is set
+up, and they are close on RMSE throughout.
+
+The mechanism that decides it: the standardised route has to estimate each
+hour's normalising quantiles, and when those are themselves noisy the
+error propagates into z and inflates the fitted shape. That is worst at
+small n, where a conditional holds few points. The pooled route has the
+opposite failing -- a free scale per hour, each informed by a handful of
+tail points, which biases its shared shape low as cells get thin.
+
+So the case for the standardised route is not RMSE. It is that the pooled
+values are one per observation instead of a re-weighting of the same
+responses many times over, so its likelihood is a real one: the standard
+error printed alongside it means what it usually means, and likelihood
+ratio intervals and tests are available. The shared-shape fit needs a
+bootstrap for the same thing.
+
+
+=====================================================================
+PART 2  Setting up the standardisation
+=====================================================================
+
+n = 2000. Which quantiles define location and scale:
+   location q0.50, scale gap to q0.90         bias -0.0081  sd 0.0453  RMSE 0.0458
+   location q0.70, scale gap to q0.95         bias -0.0013  sd 0.0390  RMSE 0.0388
+   location q0.80, scale gap to q0.98         bias +0.0177  sd 0.0470  RMSE 0.0499
+
+   The middle pair wins. Too high and the normaliser is itself a tail
+   estimate, which is the thing being avoided; too low and it stops
+   describing the part of the distribution the fit is about.
+
+n = 2000. Where the POT threshold goes, on the standardised scale:
+   threshold at the 60% point of z            bias -0.0093  sd 0.0382  RMSE 0.0391
+   threshold at the 75% point of z            bias -0.0049  sd 0.0537  RMSE 0.0536
+   threshold at the 90% point of z            bias -0.0088  sd 0.0823  RMSE 0.0822
+
+   Raising the threshold buys no reliable improvement in bias here and
+   costs a great deal of variance, so the low end of the usual range is
+   the right side to err on.
+=====================================================================

@@ -16,7 +16,8 @@ eval_return_numeric(distribution, at, lower = 0, n_grid = 4000L)
 \item{lower}{Lower bracket for the root search (default \code{0}, appropriate for
 non-negative runoff).}
 
-\item{tol}{Root-finding tolerance.}
+\item{n_grid}{Number of grid points used to tabulate the CDF before
+inverting it by interpolation.}
 }
 \value{
 A numeric vector of return levels, one per element of \code{at}.

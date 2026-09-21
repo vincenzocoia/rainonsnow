@@ -14,6 +14,7 @@ library(rnaturalearth)
 library(yaml)
 
 repo_root <- here::here()
+source(file.path(repo_root, "apps", "ros_theme.R"))
 
 # Hourly timestamps are built as Jan 1 + hours; non-leap annual files spill a few
 # rows into the next calendar year. That inflates max(year(date)) by 1. Here we tag
@@ -100,13 +101,13 @@ run_script3 <- function(root) {
 }
 
 nearest_cell <- function(lon_click, lat_click, cells_tbl) {
-  dx <- cells_tbl$y - lon_click
-  dy <- cells_tbl$x - lat_click
+  dx <- cells_tbl$x - lon_click
+  dy <- cells_tbl$y - lat_click
   idx <- which.min(dx^2 + dy^2)
   cells_tbl$cell_id[idx]
 }
 
-tile_dims <- function(xy_tbl, x_col = "y", y_col = "x") {
+tile_dims <- function(xy_tbl, x_col = "x", y_col = "y") {
   ux <- sort(unique(xy_tbl[[x_col]]))
   uy <- sort(unique(xy_tbl[[y_col]]))
   w <- if (length(ux) > 1) stats::median(diff(ux)) else 0.25
@@ -124,8 +125,8 @@ cells_ref <- hourly_all |>
   distinct(cell_id, x, y) |>
   arrange(cell_id)
 
-map_xlim <- range(cells_ref$y, na.rm = TRUE) + c(-0.5, 0.5)
-map_ylim <- range(cells_ref$x, na.rm = TRUE) + c(-0.5, 0.5)
+map_xlim <- range(cells_ref$x, na.rm = TRUE) + c(-0.5, 0.5)
+map_ylim <- range(cells_ref$y, na.rm = TRUE) + c(-0.5, 0.5)
 
 map_bbox <- st_bbox(
   c(xmin = map_xlim[1], xmax = map_xlim[2], ymin = map_ylim[1], ymax = map_ylim[2]),
@@ -139,7 +140,11 @@ td <- tile_dims(cells_ref)
 years_avail <- sort(unique(hourly_all$explorer_year))
 
 ui <- fluidPage(
-  titlePanel("Peaks over threshold (POT) explorer"),
+  theme = ros_bs_theme(),
+  ros_header(
+    "Peaks over threshold",
+    "How POT events are extracted from the hourly runoff series, one cell at a time."
+  ),
   helpText(
     "Threshold comes from ",
     code("get_pot_events()"),
@@ -260,7 +265,7 @@ server <- function(input, output, session) {
   output$cell_meta <- renderText({
     row <- cells_ref |> filter(cell_id == as.integer(input$cell_id))
     paste0(
-      "lon = ", round(row$y, 3), ", lat = ", round(row$x, 3),
+      "lon = ", round(row$x, 3), ", lat = ", round(row$y, 3),
       "\n(runoff_hourly in mm)"
     )
   })
@@ -274,7 +279,7 @@ server <- function(input, output, session) {
   })
 
   output$map_tiles <- renderPlot({
-    ggplot(cells_ref, aes(y, x)) +
+    ggplot(cells_ref, aes(x, y)) +
       geom_sf(
         data = world_map,
         inherit.aes = FALSE,
