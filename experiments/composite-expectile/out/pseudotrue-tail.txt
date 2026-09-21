@@ -1,0 +1,35 @@
+=== Pseudo-true GPD fits above u = 3.1617 (the truth's 0.90-quantile) ===
+
+Limiting GPD at this threshold, from threshold stability:
+   scale = sigma + xi(u - mu) = 1.6323,  shape = 0.2000
+
+Pseudo-true parameters, from 2e5 exceedances (two independent seeds):
+                      scale    shape   scale(2) shape(2)
+  POT MLE            1.1965   0.3450     1.2016   0.3394
+  POT L-moments      1.2039   0.3245     1.2080   0.3197
+  composite L2       1.4071   0.2339     1.4154   0.2269
+  elastile a=0.5     1.3989   0.2396     1.4095   0.2320
+  inv Huber k=4      1.4143   0.2314     1.4236   0.2241
+
+  POT MLE            1.1933   0.3459   (exact KL minimiser, by quadrature)
+  limiting GPD       1.6323   0.2000   (the target)
+
+Max |log S_fit - log S_ref| over conditional survival 1 down to 1e-3,
+against two references: the limiting GPD (the asymptotic ideal) and the
+truth's own conditional distribution (what a POT fit is actually for).
+
+                   vs limiting GPD   vs the truth
+  POT MLE                  0.8748         1.0224
+  POT L-moments            0.6744         0.8220
+  composite L2             0.2033         0.1361
+  elastile a=0.5           0.1948         0.2008
+  inv Huber k=4            0.2017         0.1172
+  truth                    0.1655         0.0000
+
+Note on the two references. The carried-back limiting GPD is NOT the truth's
+conditional distribution, even as x grows: conditioning on X > u sweeps in the
+body mass that the contamination adds at the threshold, so
+   S_cond(x) / S_limit(x) -> 1 / (S_true(u) (1 + xi u / sigma)^(1/xi))
+which here is 0.8629 (verified numerically to four decimals at x = 50, 200, 1000).
+Equivalently, the GEV component carries only 0.8267 of the truth's survival at u.
+So the limit is the right SHAPE to aim at, and the truth is the right LEVEL.
