@@ -67,6 +67,20 @@ uv run python scripts/1c-download_data-s1_wetsnow.py
 uv run python scripts/1d-download_data-clms.py --dry-run
 ```
 
+### Running 1b as a background job
+
+The HR-WSI download is large (~12 GB for the current two tiles and layer patterns, hours on a domestic connection), so `scripts/hrwsi-download.sh` runs it detached, and it survives closing the terminal or logging out.
+
+```bash
+scripts/hrwsi-download.sh start      # begin, or resume where it left off
+scripts/hrwsi-download.sh status     # running? how much is on disk?
+scripts/hrwsi-download.sh stop       # pause; everything downloaded is kept
+scripts/hrwsi-download.sh log        # follow the live log
+scripts/hrwsi-download.sh start 1    # resume with a single transfer thread
+```
+
+Pausing is safe at any point: each file is written to a `.part` and renamed only when complete, so every file on disk is whole. `start` re-lists the archive (a few minutes) and skips what it already has. Pass a worker count to `start` to throttle rather than stop.
+
 `1b` needs MGRS tile identifiers. The tiles for the current test window are already in the config; leave `hrwsi.tiles` empty to derive them from `download.bbox` instead, which needs `MGRS_tiles.gpkg` from the [official EEA client](https://github.com/eea/clms-hrwsi-api-client-python) placed at `inputs/MGRS_tiles.gpkg`.
 
 `1c` writes one CSV per year giving the wet-snow fraction of each grid cell at every Sentinel-1 overpass, plus the valid-pixel count. It reads cell coordinates from an existing `derived/eo/era5_land_hourly_alps_*.nc` when one is present, so the result joins onto the ERA5-Land table on `(x, y)`.

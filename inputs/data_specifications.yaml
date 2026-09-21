@@ -89,8 +89,15 @@ hrwsi:
   # Which layer files to pull from each product directory. Run with --dry-run
   # first: it prints the filename suffixes actually present, so this can be
   # narrowed (e.g. ["*WSM.tif", "*QCWSM.tif"] for SWS) before a bulk download.
+  # Narrowed after a --dry-run of the full archive (21.4 GB of everything):
+  # the two science rasters and their quality masks, plus metadata. Drops the
+  # quicklook PNGs (2.6 GB, display only) and GFSC AT/QAFLAGS (6.7 GB).
   layer_patterns:
-    - '*'
+    - '*WSM.tif'      # SWS  wet snow map
+    - '*WSM-QA.tif'   # SWS  quality (layover/shadow)
+    - '*GF.tif'       # GFSC gap-filled fractional snow cover
+    - '*GF-QA.tif'    # GFSC per-pixel quality
+    - '*MTD.xml'      # provenance
   output_dir: derived/eo/hrwsi
   max_workers: 4
 

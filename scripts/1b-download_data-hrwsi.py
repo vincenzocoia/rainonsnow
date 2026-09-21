@@ -272,6 +272,16 @@ def main() -> None:
     parser.add_argument("--date-end", help="override hrwsi.last_date (YYYY-MM-DD)")
     parser.add_argument("--months", nargs="+", type=int, help="override hrwsi.months")
     parser.add_argument("--output-dir", help="override hrwsi.output_dir")
+    parser.add_argument(
+        "--layer-patterns",
+        nargs="+",
+        help="override hrwsi.layer_patterns (e.g. '*WSM.tif' '*GF.tif')",
+    )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        help="override hrwsi.max_workers; lower it to leave bandwidth for other work",
+    )
     args = parser.parse_args()
 
     if args.product_types:
@@ -286,6 +296,10 @@ def main() -> None:
         cfg["months"] = args.months
     if args.output_dir:
         cfg["output_dir"] = args.output_dir
+    if args.layer_patterns:
+        cfg["layer_patterns"] = args.layer_patterns
+    if args.max_workers:
+        cfg["max_workers"] = args.max_workers
 
     unknown = [pt for pt in cfg["product_types"] if pt not in DAILY_PRODUCTS]
     if unknown:
