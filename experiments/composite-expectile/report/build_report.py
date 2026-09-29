@@ -277,6 +277,8 @@ thead th {
 tbody td { border-bottom: 1px solid var(--rule); }
 tbody tr:last-child td { border-bottom: 1.5px solid var(--rule-strong); }
 tr.ref td { color: var(--ink-2); font-style: italic; }
+tr.sub td { color: var(--ink-3); font-size: .92em; background: var(--surface-2);
+            border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
 td.win { color: var(--l2); font-weight: 600; }
 td.lose { color: var(--ref); }
 td.tie { font-weight: 600; }
@@ -427,6 +429,28 @@ VERDICT = """
     sits <em>at</em> the MLE in the body (0.98 at T = 2) and takes 26% off the far-tail MSE,
     beating L-moments throughout. It does not reach the M-estimator composites' gains under
     contamination, but it is a strictly better default than L-moments.</p></div>
+  <div class="finding"><div class="verdict-tag t-yes">Reframed</div>
+    <p><b>This is threshold selection, done smoothly.</b> Penultimate approximation gives the
+    method an effective threshold: the level whose local shape equals what the estimator actually
+    returns. Maximum likelihood fitted above the 4-year level reads the tail as if handed the
+    14-year one; the composite expectile at w = p&#8310; reads it as if handed the <b>27.5</b>-year
+    one, past the published figures for Stein's weighted composite likelihood (17&ndash;22) and
+    Luceno's AD2R (20&ndash;24). The weight is the dial; the pinball loss turns it the wrong way,
+    landing <em>below</em> maximum likelihood at 11.6.</p></div>
+  <div class="finding"><div class="verdict-tag t-no">The smaller half</div>
+    <p><b>Most of the reach is not the tail weighting.</b> A <em>flat</em> weight already puts the
+    composite expectile at 18.6 against maximum likelihood's 14.0 &mdash; past the reference band
+    before any tail focus is applied. Changing the matched functional from a likelihood to an
+    expectile does more than the weight then does, which is the same decomposition the pseudo-true
+    limits showed and is not how this method is usually motivated.</p></div>
+  <div class="finding"><div class="verdict-tag t-mix">Bought with bandwidth</div>
+    <p><b>Reaching further means reading less sharply.</b> The kernel &mdash; which part of the
+    tail the estimator averages &mdash; spans 24&times; in return period for maximum likelihood and
+    <b>63&times;</b> for the composite expectile, rising to 116&times; at the sharpest weight.
+    MWLE is the exception that explains section 18: it reaches <em>further</em> than any composite
+    (43.5) on a span of 30. Tilting a likelihood moves the reading point without smearing it;
+    tilting a loss does both. And the payoff is asymptotic &mdash; at n = 5000 the smooth dial beats
+    a hard threshold at matched bias, at n = 1000 it does not.</p></div>
 </div>
 </section>
 """
@@ -836,7 +860,7 @@ FIG_SHAPE
 
 S8 = """
 <section id="recommend">
-<h2><span class="num">21</span><span>What to do with this</span></h2>
+<h2><span class="num">22</span><span>What to do with this</span></h2>
 <div class="col">
 <p><strong>The obstacle is variance, not bias.</strong> Both composite estimators solve the bias
 problem completely &mdash; against a body-contaminated truth they remove a 39% underestimate of
@@ -874,6 +898,18 @@ short reach (&alpha; &asymp; 0.02) it dominates L-moments on a correctly specifi
 in the body, is explicit rather than iterative, and cannot fail to converge. It is the only
 estimator here with no downside to report.</p>
 
+<p><strong>Quote the effective threshold, not the weight.</strong> Section 21 gives the weight a
+unit a hydrologist already has. Saying "w = p&#8310;" conveys nothing; saying "this reads the tail
+as if the threshold were at the 27-year level, averaging over roughly the 10- to 650-year band"
+is a statement a reviewer can argue with. Report both numbers, and report the second one &mdash;
+the bandwidth is what the single number hides, and it is where the composite estimators are worst
+relative to a tilted likelihood.</p>
+
+<p><strong>Do not choose the weight without knowing &xi;.</strong> The same w = p&#8310; reads the
+20-year level on a Gumbel tail and the 51-year level at &xi; = 0.45, while maximum likelihood
+barely moves (15.5 to 12.7). A weight is not a portable setting, and the effective threshold is
+the right thing to hold fixed across catchments instead.</p>
+
 <h3>Where the method earns its keep</h3>
 <p>The contest is governed by
 (&xi;<sub>true</sub> &minus; &xi;<sub>MLE</sub>) / sd(&xi;&#770;<sub>composite</sub>), not by the
@@ -898,6 +934,17 @@ empirical target would remove L2's one structural disadvantage against L1.</li>
 fit recovers &xi; = 0.209 against a true 0.20 where likelihood returns 0.054. On the question
 "does the fitted tail have the right heaviness", the two are not close, and an estimator that ties
 on squared error while getting &xi; right is a different and arguably more useful product.</li>
+<li><strong>Take the kernel seriously as a design object.</strong> Section 21 measures which
+band of the tail each estimator reads, but nothing here <em>designs</em> that band. The obvious
+question is whether a weight can be chosen to put the kernel where one wants it &mdash; a target
+effective threshold with a target bandwidth &mdash; rather than picking w = p&#8310; and measuring
+what happens. MWLE shows a narrow kernel far out is attainable, so the composites' width is not a
+law.</li>
+<li><strong>Check the whole thing at the sample size that matters.</strong> The effective threshold
+is asymptotic, and at n = 100 &mdash; this report's own setting &mdash; the estimators are nowhere
+near their targets: at n = 1000 the composite expectile's mean shape is still 0.154 against a
+target of 0.185. Every statement in section 21 is about a limit that the finite-sample studies
+never reach, and reconciling the two is the most useful thing left undone here.</li>
 <li><strong>Settle the MWLE comparison properly.</strong> Section 18 has the two methods
 splitting the two families &mdash; Fung's weighted likelihood ahead on the three-parameter GEV, the
 composites ahead on the two-parameter GPD. That is one data-generating process each, and the
@@ -921,7 +968,7 @@ optimise, and by those the case for the method is much stronger than by MSE.</li
 
 S9 = """
 <section id="methods">
-<h2><span class="num">22</span><span>Methods and reproducibility</span></h2>
+<h2><span class="num">23</span><span>Methods and reproducibility</span></h2>
 <div class="col">
 <h3>Machinery</h3>
 <p>The expectile function of the GEV is needed on a grid of levels inside an optimiser, roughly
@@ -1125,6 +1172,17 @@ def build():
             "contaminated GEV: the ordering reverses, long reaches win the near tail and nothing "
             "wins the far tail.",
             "MSE ratio against return period for five extremile reaches, two settings")),
+        SPEN.replace("FIG_PEN", fig(
+            "fig-penult.png",
+            "<b>Where each estimator reads, and how sharply.</b> Left, the effective threshold "
+            "against the weight exponent m in w(p) = p&#8319;, for five populations, with the "
+            "filled circle marking maximum likelihood on the same population and the grey band "
+            "the companion project's WCL and AD2R references. Even a flat weight (m = 0) puts the "
+            "composite expectile above the MLE on every population, and above the reference band "
+            "on four of them. Right, the kernels themselves on GEV(0, 1, 0.2), each rescaled to "
+            "its own peak: the composite estimators shift right and spread out, while MWLE "
+            "reaches further than any of them and stays narrow.",
+            "Effective threshold against weight exponent, and kernel densities against return period")),
         S8, S9, FOOTER,
     ]
     return "".join(body)
@@ -2645,6 +2703,222 @@ v = 0.50 shows the step is not uniformly good; its brittleness in v shows the cr
 and the smooth graft's single excursion sits exactly where the weight hands over too early. A
 handover family indexed from step to gradual, swept properly, is a small experiment and would
 settle it.</p>
+</div>
+</section>
+"""
+
+SPEN = """
+<section id="penult">
+<h2><span class="num">21</span><span>What level is each estimator actually reading?</span></h2>
+<div class="col">
+<p>Section 17 asked what each estimator converges to. This asks something sharper, and the answer
+turns out to be the most useful single number in the report. Penultimate approximation gives the
+language: the extreme-value family is never exactly right at a finite level, and the shape that
+best describes the data varies with how far out one looks. So a tail-weighted estimator fitted
+above a low threshold is not doing something the threshold framework cannot express &mdash; it is
+behaving <em>as if</em> it had been handed a higher threshold. The question is which one.</p>
+
+<p>The coordinate that makes this precise is the <b>reciprocal hazard</b> r(x) = S(x)/f(x). A GPD
+anchored at u has r(u+y) = &sigma; + &xi;y exactly: a straight line whose intercept is the scale
+and whose slope is the shape. So for any distribution, r(x) is the <em>penultimate scale</em> at
+level x and r&prime;(x) the <em>penultimate shape</em>, and the ultimate shape is lim r&prime;.
+Fitting a GPD is fitting a line through r, and every estimator differs only in where along r it
+reads.</p>
+</div>
+<div class="eq">effective threshold:  the return period R = 1/S(x&#8202;<sub>e</sub>) at which  r&prime;(x&#8202;<sub>e</sub>) = &xi;*
+
+kernel:               &xi;* = &#8747; K(s)&#8202;r&prime;(u+s)&#8202;ds,   K &ge; 0,  &#8747;K = 1</div>
+<div class="col">
+<p>&xi;* is the estimator's pseudo-true shape from section 17, so the effective threshold is where
+the local penultimate shape equals what the estimator actually returns. The kernel says how that
+average is taken &mdash; which part of the tail the estimator is reading, and how wide a band. It
+is recovered without assuming the representation holds: perturb r by a smooth <em>step</em> at
+position s, which is a unit-mass bump in r&prime; there, and K(s) = &part;&xi;*/&part;&epsilon;. A
+step in r is far better conditioned than a narrow bump in r&prime;, which would need a grid fine
+enough to resolve it.</p>
+
+<div class="note"><span class="lab">The construction is not ours, and it was checked against its source</span>
+<p>The method comes from the companion smooth-graft work, where it was applied to maximum
+likelihood, Stein's weighted composite likelihood and Luceno's AD2R. That code was not reachable
+from here, so the pipeline was rebuilt from the specification and validated against its numbers,
+which were produced independently: maximum likelihood's effective threshold comes out
+<b>12.7&ndash;15.5</b> against their 13&ndash;16, its kernel's 10% point <b>6.3&ndash;6.8</b>
+against their 6.5, and LP3(0.6, 0.20) reproduces their 90% point of 142 at <b>137</b>. The
+consistency check they prescribe &mdash; the target's own scale against the penultimate GPD at
+x<sub>e</sub> carried back to u &mdash; holds to 4.0% against their 2.5% tolerance, loosening only
+for the estimators that reach furthest out. Everything below is population-level: quadrature
+against a known distribution, no Monte Carlo anywhere.</p></div>
+
+<h3>Where each estimator sits</h3>
+<p>Seven populations, all fitted above R = 4 (the population 75th percentile). GEV at three shapes,
+and log-Pearson III &mdash; log X ~ Gamma(a, &beta;) &mdash; which converges to its limit only
+logarithmically, at the rate r&prime;(x) = &beta; + &beta;&sup2;(a&minus;1)/log x.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Effective threshold, as a return period, for every estimator in this report. The
+reference values in the third row come from the companion project. Red marks a row reading a
+<em>lower</em> level than maximum likelihood; nothing here is colour-coded as better, because
+section text below is about why further out is not automatically better. Two further populations
+&mdash; LP3 with &beta; = 0.45 &mdash; are omitted and explained at the end.</caption>
+<thead><tr><th>estimator</th><th>GEV &xi;=0</th><th>GEV &xi;=0.2</th><th>GEV &xi;=0.45</th><th>LP3 (0.6, 0.2)</th><th>LP3 (1.6, 0.2)</th></tr></thead>
+<tbody>
+<tr class="ref"><td>POT maximum likelihood</td><td>15.5</td><td>14.0</td><td>12.7</td><td>13.8</td><td>14.2</td></tr>
+<tr class="ref"><td>POT L-moments</td><td>11.1</td><td>12.9</td><td>16.7</td><td>13.6</td><td>13.4</td></tr>
+<tr class="sub"><td>&mdash; companion project &mdash;</td><td colspan="5">WCL (linear weight) 17&ndash;22&nbsp;&nbsp;&nbsp;AD2R 20&ndash;24&nbsp;&nbsp;&nbsp;ADR ~11</td></tr>
+<tr><td>composite L1, w = 1</td><td class="lose">10.9</td><td class="lose">11.6</td><td class="lose">12.8</td><td class="lose">12.0</td><td class="lose">11.9</td></tr>
+<tr><td>composite L1, w = p&sup2;</td><td>13.1</td><td>14.1</td><td>15.7</td><td>14.6</td><td>14.5</td></tr>
+<tr><td>composite L1, w = p&#8310;</td><td>16.5</td><td>17.9</td><td>20.5</td><td>18.9</td><td>18.7</td></tr>
+<tr><td>composite L1, w = p&sup2;&#8304;</td><td>24.0</td><td>26.9</td><td>32.1</td><td>29.2</td><td>28.8</td></tr>
+<tr><td><b>composite L2, w = 1</b></td><td>14.3</td><td>18.6</td><td>31.2</td><td>20.4</td><td>20.0</td></tr>
+<tr><td>composite L2, w = p&sup2;</td><td>16.9</td><td>22.5</td><td>39.7</td><td>25.1</td><td>24.6</td></tr>
+<tr><td><b>composite L2, w = p&#8310;</b></td><td>20.1</td><td>27.5</td><td>51.2</td><td>31.2</td><td>30.5</td></tr>
+<tr><td>composite L2, w = p&sup2;&#8304;</td><td>26.0</td><td>37.3</td><td>75.8</td><td>43.9</td><td>42.6</td></tr>
+<tr><td>composite L2, smoothstep p&#8320;=0.50</td><td>19.1</td><td>25.8</td><td>46.6</td><td>29.1</td><td>28.5</td></tr>
+<tr><td>composite L2, smoothstep p&#8320;=0.90</td><td>29.7</td><td>43.2</td><td>89.3</td><td>51.6</td><td>49.8</td></tr>
+<tr><td>composite L2, smoothstep p&#8320;=0.95</td><td>35.9</td><td>54.1</td><td>119.9</td><td>67.1</td><td>63.8</td></tr>
+<tr><td>&alpha;-elastile, &alpha;=0.5, w = p&#8310;</td><td>18.7</td><td>26.2</td><td>50.0</td><td>24.5</td><td>26.0</td></tr>
+<tr><td>inverted Huber, k=1</td><td>21.9</td><td>35.0</td><td>132.0</td><td>42.0</td><td>40.3</td></tr>
+<tr><td>inverted Huber, k=4</td><td>20.1</td><td>29.0</td><td>77.9</td><td>33.7</td><td>32.7</td></tr>
+<tr><td>inverted Huber, k=16</td><td>20.1</td><td>27.5</td><td>62.9</td><td>31.3</td><td>30.5</td></tr>
+<tr><td>MWLE (Fung), w = p&sup2;</td><td>26.6</td><td>23.7</td><td>21.2</td><td>24.4</td><td>24.7</td></tr>
+<tr><td><b>MWLE (Fung), w = p&#8310;</b></td><td>49.2</td><td>43.5</td><td>38.7</td><td>46.9</td><td>46.4</td></tr>
+<tr><td>composite extremile, r<sub>max</sub>=50</td><td>27.1</td><td>34.3</td><td>50.3</td><td>39.0</td><td>38.1</td></tr>
+<tr><td>composite extremile, r<sub>max</sub>=200</td><td>41.3</td><td>55.8</td><td>88.7</td><td>68.4</td><td>64.9</td></tr>
+</tbody></table>
+</div>
+FIG_PEN
+<div class="col">
+<p><strong>Most of the reach is not the weight.</strong> The composite expectile with a
+<em>flat</em> weight &mdash; no tail focus at all &mdash; already sits at 18.6 on GEV(0, 1, 0.2)
+against maximum likelihood's 14.0, inside the companion project's WCL band before any weighting is
+applied, and at 31.2 on GEV &xi; = 0.45 against 12.7. The one exception is the Gumbel tail, where
+the flat-weight expectile reads 14.3 against maximum likelihood's 15.5 &mdash; slightly <em>lower</em>
+&mdash; so the effect is not universal. Changing the matched functional from a likelihood to an
+expectile does more than the weight then does. That is the same decomposition section 17 found in the pseudo-true limits, where
+the flat-weight expectile reached shape 0.264 against likelihood's 0.346, and it is worth saying
+plainly: <b>the tail weighting is the smaller half of this method.</b></p>
+
+<p><strong>The pinball loss goes the wrong way.</strong> Composite L1 with a flat weight lands at
+11.6, <em>below</em> maximum likelihood &mdash; and almost exactly where the companion project's
+ADR sits, at about 11. It takes w = p&sup2;&#8304; to drag L1 to 26.9, which L2 reaches at
+w = p&sup2;. Quantile matching pulls the estimator <em>in</em>; expectile matching pushes it out.
+This is a second, independent reason to prefer L2 over L1, and it is not the variance argument of
+section 05.</p>
+
+<p><strong>The reach depends sharply on the tail.</strong> Composite L2 at w = p&#8310; runs from
+20.1 on a Gumbel tail to 51.2 at &xi; = 0.45, and the inverted Huber at k = 1 from 21.9 to 132. The
+references barely move: maximum likelihood goes 15.5 to 12.7, in the opposite direction. So the
+effective threshold of a composite estimator is not a property of the estimator alone, and quoting
+one number for it &mdash; as this report has been tempted to do for the weight &mdash; would be
+wrong. The two LP3 populations with &beta; = 0.2 behave like GEV &xi; = 0.2 throughout, which is
+mildly reassuring about how much of this is family-specific.</p>
+
+<h3>Shift, or widen?</h3>
+<p>Both, and the widening is the cost that the single number hides.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>The kernel's quantiles on GEV(0, 1, 0.2), as return periods, with the 90:10 span and the
+measured total mass. Ordered by effective threshold.</caption>
+<thead><tr><th>estimator</th><th>R<sub>e</sub></th><th>K 10%</th><th>25%</th><th>50%</th><th>75%</th><th>90%</th><th>span</th><th>&#8747;K</th></tr></thead>
+<tbody>
+<tr><td>composite L1, w = 1</td><td>11.6</td><td>6.1</td><td>8.4</td><td>13.9</td><td>26.8</td><td>56</td><td class="win">9</td><td>1.03</td></tr>
+<tr class="ref"><td>POT maximum likelihood</td><td>14.0</td><td>6.5</td><td>9.8</td><td>19.3</td><td>50.8</td><td>158</td><td>24</td><td>1.00</td></tr>
+<tr><td>composite L1, w = p&sup2;&#8304;</td><td>26.9</td><td>10.9</td><td>20.6</td><td>43.8</td><td>98.1</td><td>219</td><td class="win">20</td><td>1.03</td></tr>
+<tr><td>composite L2, w = p&#8310;</td><td>27.5</td><td>10.3</td><td>21.0</td><td>55.6</td><td>178</td><td>649</td><td class="lose">63</td><td>1.05</td></tr>
+<tr><td>inverted Huber, k = 4</td><td>29.0</td><td>10.7</td><td>22.4</td><td>62.4</td><td>216</td><td>852</td><td class="lose">80</td><td>1.05</td></tr>
+<tr><td>inverted Huber, k = 1</td><td>35.0</td><td>12.5</td><td>27.7</td><td>82.6</td><td>306</td><td>1245</td><td class="lose">99</td><td>1.05</td></tr>
+<tr><td>composite L2, w = p&sup2;&#8304;</td><td>37.3</td><td>13.3</td><td>31.3</td><td>91.7</td><td>308</td><td>1145</td><td class="lose">86</td><td>1.04</td></tr>
+<tr><td><b>MWLE (Fung), w = p&#8310;</b></td><td>43.5</td><td>17.4</td><td>30.3</td><td>64.8</td><td>173</td><td>531</td><td class="win">30</td><td>1.01</td></tr>
+<tr><td>composite L2, smoothstep p&#8320;=0.95</td><td>54.1</td><td>19.0</td><td>53.4</td><td>174</td><td>594</td><td>2209</td><td class="lose">116</td><td>1.03</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>Maximum likelihood reads a band spanning 24&times; in return period. The composite expectile at
+the same nominal threshold reads 63&times;, and pushing the weight harder widens it further &mdash;
+116&times; at the smoothstep weight. So "effective threshold R<sub>e</sub>" is a much softer claim
+for a composite estimator than for a likelihood: it is reading four decades of tail and reporting
+one shape, which is precisely the situation penultimate theory says is dangerous when
+r&prime; is not constant over the band.</p>
+
+<div class="note"><span class="lab">The two narrow kernels, and what they explain</span>
+<p><b>MWLE reaches further than composite L2 at w = p&sup2;&#8304; &mdash; 43.5 against 37.3 &mdash;
+with a span of 30 rather than 86.</b> Tilting the <em>likelihood</em> moves the reading point
+without smearing it; tilting the <em>loss</em> does both. That is very likely the mechanism behind
+section 18's efficiency result, where MWLE paid a 4&ndash;5% premium on a correctly specified GEV
+against the composites' 12&ndash;32%: a narrow kernel is a low-variance kernel. And the pinball
+loss has the tightest kernel of anything here, 9 at a flat weight and 20 at w = p&sup2;&#8304;
+&mdash; it simply cannot reach. Narrow-and-near, narrow-and-far, wide-and-far: the three losses
+are not three points on one dial.</p></div>
+
+<h3>Is this a cheaper route out than raising the threshold?</h3>
+<p>The honest comparison, and the one this whole construction exists to make. A composite estimator
+fitted above R = 4 reads the tail as if handed a threshold at R<sub>e</sub>. Simply raising a hard
+threshold to R<sub>e</sub> would buy the same bias &mdash; and discard most of the sample. Which is
+cheaper?</p>
+
+<p>Maximum likelihood has an effective threshold of its own, so "the same level" needs care: here
+R<sub>e</sub> &asymp; 3.6 &times; R<sub>nominal</sub> for the MLE, so the equal-bias competitor to a
+composite estimator at R<sub>e</sub> = 27.5 is maximum likelihood at a <em>nominal</em> threshold of
+7.7, not 27.5. Monte Carlo on GEV(0, 1, 0.2), comparing sd(&xi;&#770;):</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>Where maximum likelihood's sampling standard deviation actually matches each composite
+estimator's, against the nominal threshold it would need for equal bias. Last column above the
+equal-bias column means the composite gets to that effective threshold more cheaply &mdash; that is, the sd-matched column sitting above the equal-bias
+column.</caption>
+<thead><tr><th rowspan="2">estimator</th><th rowspan="2">R<sub>e</sub></th><th rowspan="2">equal-bias<br>MLE nominal R</th><th colspan="2">n = 1000</th><th colspan="2">n = 5000</th></tr>
+<tr><th>sd(&xi;&#770;)</th><th>sd-matched R</th><th>sd(&xi;&#770;)</th><th>sd-matched R</th></tr></thead>
+<tbody>
+<tr><td>composite L2, w = 1</td><td>18.6</td><td>5.2</td><td>0.082</td><td class="lose">4.6</td><td>0.039</td><td class="win">5.4</td></tr>
+<tr><td>composite L2, w = p&sup2;</td><td>22.5</td><td>6.3</td><td>0.088</td><td class="lose">5.2</td><td>0.043</td><td class="win">6.6</td></tr>
+<tr><td>composite L2, w = p&#8310;</td><td>27.5</td><td>7.7</td><td>0.095</td><td class="lose">6.0</td><td>0.049</td><td class="win">8.3</td></tr>
+<tr><td>composite L2, w = p&sup2;&#8304;</td><td>37.3</td><td>10.4</td><td>0.108</td><td class="lose">7.6</td><td>0.059</td><td class="win">12.4</td></tr>
+<tr><td>inverted Huber, k = 4</td><td>29.0</td><td>8.1</td><td>0.091</td><td class="lose">5.5</td><td>0.050</td><td class="win">8.9</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p><strong>At n = 5000 the composite family is the cheaper route; at n = 1000 it is not.</strong>
+At the larger size every estimator reaches its effective threshold for less variance than raising
+a hard threshold would &mdash; 19% further out at w = p&sup2;&#8304; &mdash; and the margin grows
+with the weighting, which is the result the method needs.</p>
+
+<p>The n = 1000 row should not be read as a finding about the method, though, because the
+comparison's premise fails there: at that size none of these estimators is near its asymptotic
+target, with mean &xi;&#770; running 0.140 to 0.158 against targets of 0.177 to 0.189. At n = 5000
+they are close (0.180 against 0.185) and the matched-bias comparison means what it says. Root mean
+squared error gives the same verdict at both sizes. The practical reading is that <b>the effective
+threshold is an asymptotic statement, and n = 100 &mdash; the size this whole report has used
+&mdash; is nowhere near where it becomes true.</b></p>
+
+<h3>Two things the construction cannot do here</h3>
+<div class="note"><span class="lab">Non-monotone r&prime; makes the number meaningless</span>
+<p>LP3 with &beta; = 0.45 has a penultimate shape that rises from 0.459 at R = 4 to about 0.480 near
+R = 20 and then decays back towards 0.45 over the following eight decades. So r&prime;(x) = &xi;*
+has <em>two</em> roots for any target inside that window, and 51 of the 52 estimator cells on those
+two populations report multiple crossings. The kernel is still perfectly well defined; the single
+summary number is not. This is the &rho; = 0 behaviour that makes LP3 worth including, and any
+effective-threshold table should be read with a monotonicity check attached.</p></div>
+
+<div class="note"><span class="lab">&#8747;K is 1.05, not 1, for the composite estimators</span>
+<p>The representation &xi;* = &#8747;K r&prime; is exact only if the target shape really is a linear
+functional of the local shapes. Measuring the total mass tests that, and it comes out 0.99&ndash;1.01
+for maximum likelihood and MWLE but 1.04&ndash;1.07 for every composite estimator. The gap is the
+estimator, not the quadrature: perturbing r&prime; by a <em>constant</em> c shifts &xi;* by 1.006c
+for maximum likelihood and 1.048c for composite L2, which is the same number by a different route.
+So the composite estimators are line fits through r only to about 5%, and the kernel quantiles
+above are renormalised. Fine for reading shape and spread; not a basis for arithmetic.</p></div>
+
+<h3>What this adds up to</h3>
+<p>The effective threshold reframes the whole method. A tail-weighted composite estimator is not an
+alternative to threshold selection &mdash; it <em>is</em> threshold selection, done smoothly, with
+the weight as the dial and the kernel as the resolution. Read that way, three things follow. The
+weight is the smaller half of what the construction does, and the choice of functional the larger.
+The reach is bought with bandwidth, so an estimator that reads further also reads less sharply,
+and MWLE's narrow kernel is the concrete reason it was hard to beat in section 18. And the payoff
+is asymptotic: at n = 5000 the smooth dial beats the hard threshold, and at n = 1000 it does not.</p>
 </div>
 </section>
 """
