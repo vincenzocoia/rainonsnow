@@ -1,0 +1,140 @@
+=================================================================
+ EFFECTIVE THRESHOLD AND KERNEL, composite family vs references
+ Population level (no Monte Carlo); all estimators fit above R = 4.
+=================================================================
+
+PIPELINE CHECK against the smooth-graft project's independent numbers
+  MLE effective threshold here: R = 12.7 to 15.5   (their reference 13-16)
+  MLE kernel 10% point:         R = 6.3 to 6.8   (their reference 6.5)
+  MLE kernel 90% point:         R = 111 to 255   (their reference 142;
+                                 LP3(0.6,0.20) gives 137)
+  scale check |sigma_u/sigma* - 1|: max 4.0%      (their tolerance ~2.5%)
+
+-----------------------------------------------------------------
+1. EFFECTIVE THRESHOLD (return period at which r' equals the target shape)
+-----------------------------------------------------------------
+                      GEV xi=0.00 GEV xi=0.20 GEV xi=0.45 LP3 a=0.6 b=0.20
+MLE                          15.5        14.0        12.7             13.8
+L-moments                    11.1        12.9        16.7             13.6
+L1 (pinball) p^0             10.9        11.6        12.8             12.0
+L1 (pinball) p^2             13.1        14.1        15.7             14.6
+L1 (pinball) p^6             16.5        17.9        20.5             18.9
+L1 (pinball) p^20            24.0        26.9        32.1             29.2
+L2 (expectile) p^0           14.3        18.6        31.2             20.4
+L2 (expectile) p^1           15.7        20.7        35.8             23.0
+L2 (expectile) p^2           16.9        22.5        39.7             25.1
+L2 (expectile) p^4           18.7        25.3        46.0             28.5
+L2 (expectile) p^6           20.1        27.5        51.2             31.2
+L2 (expectile) p^10          22.3        31.1        59.8             35.7
+L2 (expectile) p^20          26.0        37.3        75.8             43.9
+L2 smoothstep p0=0.50        19.1        25.8        46.6             29.1
+L2 smoothstep p0=0.80        24.6        34.5        67.0             40.1
+L2 smoothstep p0=0.90        29.7        43.2        89.3             51.6
+L2 smoothstep p0=0.95        35.9        54.1       119.9             67.1
+elastile a=0.5 p^6           18.7        26.2        50.0             24.5
+inv Huber k=1 p^6            21.9        35.0       132.0             42.0
+inv Huber k=4 p^6            20.1        29.0        77.9             33.7
+inv Huber k=16 p^6           20.1        27.5        62.9             31.3
+MWLE p^2                     26.6        23.7        21.2             24.4
+MWLE p^6                     49.2        43.5        38.7             46.9
+extremile rmax=20            20.5        25.0        35.0             27.5
+extremile rmax=50            27.1        34.3        50.3             39.0
+extremile rmax=200           41.3        55.8        88.7             68.4
+                      LP3 a=1.6 b=0.20
+MLE                               14.2
+L-moments                         13.4
+L1 (pinball) p^0                  11.9
+L1 (pinball) p^2                  14.5
+L1 (pinball) p^6                  18.7
+L1 (pinball) p^20                 28.8
+L2 (expectile) p^0                20.0
+L2 (expectile) p^1                22.5
+L2 (expectile) p^2                24.6
+L2 (expectile) p^4                27.9
+L2 (expectile) p^6                30.5
+L2 (expectile) p^10               34.8
+L2 (expectile) p^20               42.6
+L2 smoothstep p0=0.50             28.5
+L2 smoothstep p0=0.80             39.0
+L2 smoothstep p0=0.90             49.8
+L2 smoothstep p0=0.95             63.8
+elastile a=0.5 p^6                26.0
+inv Huber k=1 p^6                 40.3
+inv Huber k=4 p^6                 32.7
+inv Huber k=16 p^6                30.5
+MWLE p^2                          24.7
+MWLE p^6                          46.4
+extremile rmax=20                 27.1
+extremile rmax=50                 38.1
+extremile rmax=200                64.9
+
+reference points supplied from the smooth-graft project:
+  MLE 13-16   WCL (linear weight) 17-22   AD2R 20-24   ADR ~11
+
+-----------------------------------------------------------------
+2. KERNEL SPREAD, as return periods (GEV xi = 0.20)
+-----------------------------------------------------------------
+             estimator     xi  R_e  K10  K25   K50   K75  K90 span  intK
+      L1 (pinball) p^0 0.1615 11.6  6.1  8.4  13.9  26.8   56    9 1.025
+             L-moments 0.1656 12.9  6.2  9.0  17.0  44.0  143   23 1.040
+                   MLE 0.1687 14.0  6.5  9.8  19.3  50.8  158   24 0.995
+      L1 (pinball) p^2 0.1689 14.1  6.9 10.2  17.7  35.5   76   11 1.029
+      L1 (pinball) p^6 0.1761 17.9  8.2 13.0  24.4  51.1  111   14 1.031
+    L2 (expectile) p^0 0.1769 18.6  7.6 13.2  31.1  94.5  335   44 1.052
+    L2 (expectile) p^1 0.1795 20.7  8.3 15.0  36.4 112.0  402   48 1.051
+    L2 (expectile) p^2 0.1812 22.5  8.8 16.5  41.0 127.9  460   52 1.049
+              MWLE p^2 0.1822 23.7 10.0 16.4  34.2  90.5  280   28 1.010
+     extremile rmax=20 0.1832 25.0  9.9 18.3  43.0 125.7  428   43 1.037
+    L2 (expectile) p^4 0.1834 25.3  9.6 18.9  48.8 155.1  562   58 1.047
+ L2 smoothstep p0=0.50 0.1837 25.8  9.9 19.5  49.5 155.1  558   57 1.046
+    elastile a=0.5 p^6 0.1840 26.2 10.0 19.5  49.4 156.2  568   57 1.049
+     L1 (pinball) p^20 0.1844 26.9 10.9 20.6  43.8  98.1  219   20 1.029
+    L2 (expectile) p^6 0.1848 27.5 10.3 21.0  55.6 178.5  649   63 1.046
+    inv Huber k=16 p^6 0.1848 27.5 10.3 21.0  55.7 178.7  651   63 1.046
+     inv Huber k=4 p^6 0.1856 29.0 10.7 22.4  62.4 216.0  852   80 1.052
+   L2 (expectile) p^10 0.1866 31.1 11.4 24.6  67.5 220.3  808   71 1.043
+     extremile rmax=50 0.1879 34.3 12.8 26.9  70.8 219.3  767   60 1.032
+ L2 smoothstep p0=0.80 0.1880 34.5 12.6 28.3  78.5 253.5  924   74 1.040
+     inv Huber k=1 p^6 0.1881 35.0 12.5 27.7  82.6 305.8 1245   99 1.053
+   L2 (expectile) p^20 0.1889 37.3 13.3 31.3  91.7 308.4 1145   86 1.039
+ L2 smoothstep p0=0.90 0.1905 43.2 15.3 38.5 115.1 382.3 1408   92 1.036
+              MWLE p^6 0.1905 43.5 17.4 30.3  64.8 172.7  531   30 1.013
+ L2 smoothstep p0=0.95 0.1924 54.1 19.0 53.4 173.7 593.9 2209  116 1.031
+    extremile rmax=200 0.1927 55.8 19.8 52.3 167.0 573.3 2067  104 1.025
+
+-----------------------------------------------------------------
+3. THE TWO POPULATIONS WHERE THE READING IS NOT AVAILABLE
+-----------------------------------------------------------------
+LP3 with beta = 0.45 has non-monotone r': it rises to about 0.480 near
+R = 20 and decays back towards 0.45 over the following decades, so
+r'(x) = xi* has two roots for any target in that window. 51 of the 52
+estimator-population cells there report multiple crossings. The kernel is
+still well defined; the single number is not.
+
+                      LP3 a=0.6 b=0.45 LP3 a=1.6 b=0.45
+MLE                               11.5              8.9
+L-moments                         13.9              8.6
+L1 (pinball) p^0                  11.9              9.5
+L1 (pinball) p^2                  14.2             10.1
+L1 (pinball) p^6                  17.6             10.4
+L1 (pinball) p^20                 24.2              9.7
+L2 (expectile) p^0                19.9              7.9
+L2 (expectile) p^1                21.2              7.7
+L2 (expectile) p^2                22.1              7.6
+L2 (expectile) p^4                23.3              7.4
+L2 (expectile) p^6                23.9              7.3
+L2 (expectile) p^10               24.6              7.1
+L2 (expectile) p^20               25.2              6.8
+L2 smoothstep p0=0.50             23.5              7.4
+L2 smoothstep p0=0.80             25.2              7.0
+L2 smoothstep p0=0.90             25.4              6.7
+L2 smoothstep p0=0.95             24.8              6.4
+elastile a=0.5 p^6                23.6              7.4
+inv Huber k=1 p^6                 22.9              5.9
+inv Huber k=4 p^6                 23.1              6.3
+inv Huber k=16 p^6                23.3              6.6
+MWLE p^2                          18.1             10.4
+MWLE p^6                          28.8             10.1
+extremile rmax=20                 22.7              8.2
+extremile rmax=50                 26.1              7.7
+extremile rmax=200                27.7              6.8

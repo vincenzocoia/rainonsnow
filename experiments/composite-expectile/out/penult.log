@@ -1,0 +1,9 @@
+done: GEV xi=0.00 
+done: GEV xi=0.20 
+done: LP3 a=0.6 b=0.20 
+done: GEV xi=0.45 
+done: LP3 a=1.6 b=0.20 
+done: LP3 a=0.6 b=0.45 
+done: LP3 a=1.6 b=0.45 
+
+total 9.4 min

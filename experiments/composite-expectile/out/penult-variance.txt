@@ -1,0 +1,90 @@
+=== Q3: variance at matched effective threshold, GEV(0,1,0.2) ===
+
+MLE's own effective threshold against its nominal one:
+   R_nom   xi  R_eff
+1      4 0.17  14.01
+2      6 0.18  21.36
+3      8 0.19  28.69
+4     11 0.19  39.70
+5     14 0.19  50.70
+6     20 0.19  72.70
+7     30 0.20 109.36
+8     50 0.20 182.68
+9     80 0.20 292.66
+10   130 0.20 475.89
+11   200 0.20 732.26
+
+Composite estimators fitted above R = 4, effective thresholds:
+  L2 p^0             xi* = 0.1769   R_e =   18.6   (MLE would need a nominal threshold of R = 5.2)
+  L2 p^2             xi* = 0.1812   R_e =   22.5   (MLE would need a nominal threshold of R = 6.3)
+  L2 p^6             xi* = 0.1848   R_e =   27.5   (MLE would need a nominal threshold of R = 7.7)
+  L2 p^20            xi* = 0.1889   R_e =   37.3   (MLE would need a nominal threshold of R = 10.4)
+  invHuber k=4 p^6   xi* = 0.1856   R_e =   29.0   (MLE would need a nominal threshold of R = 8.1)
+
+
+--- n = 1000, 1200 replicates ---
+(3.3 min)
+                est     mean      sd    rmse nfail
+1            L2 p^0  0.15769 0.08206 0.09229     0
+2            L2 p^2  0.15750 0.08773 0.09745     0
+3            L2 p^6  0.15391 0.09518 0.10571     0
+4           L2 p^20  0.14024 0.10781 0.12322     0
+5  invHuber k=4 p^6  0.14887 0.09119 0.10451     0
+6           MLE R=4  0.15497 0.07581 0.08815     0
+7           MLE R=6  0.16226 0.09532 0.10248     0
+8           MLE R=8  0.16070 0.11057 0.11730     0
+9          MLE R=11  0.15861 0.13348 0.13970     0
+10         MLE R=14  0.15323 0.15364 0.16054     0
+11         MLE R=20  0.14201 0.18813 0.19679     0
+12         MLE R=30  0.11504 0.24146 0.25588     0
+13         MLE R=50  0.06021 0.30816 0.33826     0
+14         MLE R=80 -0.01078 0.37928 0.43378     0
+15        MLE R=130 -0.10152 0.43342 0.52783     0
+16        MLE R=200 -0.16644 0.44951 0.57980     0
+
+  MLE's sd(xi-hat) by nominal threshold:
+    R=4:0.0758  R=6:0.0953  R=8:0.1106  R=11:0.1335  R=14:0.1536  R=20:0.1881  R=30:0.2415  R=50:0.3082  R=80:0.3793  R=130:0.4334  R=200:0.4495 
+
+  estimator          sd(xi)   R_e   equal-bias MLE   MLE nominal R matching this sd
+  L2 p^0             0.0821   18.6        5.2                4.6
+  L2 p^2             0.0877   22.5        6.3                5.2
+  L2 p^6             0.0952   27.5        7.7                6.0
+  L2 p^20            0.1078   37.3       10.4                7.6
+  invHuber k=4 p^6   0.0912   29.0        8.1                5.5
+
+  Read: if the last column exceeds the equal-bias column, the composite reaches
+  that effective threshold for LESS variance than raising a hard threshold would.
+
+
+--- n = 5000, 600 replicates ---
+(1.6 min)
+                est   mean      sd    rmse nfail
+1            L2 p^0 0.1753 0.03857 0.04577     0
+2            L2 p^2 0.1782 0.04277 0.04795     0
+3            L2 p^6 0.1801 0.04856 0.05245     0
+4           L2 p^20 0.1801 0.05940 0.06260     0
+5  invHuber k=4 p^6 0.1796 0.05033 0.05427     0
+6           MLE R=4 0.1690 0.03339 0.04551     0
+7           MLE R=6 0.1784 0.04052 0.04591     0
+8           MLE R=8 0.1824 0.04752 0.05062     0
+9          MLE R=11 0.1843 0.05619 0.05831     0
+10         MLE R=14 0.1838 0.06307 0.06505     0
+11         MLE R=20 0.1862 0.07992 0.08103     0
+12         MLE R=30 0.1837 0.09539 0.09670     0
+13         MLE R=50 0.1783 0.12918 0.13088     0
+14         MLE R=80 0.1612 0.16250 0.16694     0
+15        MLE R=130 0.1380 0.20834 0.21719     0
+16        MLE R=200 0.1116 0.27029 0.28415     0
+
+  MLE's sd(xi-hat) by nominal threshold:
+    R=4:0.0334  R=6:0.0405  R=8:0.0475  R=11:0.0562  R=14:0.0631  R=20:0.0799  R=30:0.0954  R=50:0.1292  R=80:0.1625  R=130:0.2083  R=200:0.2703 
+
+  estimator          sd(xi)   R_e   equal-bias MLE   MLE nominal R matching this sd
+  L2 p^0             0.0386   18.6        5.2                5.4
+  L2 p^2             0.0428   22.5        6.3                6.6
+  L2 p^6             0.0486   27.5        7.7                8.3
+  L2 p^20            0.0594   37.3       10.4               12.4
+  invHuber k=4 p^6   0.0503   29.0        8.1                8.9
+
+  Read: if the last column exceeds the equal-bias column, the composite reaches
+  that effective threshold for LESS variance than raising a hard threshold would.
