@@ -443,6 +443,14 @@ VERDICT = """
     before any tail focus is applied. Changing the matched functional from a likelihood to an
     expectile does more than the weight then does, which is the same decomposition the pseudo-true
     limits showed and is not how this method is usually motivated.</p></div>
+  <div class="finding"><div class="verdict-tag t-no">Two reversals</div>
+    <p><b>The asymptotics contradict two of this report's own findings.</b> The composite
+    estimators are Z-estimators, so the sandwich is available in closed form and was checked
+    against simulation to under 2% at n = 8000. It says the <em>pinball</em> loss is the more
+    efficient of the two at matched weight (sd 1.420 against 1.808) for every &xi; above about
+    0.06, and that the inverted Huber's interior optimum in k does not exist in the limit &mdash;
+    its variance is monotone in k, and plain L2 at a sharper weight reaches further for 3% less
+    variance. Sections 05 and 15 are right about n = 100 and wrong about why.</p></div>
   <div class="finding"><div class="verdict-tag t-mix">Bought with bandwidth</div>
     <p><b>Reaching further means reading less sharply.</b> The kernel &mdash; which part of the
     tail the estimator averages &mdash; spans 24&times; in return period for maximum likelihood and
@@ -2910,6 +2918,83 @@ estimator, not the quadrature: perturbing r&prime; by a <em>constant</em> c shif
 for maximum likelihood and 1.048c for composite L2, which is the same number by a different route.
 So the composite estimators are line fits through r only to about 5%, and the kernel quantiles
 above are renormalised. Fine for reading shape and spread; not a basis for arithmetic.</p></div>
+
+<h3>The variance, in closed form, and what it prices</h3>
+<p>The effective threshold says where an estimator reads; it says nothing about what that costs.
+That half is available too, and it turns out to be the same calculation. The criterion's
+first-order condition makes &theta;&#770; a <b>Z-estimator</b>: differentiating the composite
+criterion, &theta;&#770; solves n<sup>&minus;1</sup>&Sigma;<sub>i</sub> g(Y<sub>i</sub>,
+&theta;&#770;) = 0 with a score that is itself an integral over levels,</p>
+</div>
+<div class="eq">g(y, &theta;) = &#8747;&#8320;&sup1; w(p)&#8202;h&#8202;<sub>p</sub>(y, &theta;)&#8202;&nabla;&#8202;<sub>&theta;</sub>T&#8202;<sub>p</sub>(&theta;)&#8202;dp,    h&#8202;<sub>p</sub>(y, &theta;) = |p &minus; I(y &lt; T&#8202;<sub>p</sub>)|&#8202;&psi;(y &minus; T&#8202;<sub>p</sub>)</div>
+<div class="col">
+<p>so the ordinary sandwich applies: &radic;n(&theta;&#770; &minus; &theta;*) &rarr;
+N(0, A<sup>&minus;1</sup>BA<sup>&minus;&#8868;</sup>), and since
+E[h<sub>p</sub>(Y, &theta;)] = g<sub>p</sub><sup>F</sup>(T<sub>p</sub>(&theta;)), the &theta;* here
+is the pseudo-true parameter of section 17 &mdash; not a separate object.</p>
+</div>
+<div class="eq">A = &#8747; w(p)[&#8202;c&#8202;<sub>p</sub>&#8202;&nabla;T&#8202;<sub>p</sub>&nabla;T&#8202;<sub>p</sub><sup>&#8868;</sup> &minus; d&#8202;<sub>p</sub>&#8202;&nabla;&sup2;T&#8202;<sub>p</sub>&#8202;]&#8202;dp     B = &#8747;&#8747; w(p)w(q)&#8202;<span class="hl">&kappa;(p,q)</span>&#8202;&nabla;T&#8202;<sub>p</sub>&nabla;T&#8202;<sub>q</sub><sup>&#8868;</sup>&#8202;dp&#8202;dq
+
+c&#8202;<sub>p</sub> = E[&#8202;|p&minus;I(Y&lt;t&#8202;<sub>p</sub>)|&#8202;&psi;&prime;(Y&minus;t&#8202;<sub>p</sub>)&#8202;]    d&#8202;<sub>p</sub> = g&#8202;<sub>p</sub><sup>F</sup>(t&#8202;<sub>p</sub>)    &kappa;(p,q) = E[&#8202;h&#8202;<sub>p</sub>(Y)&#8202;h&#8202;<sub>q</sub>(Y)&#8202;]</div>
+<div class="col">
+<p>Three readings. The Hessian term carries <b>d<sub>p</sub>, the same level-by-level discrepancy
+that defines &theta;*</b>, so it vanishes identically at a correct model and A collapses to the
+outer product &mdash; misspecification enters the variance through a term that is exactly zero when
+the family is right. <b>B is a double integral</b> whose kernel &kappa;(p,q) is the covariance
+between the level-p and level-q contributions; for the pinball loss
+h<sub>p</sub>(y) = p &minus; I(y &lt; t<sub>p</sub>) exactly, so &kappa; reduces at a correct model
+to min(p,q) &minus; pq, the Brownian bridge. And c<sub>p</sub> is a probability for the smooth
+losses but a <em>density</em> for the pinball one, which is where the differing tail requirements
+of section 07 come from.</p>
+
+<div class="note"><span class="lab">Checked against simulation, not asserted</span>
+<p>3000 replicates at three sample sizes, in a correctly specified setting (d<sub>p</sub> = 0) and
+a misspecified one (max|d<sub>p</sub>| &asymp; 7&times;10<sup>&minus;3</sup>, so the Hessian term is
+live). Predicted sd of &radic;n&#8202;&xi;&#770; against simulated, at n = 8000: pinball
+<b>1.420 vs +0.8%</b> correct and <b>+0.3%</b> misspecified; asymmetric square at w = p&#8310;
+<b>1.808 vs +0.4%</b> and <b>+1.9%</b>; one-sided k = 4 <b>1.965 vs &minus;0.6%</b> and
+<b>+1.8%</b>. The correlation between the two components is reproduced as well as the margins
+(&minus;0.857 predicted, &minus;0.861 observed for L2). The one-sided loss converges far more
+slowly than the rest &mdash; 17% below its asymptotic spread at n = 500, against 8% for L2 and 3%
+for L1 &mdash; which matters for reading a report run at n = 100.</p></div>
+
+<h3>The reach&ndash;efficiency frontier, and two reversals</h3>
+<p>With the variance in the same closed form as the effective threshold, the two go on one axis.
+Variance below is on a correctly specified GPD(0, 1, 0.2); reach is on the misspecified GEV tail.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption>What each unit of reach costs. The asymptotic sd of &radic;n&#8202;&xi;&#770; is relative to
+the GPD MLE's exact 1 + &xi;.</caption>
+<thead><tr><th>estimator</th><th>effective threshold</th><th>sd(&radic;n&#8202;&xi;&#770;)</th><th>rel. MLE</th></tr></thead>
+<tbody>
+<tr class="ref"><td>GPD maximum likelihood</td><td>14.0</td><td>1.200</td><td>1.00</td></tr>
+<tr><td>pinball, w = 1</td><td class="lose">11.6</td><td class="lose">1.315</td><td class="lose">1.10</td></tr>
+<tr><td>pinball, w = p&#8310;</td><td>17.9</td><td>1.420</td><td>1.18</td></tr>
+<tr><td>pinball, w = p&sup2;&#8304;</td><td>26.9</td><td>1.765</td><td>1.47</td></tr>
+<tr><td>asym. square, w = 1</td><td>18.6</td><td>1.384</td><td>1.15</td></tr>
+<tr><td>asym. square, w = p&#8310;</td><td>27.5</td><td>1.808</td><td>1.51</td></tr>
+<tr><td><b>asym. square, w = p&#8312;</b></td><td><b>29.4</b></td><td><b>1.903</b></td><td><b>1.59</b></td></tr>
+<tr><td>asym. square, w = p&sup2;&#8304;</td><td>37.3</td><td>2.316</td><td>1.93</td></tr>
+<tr><td><b>one-sided, k = 4, w = p&#8310;</b></td><td><b>29.0</b></td><td class="lose"><b>1.965</b></td><td class="lose"><b>1.64</b></td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<div class="note"><span class="lab">Two of this report's findings reverse in the limit</span>
+<p><b>The pinball loss is asymptotically the more efficient of the two.</b> At matched weight on
+GPD(0, 1, 0.2) its sd is 1.420 against the asymmetric square's 1.808, and it is lower for every
+&xi; above about 0.06 &mdash; while the asymmetric square's variance diverges as &xi; &rarr; 1/2
+(1.81, 2.62, 4.46, 6.30, 8.64 at &xi; = 0.2, 0.3, 0.4, 0.45, 0.49) and the pinball loss's stays
+bounded (1.42 to 1.88). Section 05's two- to six-fold advantage for L2 is real at n = 100 and gone
+in the limit.</p>
+<p><b>The inverted Huber is asymptotically dominated.</b> At k = 4 it reads the 29.0-year level for
+sd 1.965; the plain asymmetric square at w = p&#8312; reads <em>further</em>, 29.4, for 3% less
+variance. Its asymptotic variance is monotone decreasing in k towards the pure-L2 limit, attained
+to five decimals by k = 64, so section 15's interior optimum at k = 4 has no asymptotic
+counterpart at all.</p>
+<p>Neither reversal makes the finite-sample results wrong &mdash; n = 100 is what a hydrologist
+has. Both mean the <em>explanation</em> offered for them is wrong: what the asymmetric square and
+the knot buy at n = 100 is finite-sample stability, not a better functional.</p></div>
 
 <h3>What this adds up to</h3>
 <p>The effective threshold reframes the whole method. A tail-weighted composite estimator is not an

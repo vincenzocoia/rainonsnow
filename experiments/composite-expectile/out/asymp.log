@@ -1,0 +1,66 @@
+=== Sandwich against Monte Carlo ===
+3000 replicates per cell; entries are sd of sqrt(n)(theta-hat - theta*)
+
+
+############ correct : GPD(1.00,0.20), u at S(u) = 1.000 ############
+
+composite L1, w=p^6
+  theta* = (1.00000, 0.20000)   max|d_p| = 2.31e-10
+  sandwich : sd sigma 1.9557   sd xi 1.4200   corr -0.744
+  n =   500 : sd sigma 2.0078 ( +2.7%)  sd xi 1.4581 ( +2.7%)  corr -0.750  sqrt(n)*bias (+0.23,-0.194)  fail 0
+  n =  2000 : sd sigma 1.9589 ( +0.2%)  sd xi 1.4501 ( +2.1%)  corr -0.744  sqrt(n)*bias (+0.05,-0.038)  fail 0
+  n =  8000 : sd sigma 1.9601 ( +0.2%)  sd xi 1.4317 ( +0.8%)  corr -0.745  sqrt(n)*bias (+0.09,-0.071)  fail 0
+
+composite L2, w=p^6
+  theta* = (1.00000, 0.20000)   max|d_p| = 2.97e-10
+  sandwich : sd sigma 2.7399   sd xi 1.8081   corr -0.857
+  n =   500 : sd sigma 2.4630 (-10.1%)  sd xi 1.6690 ( -7.7%)  corr -0.816  sqrt(n)*bias (+0.51,-0.296)  fail 0
+  n =  2000 : sd sigma 2.7358 ( -0.2%)  sd xi 1.8116 ( +0.2%)  corr -0.856  sqrt(n)*bias (+0.24,-0.174)  fail 0
+  n =  8000 : sd sigma 2.7804 ( +1.5%)  sd xi 1.8148 ( +0.4%)  corr -0.861  sqrt(n)*bias (+0.12,-0.084)  fail 0
+
+composite L2, w=p^2
+  theta* = (1.00000, 0.20000)   max|d_p| = 2.85e-10
+  sandwich : sd sigma 2.1282   sd xi 1.5618   corr -0.799
+  n =   500 : sd sigma 2.0688 ( -2.8%)  sd xi 1.4946 ( -4.3%)  corr -0.772  sqrt(n)*bias (+0.30,-0.231)  fail 0
+  n =  2000 : sd sigma 2.1412 ( +0.6%)  sd xi 1.5658 ( +0.3%)  corr -0.791  sqrt(n)*bias (+0.19,-0.088)  fail 0
+  n =  8000 : sd sigma 2.1531 ( +1.2%)  sd xi 1.5773 ( +1.0%)  corr -0.809  sqrt(n)*bias (+0.10,-0.099)  fail 0
+
+inv Huber k=4, w=p^6
+  theta* = (1.00000, 0.20000)   max|d_p| = 2.99e-10
+  sandwich : sd sigma 3.0922   sd xi 1.9649   corr -0.881
+  n =   500 : sd sigma 2.5088 (-18.9%)  sd xi 1.6253 (-17.3%)  corr -0.808  sqrt(n)*bias (+0.79,-0.453)  fail 0
+  n =  2000 : sd sigma 3.0081 ( -2.7%)  sd xi 1.9018 ( -3.2%)  corr -0.876  sqrt(n)*bias (+0.33,-0.228)  fail 0
+  n =  8000 : sd sigma 3.1162 ( +0.8%)  sd xi 1.9537 ( -0.6%)  corr -0.882  sqrt(n)*bias (+0.13,-0.078)  fail 0
+
+
+############ misspec : GEV xi=0.20, u at S(u) = 0.250 ############
+
+composite L1, w=p^6
+  theta* = (1.41876, 0.17605)   max|d_p| = 7.12e-03
+  sandwich : sd sigma 2.7104   sd xi 1.4215   corr -0.749
+  n =   500 : sd sigma 2.6884 ( -0.8%)  sd xi 1.4164 ( -0.4%)  corr -0.740  sqrt(n)*bias (+0.28,-0.151)  fail 0
+  n =  2000 : sd sigma 2.6474 ( -2.3%)  sd xi 1.4061 ( -1.1%)  corr -0.736  sqrt(n)*bias (+0.12,-0.071)  fail 0
+  n =  8000 : sd sigma 2.7405 ( +1.1%)  sd xi 1.4260 ( +0.3%)  corr -0.756  sqrt(n)*bias (+0.09,-0.049)  fail 0
+
+composite L2, w=p^6
+  theta* = (1.40419, 0.18478)   max|d_p| = 7.25e-03
+  sandwich : sd sigma 3.8021   sd xi 1.8272   corr -0.864
+  n =   500 : sd sigma 3.3953 (-10.7%)  sd xi 1.6269 (-11.0%)  corr -0.820  sqrt(n)*bias (+0.71,-0.330)  fail 0
+  n =  2000 : sd sigma 3.6422 ( -4.2%)  sd xi 1.7540 ( -4.0%)  corr -0.851  sqrt(n)*bias (+0.38,-0.191)  fail 0
+  n =  8000 : sd sigma 3.7984 ( -0.1%)  sd xi 1.8616 ( +1.9%)  corr -0.866  sqrt(n)*bias (+0.33,-0.149)  fail 0
+
+composite L2, w=p^2
+  theta* = (1.41502, 0.18118)   max|d_p| = 4.87e-03
+  sandwich : sd sigma 2.9743   sd xi 1.5847   corr -0.809
+  n =   500 : sd sigma 2.8731 ( -3.4%)  sd xi 1.5246 ( -3.8%)  corr -0.782  sqrt(n)*bias (+0.39,-0.231)  fail 0
+  n =  2000 : sd sigma 2.9617 ( -0.4%)  sd xi 1.5510 ( -2.1%)  corr -0.811  sqrt(n)*bias (+0.21,-0.089)  fail 0
+  n =  8000 : sd sigma 2.9050 ( -2.3%)  sd xi 1.5269 ( -3.6%)  corr -0.795  sqrt(n)*bias (+0.24,-0.111)  fail 0
+
+inv Huber k=4, w=p^6
+  theta* = (1.40192, 0.18561)   max|d_p| = 7.72e-03
+  sandwich : sd sigma 4.2604   sd xi 1.9793   corr -0.886
+  n =   500 : sd sigma 3.4850 (-18.2%)  sd xi 1.6333 (-17.5%)  corr -0.818  sqrt(n)*bias (+0.99,-0.398)  fail 0
+  n =  2000 : sd sigma 4.2481 ( -0.3%)  sd xi 1.9968 ( +0.9%)  corr -0.893  sqrt(n)*bias (+0.45,-0.204)  fail 0
+  n =  8000 : sd sigma 4.3493 ( +2.1%)  sd xi 2.0146 ( +1.8%)  corr -0.892  sqrt(n)*bias (+0.11,-0.061)  fail 0
+
+wrote out/asymp-check.txt

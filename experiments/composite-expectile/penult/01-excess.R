@@ -73,6 +73,9 @@ excess_on <- function(base, rfun = NULL) {
          if (any(hi)) o[hi] <- phi_hi * gpd_pow(z[hi] - y_hi, 1 - xi_hi)
          o },
        Qc = function(p) expm1(sp_y(-log1p(-p))),
+       ## r and the density on the exceedance law, for the sandwich's c_p term
+       rq = function(z) approx(y, rn, pmin(pmax(z, 0), y_hi), rule = 2)$y,
+       fc = function(z) Scfun(z) / approx(y, rn, pmin(pmax(z, 0), y_hi), rule = 2)$y,
        e_of_y = function(z) sp_e(log1p(pmax(z, 0))))
 }
 # E[(z-Z)^+] = z - E[Z] + E[(Z-z)^+] above the support's lower end, and is

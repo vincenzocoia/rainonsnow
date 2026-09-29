@@ -100,8 +100,12 @@ code{font-family:var(--mono);font-size:.88em;background:none;padding:0}
 thresholds, where the family is typically adequate in the tail and wrong in the body. Global
 criteria &mdash; likelihood, L-moments &mdash; distribute that misspecification across the whole
 distribution and bias the extrapolation of interest. We study estimators that integrate an
-asymmetric loss over probability levels against a measure concentrated in the tail, and place them
-in the M-quantile family. Replacing the pinball loss of the composite quantile estimator by its
+asymmetric loss over probability levels against a measure concentrated in the tail, place them
+in the M-quantile family, and give their asymptotic distribution: the criterion's first-order
+condition makes the estimator a Z-estimator whose score is itself an integral over levels, so a
+sandwich applies in which the Hessian term carries the level-by-level misspecification discrepancy
+and the middle term is a weighted double integral of a covariance kernel across levels &mdash; for
+the pinball loss, the covariance of the Brownian bridge. Replacing the pinball loss of the composite quantile estimator by its
 asymmetric-least-squares analogue reduces mean squared error at the 1000-year return level by a
 factor of two to six, at the cost of a structural obstacle: the expectile identification equation
 contains the distribution's mean, so no weight makes the estimator asymptotically unbiased under
@@ -115,9 +119,14 @@ the conventional reference discards nine tenths of the sample. Compared directly
 tail-weighted likelihood, the composite criteria lead when fitting a generalized Pareto tail above
 a known threshold and trail when fitting a generalized extreme value distribution to block maxima,
 which we read as efficiency recovered on a poorly identified problem rather than as a verdict on
-either construction.</p>
+either construction. Finally, penultimate approximation gives the construction an
+<em>effective threshold</em> &mdash; the return period whose local penultimate shape equals what
+the estimator returns &mdash; which turns the weight into a quantity a hydrologist can argue with,
+prices it against the asymptotic variance, and shows that most of the reach comes from the choice
+of matched functional rather than from the tail weighting.</p>
 </div>
 <p class="keywords"><b>Keywords:</b> tail robustness &middot; expectiles &middot; M-quantiles
+&middot; penultimate approximation &middot; sandwich variance
 &middot; generalized extreme value &middot; generalized Pareto &middot; return level &middot;
 model misspecification &middot; flood frequency</p>
 
@@ -278,18 +287,111 @@ integral equations in (&sigma;, &xi;):</p>
 differentiation is required anywhere.</p>
 </div>
 
-<h3><span class="n">2.4</span>Closed forms</h3>
+
+<h3><span class="n">2.4</span>Asymptotic distribution</h3>
+<div class="col">
+<p>The same differentiation that produced (4) makes &theta;&#770; a Z-estimator, and the rest
+follows. Writing the first-order condition of (1) as a sample average,
+n<sup>&minus;1</sup>&Sigma;<sub>i</sub> g(Y<sub>i</sub>, &theta;&#770;) = 0 with</p>
+</div>
+<div class="eq"><div class="body">g(y, &theta;) = &#8747;&#8320;&sup1; w(p)&#8202;h<sub>p</sub>(y, &theta;)&#8202;&nabla;&#8202;<sub>&theta;</sub>T&#8202;<sub>p</sub>(&theta;)&#8202;dp,    h<sub>p</sub>(y, &theta;) = |p &minus; I(y &lt; T<sub>p</sub>(&theta;))|&#8202;&psi;(y &minus; T<sub>p</sub>(&theta;))</div><div class="tag">(7)</div></div>
+<div class="col">
+<p>Each observation contributes to <em>every</em> level, weighted by w and by the sensitivity (5).
+Since E<sub>F</sub>[h<sub>p</sub>(Y, &theta;)] = g<sub>p</sub><sup>F</sup>(T<sub>p</sub>(&theta;)),
+the expected score is exactly the left-hand side of (4): the pseudo-true limit of Section 2.3 is
+the Z-estimator's limit, not a separate object.</p>
+</div>
+<div class="prop"><span class="lab">Proposition 3 &mdash; asymptotic normality</span>
+<p>Suppose &theta;* is the unique root of E<sub>F</sub>&#8202;g(&middot;, &theta;) = 0 in a
+neighbourhood, that A below is nonsingular, and that
+E<sub>F</sub>&#8202;&#8214;g(Y, &theta;*)&#8214;&sup2; &lt; &infin;. Then
+&radic;n&#8202;(&theta;&#770; &minus; &theta;*) &rarr;<sub>d</sub>
+N(0, A<sup>&minus;1</sup>B&#8202;A<sup>&minus;&#8868;</sup>), with A and B given by (8).</p></div>
+<div class="eq"><div class="body">A = &#8747; w(p)&#8202;[&#8202;c<sub>p</sub>&#8202;&nabla;T<sub>p</sub>&nabla;T<sub>p</sub><sup>&#8868;</sup> &minus; d<sub>p</sub>&#8202;&nabla;&sup2;T<sub>p</sub>&#8202;]&#8202;dp,    B = &#8747;&#8747; w(p)w(q)&#8202;&kappa;(p,q)&#8202;&nabla;T<sub>p</sub>&nabla;T<sub>q</sub><sup>&#8868;</sup>&#8202;dp&#8202;dq
+
+c<sub>p</sub> = E[&#8202;|p &minus; I(Y &lt; t<sub>p</sub>)|&#8202;&psi;&prime;(Y &minus; t<sub>p</sub>)&#8202;],   d<sub>p</sub> = g&#8202;<sub>p</sub><sup>F</sup>(t<sub>p</sub>),   &kappa;(p,q) = E[&#8202;h<sub>p</sub>(Y)&#8202;h<sub>q</sub>(Y)&#8202;]</div><div class="tag">(8)</div></div>
+<div class="col">
+<p>all evaluated at &theta;*, with t<sub>p</sub> = T<sub>p</sub>(&theta;*). Three features are
+worth drawing out, because they are what the sandwich buys beyond a standard error.</p>
+
+<p><strong>The Hessian term carries the discrepancy.</strong> d<sub>p</sub> is the same
+level-by-level discrepancy that defines &theta;* through (4). It vanishes identically when the
+model is correctly specified, and A collapses to the outer product alone. Misspecification thus
+enters the variance through a term that is exactly zero at a correct model, which also means the
+naive information-matrix variance is valid precisely when the family is right &mdash; the usual
+sandwich story, but here with an interpretable middle rather than an opaque one.</p>
+
+<p><strong>B is a double integral, and its kernel is familiar.</strong> The variance is governed by
+&kappa;(p, q), the covariance between the level-p and level-q contributions. For the pinball loss
+h<sub>p</sub>(y) = p &minus; I(y &lt; t<sub>p</sub>) exactly, so
+&kappa;(p,q) = pq &minus; p&#8202;F(t<sub>q</sub>) &minus; q&#8202;F(t<sub>p</sub>) +
+F(t<sub>p&#8743;q</sub>), which at a correct model reduces to min(p,q) &minus; pq &mdash; the
+covariance of the Brownian bridge. The composite quantile estimator's variance is therefore a
+w-weighted double integral of the classical quantile-process covariance, which we think is the
+clearest available statement of what the construction does.</p>
+
+<p><strong>c<sub>p</sub> is where &psi;&prime; lives</strong>, and it is a probability for the smooth
+losses but a <em>density</em> for the pinball one, which is the source of the differing tail
+requirements in Table 3:</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption><b>Table 1.</b> The local sensitivity c<sub>p</sub> for each member, in closed form. Only
+&kappa; then remains, and for the asymmetric square it needs only truncated first and second
+moments of the truth.</caption>
+<thead><tr><th>loss</th><th>&psi;&prime;(v)</th><th>c<sub>p</sub></th></tr></thead>
+<tbody>
+<tr><td>pinball</td><td>2&delta;<sub>0</sub>(v)</td><td>f(t<sub>p</sub>)</td></tr>
+<tr><td>asymmetric square</td><td>1</td><td>p&#8202;S(t<sub>p</sub>) + (1&minus;p)&#8202;F(t<sub>p</sub>)</td></tr>
+<tr><td>&alpha;-elastile</td><td>2&alpha;/s + 2(1&minus;&alpha;)&delta;<sub>0</sub>(v)</td><td>(2&alpha;/s)[p&#8202;S + (1&minus;p)F] + (1&minus;&alpha;)&#8202;f(t<sub>p</sub>)</td></tr>
+<tr><td>one-sided, knot c</td><td>I(v &gt; &minus;c)</td><td>p&#8202;S(t<sub>p</sub>) + (1&minus;p)[F(t<sub>p</sub>) &minus; F(t<sub>p</sub>&minus;c)]</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p>The construction was checked against simulation rather than asserted. Table 2 compares the
+predicted standard deviation of &radic;n&#8202;&xi;&#770; with 3000 replicates at three sample
+sizes, in both a correctly specified setting (d<sub>p</sub> = 0, so A is the outer product) and a
+misspecified one (exceedances of GEV(0, 1, 0.2) over its 0.75-quantile, where
+max|d<sub>p</sub>| &asymp; 7&times;10<sup>&minus;3</sup> and the Hessian term is live). The
+correlation between the two components is reproduced as well as the margins: &minus;0.744 predicted
+against &minus;0.745 observed for the pinball loss, &minus;0.857 against &minus;0.861 for the
+asymmetric square.</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption><b>Table 2.</b> Sandwich against Monte Carlo. The first column is the predicted sd of
+&radic;n&#8202;&xi;&#770;; the rest are the simulated values as a percentage departure from it,
+3000 replicates each. The threshold is held at its population value so that the comparison is with
+the theory as stated.</caption>
+<thead><tr><th rowspan="2">estimator</th><th colspan="4">correct: GPD(0, 1, 0.2)</th><th colspan="4">misspecified: GEV tail over R = 4</th></tr>
+<tr><th>sandwich</th><th>n=500</th><th>n=2000</th><th>n=8000</th><th>sandwich</th><th>n=500</th><th>n=2000</th><th>n=8000</th></tr></thead>
+<tbody>
+<tr><td>pinball, w = p&#8310;</td><td>1.420</td><td>+2.7%</td><td>+2.1%</td><td class="win">+0.8%</td><td>1.422</td><td>&minus;0.4%</td><td>&minus;1.1%</td><td class="win">+0.3%</td></tr>
+<tr><td>asym. square, w = p&sup2;</td><td>1.562</td><td>&minus;4.3%</td><td>+0.3%</td><td class="win">+1.0%</td><td>1.585</td><td>&minus;3.8%</td><td>&minus;2.1%</td><td>&minus;3.6%</td></tr>
+<tr><td>asym. square, w = p&#8310;</td><td>1.808</td><td>&minus;7.7%</td><td>+0.2%</td><td class="win">+0.4%</td><td>1.827</td><td>&minus;11.0%</td><td>&minus;4.0%</td><td class="win">+1.9%</td></tr>
+<tr><td>one-sided, k = 4</td><td>1.965</td><td class="lose">&minus;17.3%</td><td>&minus;3.2%</td><td class="win">&minus;0.6%</td><td>1.979</td><td class="lose">&minus;17.5%</td><td class="win">+0.9%</td><td>+1.8%</td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<div class="note"><p>The one-sided loss converges far more slowly than the others: at n = 500 its
+sampling spread is 17% below the asymptotic value in both settings, against 8% for the asymmetric
+square and 3% for the pinball loss. That ordering matters for reading Section 5, which is run
+at n = 100. A loss whose &psi; is capped below has a score with a bounded left tail and a heavy
+right one, and the resulting skewness is slow to wash out.</p></div>
+</div>
+
+<h3><span class="n">2.5</span>Closed forms</h3>
 <div class="col">
 <p>Equation (2) is tractable for both extreme-value families because each identification equation
 reduces to the first partial moment</p>
 </div>
-<div class="eq"><div class="body">&phi;(x) = E[(Y &minus; x)<sup>+</sup>]</div><div class="tag">(7)</div></div>
+<div class="eq"><div class="body">&phi;(x) = E[(Y &minus; x)<sup>+</sup>]</div><div class="tag">(9)</div></div>
 <div class="col">
 <p>which is available in closed form: for the GPD,
 &phi;(x) = (&sigma; + &xi;(x &minus; &mu;))&#8202;S(x)/(1 &minus; &xi;); for the GEV, in terms of a
 lower incomplete gamma function. The expectile is then the unique root of</p>
 </div>
-<div class="eq"><div class="body">k&#8202;&phi;(t) + m &minus; t = 0,    k = (2p &minus; 1)/(1 &minus; p),   m = E[Y]</div><div class="tag">(8)</div></div>
+<div class="eq"><div class="body">k&#8202;&phi;(t) + m &minus; t = 0,    k = (2p &minus; 1)/(1 &minus; p),   m = E[Y]</div><div class="tag">(10)</div></div>
 <div class="col">
 <p>a strictly decreasing function of t admitting a safeguarded Newton solution in a handful of
 iterations. The elastile requires only the same ingredients. In consequence the composite criterion
@@ -319,11 +421,11 @@ criterion needs E|Y|<sup>a</sup>; the loss <em>difference</em> against a fixed r
 which has the same minimiser, is bounded by C(1 + |Y|<sup>a&minus;1</sup>), as is the estimating
 equation it differentiates to, so the functional is defined under E|Y|<sup>a&minus;1</sup>; and the
 sandwich variance needs the square of that score, E|Y|<sup>2(a&minus;1)</sup>. Reading these off a
-GPD tail with index 1/&xi; gives Table 1.</p>
+GPD tail with index 1/&xi; gives Table 3.</p>
 </div>
 <div class="tablewrap">
 <table>
-<caption><b>Table 1.</b> What each loss requires of the tail, for a GPD with shape &xi;. Only the
+<caption><b>Table 3.</b> What each loss requires of the tail, for a GPD with shape &xi;. Only the
 middle column decides whether the target functional exists; the first is repaired for free by the
 loss-difference form.</caption>
 <thead><tr><th>loss</th><th>raw criterion finite</th><th>functional defined</th><th>root-n asymptotics</th></tr></thead>
@@ -336,6 +438,13 @@ loss-difference form.</caption>
 </tbody></table>
 </div>
 <div class="col">
+<p>The third column is a prediction of Proposition 3, and it can be checked rather than asserted.
+Evaluating (8) on a correctly specified GPD(0, 1, &xi;) with w = p&#8310;, the asymptotic sd of
+&radic;n&#8202;&xi;&#770; for the asymmetric square runs 1.25, 1.81, 2.62, 4.46, 6.30, 8.64 as &xi;
+goes 0.05, 0.2, 0.3, 0.4, 0.45, 0.49 &mdash; diverging as &xi; approaches 1/2 &mdash; while the
+pinball loss runs 1.26, 1.42, 1.55, 1.71, 1.80, 1.88 and stays bounded. The ratio between them is
+0.99 at &xi; = 0.05 and 4.6 at &xi; = 0.49.</p>
+
 <p>Two consequences. The quantile requires nothing: the &xi; &lt; 1 in its first column is an
 artefact of not recentring. And the elastile buys no additional domain &mdash; a sum is finite only
 if both terms are, so every &alpha; above zero inherits the expectile's thresholds. Mixing trades
@@ -360,7 +469,7 @@ the weight must be chosen relative to the sample size, not in the abstract.</p>
 <h2><span class="n">4</span><span>Mean anchoring, and a loss that removes it</span></h2>
 <div class="col">
 <p>The expectile's advantage over the quantile &mdash; that it uses magnitudes &mdash; is also the
-source of a structural problem, visible in (8).</p>
+source of a structural problem, visible in (10).</p>
 </div>
 <div class="prop"><span class="lab">Proposition 1 &mdash; mean anchoring</span>
 <p>The level-p expectile solves p&#8202;E[(Y &minus; t)<sup>+</sup>] =
@@ -378,7 +487,7 @@ expectile estimator is not. The effect is not negligible. For the contaminated G
 the truth's expectile at p = 0.98 sits 9.73% above its own GEV component's, and at p = 0.99 still
 7.03%, while the corresponding quantile figures are zero to four decimals.</p>
 
-<p>One obvious repair is to substitute the sample mean for the model's in (8). This works
+<p>One obvious repair is to substitute the sample mean for the model's in (10). This works
 asymptotically &mdash; it reduces the surviving contamination at p = 0.98 from 9.73% to 0.0001% and
 puts the estimator's asymptotic target on the true parameters &mdash; and fails in practice, because
 at n = 100 the sample mean of a heavy-tailed sample is too noisy: the corrected estimator loses on
@@ -388,7 +497,7 @@ every finite-sample criterion we measured. A structural repair is available inst
 <p>Take the one-sided influence function &psi;<sub>c</sub>(u) = max(u, &minus;c), linear above the
 fitted level and capped at &minus;c below it. Substituting into (2) and using the identity above,
 the two mean terms cancel and the identification equation becomes</p>
-<div class="eq" style="margin:14px 0"><div class="body">p&#8202;&phi;(t) = (1 &minus; p)&#8202;[ c + &phi;(t) &minus; &phi;(t &minus; c) ]</div><div class="tag">(9)</div></div>
+<div class="eq" style="margin:14px 0"><div class="body">p&#8202;&phi;(t) = (1 &minus; p)&#8202;[ c + &phi;(t) &minus; &phi;(t &minus; c) ]</div><div class="tag">(11)</div></div>
 <p>which involves F only through &phi; at t and at t &minus; c. Since
 &phi;(x) = &#8747;<sub>x</sub><sup>&infin;</sup> S(u) du, the level-p functional
 t<sub>p</sub>(F) depends on F only through its restriction to [t<sub>p</sub> &minus; c, &infin;). It
@@ -495,11 +604,11 @@ suggestive derivation attached, not as theory confirmed by simulation.</p></div>
 <div class="col">
 <p>None of the above is deployable without knowing what it costs when the family is right. We
 therefore repeat the study on data drawn from the fitted family exactly. On iid GEV(0, 1, 0.2) at
-n = 100, where maximum likelihood is efficient, the composite estimators lose (Table 2).</p>
+n = 100, where maximum likelihood is efficient, the composite estimators lose (Table 4).</p>
 </div>
 <div class="tablewrap">
 <table>
-<caption><b>Table 2.</b> MSE relative to the GEV MLE on data that really are GEV, n = 100, 2000
+<caption><b>Table 4.</b> MSE relative to the GEV MLE on data that really are GEV, n = 100, 2000
 replicates. Above 1 is the price paid. The final column is the median fitted shape against a true
 &xi; = 0.2.</caption>
 <thead><tr><th>estimator</th><th>T=2</th><th>T=10</th><th>T=48</th><th>T=203</th><th>T=529</th><th>T=1000</th><th>median &xi;&#770;</th></tr></thead>
@@ -524,7 +633,7 @@ construction has no regime in which it is preferred.</p>
 <div class="note"><p><b>The bias runs in the unsafe direction.</b> At T = 1000 the MLE is biased
 +1.01 and L-moments +0.45, while the composite expectile is &minus;1.52 and the one-sided loss
 &minus;1.93. The composite estimators under-predict the far tail, which for design purposes is the
-dangerous direction. The cause is in the last column of Table 2: tail-weighted fitting underestimates
+dangerous direction. The cause is in the last column of Table 4: tail-weighted fitting underestimates
 the shape parameter badly at n = 100 even with a perfect family, and a low shape shrinks the
 extrapolation.</p></div>
 
@@ -532,14 +641,14 @@ extrapolation.</p></div>
 known at zero &mdash; two parameters, the same two for every estimator, a regular problem in which
 the MLE is efficient &mdash; L-moments beats the MLE at every return period, the small-sample result reported by Hosking and
 Wallis (1987), so it is the honest yardstick. Against it, only the one-sided loss wins, and only beyond
-about T = 26 (Table 3). Crucially, when a GPD is deployed above a threshold with exceedance rate
+about T = 26 (Table 5). Crucially, when a GPD is deployed above a threshold with exceedance rate
 &zeta;, the T-year level solves &zeta;&#8202;S(x) = 1/T, so a column labelled T here is the
 (T/&zeta;)-year level. With &zeta; = 0.1 the 50-to-1000-year range that design work occupies is
 T = 5 to 100 in this table &mdash; the middle, not the right edge.</p>
 </div>
 <div class="tablewrap">
 <table>
-<caption><b>Table 3.</b> MSE relative to GPD L-moments on data that really are GPD, threshold known,
+<caption><b>Table 5.</b> MSE relative to GPD L-moments on data that really are GPD, threshold known,
 n = 100. All rows grafted. Below 1 is better than L-moments. The second row gives the corresponding
 return period when the GPD sits above a threshold with exceedance rate &zeta; = 0.1.</caption>
 <thead><tr><th>estimator</th><th>T=2</th><th>T=5</th><th>T=10</th><th>T=26</th><th>T=48</th><th>T=107</th><th>T=1000</th></tr></thead>
@@ -611,7 +720,7 @@ matches that to a maximum log-ratio of 2.7&times;10<sup>&minus;7</sup> at u = 10
 </div>
 <div class="tablewrap">
 <table>
-<caption><b>Table 4.</b> Pseudo-true GPD limits above u = 3.16 with w(p) = p<sup>6</sup>, solved
+<caption><b>Table 6.</b> Pseudo-true GPD limits above u = 3.16 with w(p) = p<sup>6</sup>, solved
 from (4) to a residual below 10<sup>&minus;10</sup>. The likelihood limit minimises
 Kullback&ndash;Leibler divergence and the L-moment limit matches the first two L-moments; both are
 obtained exactly. The right-hand block sweeps the weight for the asymmetric square.</caption>
@@ -657,9 +766,9 @@ here. The limit is a target for the shape; the truth is the target for the level
 the likelihood rather than the loss. For a model density h and a non-decreasing weight
 &omega; bounded away from zero, MWLE maximises</p>
 </div>
-<div class="eq"><div class="body">&#8467;(&theta;) = &Sigma;<sub>i</sub>&#8202;&omega;(y<sub>i</sub>)&#8202;log h(y<sub>i</sub>; &theta;) &minus; [&Sigma;<sub>i</sub>&#8202;&omega;(y<sub>i</sub>)]&#8202;log C(&theta;),    C(&theta;) = &#8747; h(u; &theta;)&#8202;&omega;(u)&#8202;du</div><div class="tag">(10)</div></div>
+<div class="eq"><div class="body">&#8467;(&theta;) = &Sigma;<sub>i</sub>&#8202;&omega;(y<sub>i</sub>)&#8202;log h(y<sub>i</sub>; &theta;) &minus; [&Sigma;<sub>i</sub>&#8202;&omega;(y<sub>i</sub>)]&#8202;log C(&theta;),    C(&theta;) = &#8747; h(u; &theta;)&#8202;&omega;(u)&#8202;du</div><div class="tag">(12)</div></div>
 <div class="col">
-<p>The normaliser makes (10) a genuine log-likelihood for the tilted density h&omega;/C, so under
+<p>The normaliser makes (12) a genuine log-likelihood for the tilted density h&omega;/C, so under
 misspecification it converges to a Kullback&ndash;Leibler projection taken in the tilted metric
 &mdash; a tail-weighted version of the same target maximum likelihood aims at. It is therefore a
 direct competitor rather than a related idea, and a comparison is owed.</p>
@@ -675,7 +784,7 @@ to five decimal places in both families.</p>
 </div>
 <div class="tablewrap">
 <table>
-<caption><b>Table 5.</b> GEV family, n = 100, 2000 replicates, MSE relative to the GEV maximum
+<caption><b>Table 7.</b> GEV family, n = 100, 2000 replicates, MSE relative to the GEV maximum
 likelihood estimator. Left block, the contaminated truth of Section 5.1; right block, exactly
 correct GEV(0, 1, 0.2). The last column is the median fitted shape under contamination against a
 true &xi; = 0.2.</caption>
@@ -702,7 +811,7 @@ has discarded the body &mdash; and it is repaired the same way, by grafting.</p>
 </div>
 <div class="tablewrap">
 <table>
-<caption><b>Table 6.</b> GPD family, n = 100. Left block, exceedances over the sample
+<caption><b>Table 8.</b> GPD family, n = 100. Left block, exceedances over the sample
 0.90-quantile of the contaminated truth, three parameters, relative to POT&ndash;MLE(0.90). Right
 block, exactly correct GPD(0, 0.5, 0.2) with the threshold known, two parameters, relative to the
 GPD MLE. Rows are grafted onto an empirical body except where marked ungrafted; the two reference
@@ -737,17 +846,150 @@ whereas a composite criterion still integrates over levels below the join with s
 weight.</p></div>
 </div>
 
-<h2><span class="n">6</span><span>Discussion</span></h2>
+
+<h2><span class="n">6</span><span>The effective threshold</span></h2>
+<div class="col">
+<p>Penultimate approximation supplies the frame this construction has been missing. The
+extreme-value family is never exactly right at a finite level, and the shape best describing the
+data varies with how far out one looks (Fisher and Tippett, 1928; Gomes and de Haan, 1999). A
+tail-weighted estimator fitted above a low threshold is therefore not doing something the threshold
+framework cannot express: it is behaving <em>as if</em> handed a higher threshold, and the question
+is which one.</p>
+
+<p>The coordinate that makes this precise is the reciprocal hazard r(x) = S(x)/f(x). A GPD anchored
+at u has r(u+y) = &sigma; + &xi;y exactly &mdash; a straight line whose intercept is the scale and
+whose slope is the shape. So for any distribution r(x) is the penultimate scale at level x,
+r&prime;(x) the penultimate shape, and lim r&prime; the ultimate shape. Fitting a GPD is fitting a
+line through r, and estimators differ only in where along r they read.</p>
+</div>
+<div class="eq"><div class="body">effective threshold:  the return period R = 1/S(x<sub>e</sub>) at which  r&prime;(x<sub>e</sub>) = &xi;*
+
+kernel:               &xi;* = &#8747; K(s)&#8202;r&prime;(u+s)&#8202;ds,  K &ge; 0, &#8747;K = 1</div><div class="tag">(13)</div></div>
+<div class="col">
+<p>&xi;* is the pseudo-true shape of Section 2.3, so the effective threshold is the level whose
+local penultimate shape equals what the estimator actually returns; the kernel says which band of
+the tail that average is taken over. K is recovered without assuming the representation holds, by
+perturbing r with a smooth <em>step</em> at position s &mdash; a unit-mass bump in r&prime; there
+&mdash; and reading K(s) = &part;&xi;*/&part;&epsilon;. The construction is due to a companion study
+of smooth grafting, which applied it to maximum likelihood, weighted composite likelihood and
+Luce&ntilde;o's AD2R; our implementation reproduces its published figures for maximum likelihood
+(effective threshold 12.7&ndash;15.5 against 13&ndash;16; kernel 10% point 6.3&ndash;6.8 against
+6.5) and passes its consistency check, that the target's own scale agrees with the penultimate GPD
+at x<sub>e</sub> carried back to u, to 4%.</p>
+
+<h3><span class="n">6.1</span>Where the family sits, and what it costs</h3>
+<p>Everything below is population-level quadrature against a known distribution. Fitting is above
+R = 4 throughout. Because Section 2.4 gives the asymptotic variance in the same closed form, the
+two can be put on one axis: what does each unit of reach cost in efficiency?</p>
+</div>
+<div class="tablewrap">
+<table>
+<caption><b>Table 9.</b> The reach&ndash;efficiency frontier. Effective threshold on the
+misspecified GEV(0, 1, 0.2) tail; asymptotic sd of &radic;n&#8202;&xi;&#770; from (8) on a correctly
+specified GPD(0, 1, 0.2), relative to the GPD maximum likelihood estimator's exact 1 + &xi;.</caption>
+<thead><tr><th>estimator</th><th>effective threshold</th><th>sd(&radic;n&#8202;&xi;&#770;)</th><th>relative to MLE</th></tr></thead>
+<tbody>
+<tr class="ref"><td>GPD maximum likelihood</td><td>14.0</td><td>1.200</td><td>1.00</td></tr>
+<tr><td>pinball, w = 1</td><td class="lose">11.6</td><td class="lose">1.315</td><td class="lose">1.10</td></tr>
+<tr><td>pinball, w = p&#8310;</td><td>17.9</td><td>1.420</td><td>1.18</td></tr>
+<tr><td>pinball, w = p&sup2;&#8304;</td><td>26.9</td><td>1.765</td><td>1.47</td></tr>
+<tr><td>asymmetric square, w = 1</td><td>18.6</td><td>1.384</td><td>1.15</td></tr>
+<tr><td>asymmetric square, w = p&sup2;</td><td>22.5</td><td>1.562</td><td>1.30</td></tr>
+<tr><td>asymmetric square, w = p&#8310;</td><td>27.5</td><td>1.808</td><td>1.51</td></tr>
+<tr><td><b>asymmetric square, w = p&#8312;</b></td><td><b>29.4</b></td><td><b>1.903</b></td><td><b>1.59</b></td></tr>
+<tr><td>asymmetric square, w = p&sup2;&#8304;</td><td>37.3</td><td>2.316</td><td>1.93</td></tr>
+<tr><td><b>one-sided, k = 4, w = p&#8310;</b></td><td><b>29.0</b></td><td class="lose"><b>1.965</b></td><td class="lose"><b>1.64</b></td></tr>
+</tbody></table>
+</div>
+<div class="col">
+<p><strong>Most of the reach is not the weight.</strong> The asymmetric square with a <em>flat</em>
+weight already reads the 18.6-year level against maximum likelihood's 14.0, for a 15% variance
+premium &mdash; before any tail focus is applied. Changing the matched functional from a likelihood
+to an expectile does more than the weight then does. This is the same decomposition Table 6 showed
+in the pseudo-true limits, and it is not how the construction is usually motivated, including by
+us.</p>
+
+<p><strong>The pinball loss moves the reading point the wrong way.</strong> With a flat weight it
+reads the 11.6-year level &mdash; <em>below</em> maximum likelihood &mdash; while costing 10% more
+variance. It is strictly dominated there, on both axes at once. It takes w = p&sup2;&#8304; to drag
+it to 26.9, which the asymmetric square reaches at w = p&#8310; for less variance. Quantile matching
+pulls the estimator in; expectile matching pushes it out. This is a second and independent reason
+to prefer the asymmetric square, unrelated to the finite-sample variance argument of Section 5.2.</p>
+
+<div class="prop"><span class="lab">The one-sided loss is asymptotically dominated</span>
+<p>At k = 4 it reads the 29.0-year level with sd 1.965. The asymmetric square at w = p&#8312; reads
+<em>further</em> &mdash; 29.4 &mdash; for <b>3% less variance</b>. Sharpening the weight on the
+plain L2 criterion achieves everything the knot achieves, more cheaply. Its asymptotic variance is
+also monotone decreasing in k towards the pure-L2 limit, which it attains to five decimals by
+k = 64, so the interior optimum at k = 4 reported in Section 5.2 has <em>no asymptotic
+counterpart</em>: it is a finite-sample effect, consistent with the one-sided loss's unusually slow
+convergence in Table 2. Proposition 2's estimator should be presented as an n = 100 finding, not as
+a better functional.</p></div>
+
+<h3><span class="n">6.2</span>Shift, or widen?</h3>
+<div class="col">
+<p>Both, and the widening is what the single number hides. On GEV(0, 1, 0.2), maximum likelihood's
+kernel spans a factor of 24 in return period between its 10% and 90% points; the asymmetric square
+at w = p&#8310; spans 63, and at the sharpest weight tried, 116. Reaching further means reading less
+sharply, and an estimator averaging r&prime; over four decades while reporting one shape is exactly
+the situation penultimate theory warns about when r&prime; is not constant across the band.</p>
+
+<p>The exception is instructive. Fung's weighted likelihood reads the 43.5-year level &mdash;
+further than any composite estimator here &mdash; on a span of 30. Tilting a <em>likelihood</em>
+moves the reading point without smearing it; tilting a <em>loss</em> does both. We suspect this is
+the mechanism behind Section 5.6's efficiency result, where MWLE paid a 4&ndash;5% premium under
+correct specification against the composites' 12&ndash;32%. The pinball loss sits at the other
+extreme, with the narrowest kernel of anything examined (9 at a flat weight) and the least reach.
+Narrow-and-near, narrow-and-far, wide-and-far: the three are not three points on one dial.</p>
+
+<h3><span class="n">6.3</span>Is it cheaper than raising the threshold?</h3>
+<p>The comparison the construction exists to make. An estimator fitted above R = 4 that reads the
+tail at R<sub>e</sub> could be replaced by a hard threshold at R<sub>e</sub>, which would buy the
+same bias and discard most of the sample. Maximum likelihood has an effective threshold of its own
+&mdash; here R<sub>e</sub> &asymp; 3.6 R<sub>nominal</sub> &mdash; so the equal-bias competitor to a
+composite estimator at R<sub>e</sub> = 27.5 is maximum likelihood at a <em>nominal</em> threshold of
+7.7, not 27.5. Simulating on GEV(0, 1, 0.2) and matching on sampling standard deviation: at
+n = 5000 every composite estimator reaches its effective threshold for less variance than the
+threshold would need &mdash; the asymmetric square at w = p&sup2;&#8304; matches maximum likelihood
+at a nominal 12.4 against the 10.4 required for equal bias, 19% further out &mdash; and at n = 1000
+the ordering reverses.</p>
+
+<p>The n = 1000 reversal should not be read as a property of the method. At that size none of these
+estimators is near its asymptotic target: mean &xi;&#770; runs 0.140 to 0.158 against targets of
+0.177 to 0.189, so the matched-bias premise fails. At n = 5000 they are close (0.180 against 0.185)
+and the comparison means what it says. The practical consequence is uncomfortable and worth stating
+plainly: <b>the effective threshold is an asymptotic statement, and n = 100 &mdash; the sample size
+of Section 5 and of annual-maximum practice &mdash; is nowhere near where it becomes true.</b></p>
+
+<h3><span class="n">6.4</span>Two limits of the diagnostic</h3>
+<div class="note"><p><b>Non-monotone r&prime; leaves the number undefined.</b> LP3 &mdash;
+log X ~ Gamma(a, &beta;), whose penultimate shape converges only logarithmically,
+r&prime;(x) = &beta; + &beta;&sup2;(a&minus;1)/log x &mdash; has, at &beta; = 0.45, an r&prime; that
+rises from 0.459 at R = 4 to about 0.480 near R = 20 before decaying back over eight decades. The
+equation r&prime;(x) = &xi;* then has two roots for any target inside that window, and 51 of the 52
+estimator cells on those populations report multiple crossings. The kernel remains well defined;
+the summary number does not. Any effective-threshold table needs a monotonicity check attached.</p>
+<p><b>The linear representation holds only to about 5%.</b> &#8747;K = 1 is exact only if &xi;* is
+genuinely a linear functional of the local shapes. Measured, it is 0.99&ndash;1.01 for maximum
+likelihood and MWLE but 1.04&ndash;1.07 for every composite estimator, and the gap is the estimator
+rather than the quadrature: perturbing r&prime; by a constant c shifts &xi;* by 1.006c for maximum
+likelihood and 1.048c for the asymmetric square, the same number by an independent route. The
+kernel quantiles quoted above are renormalised accordingly, and are sound for reading location and
+width but not for arithmetic.</p></div>
+</div>
+</div>
+
+<h2><span class="n">7</span><span>Discussion</span></h2>
 <div class="col">
 <p>Tail-weighted composite losses do what they are designed to do. Under body misspecification of
 the kind that rain-on-snow catchments produce, they remove essentially all of the asymptotic bias
 that likelihood and L-moments incur, and the change from the pinball loss to the asymmetric square
 removes most of the variance penalty that made the L1 construction unattractive. The one-sided
-influence function of Proposition 2 is the most accurate far-tail member of the family, and it has
-the distinction of being derived from the obstacle rather than interpolated between two existing
-losses.</p>
+influence function of Proposition 2 is the most accurate far-tail member of the family at n = 100,
+and it has the distinction of being derived from the obstacle rather than interpolated between two
+existing losses &mdash; though Section 6.1 shows that advantage does not survive to the limit.</p>
 
-<p>Four qualifications should travel with that conclusion.</p>
+<p>Five qualifications should travel with that conclusion.</p>
 
 <p>First, what the method costs when nothing is wrong depends sharply on the setting, and the two
 correctly-specified studies here disagree. Fitting a GEV to block maxima it costs 12&ndash;32% in
@@ -783,6 +1025,19 @@ process in each family, and settling it needs a sweep over the shape, the sample
 of contamination. Any claim that a tail-weighted loss improves on tail-weighted likelihood should
 wait for that.</p>
 
+<p>Fifth, and most uncomfortably, two of our central finite-sample findings reverse
+asymptotically. The headline comparison of Section 5.2 is that the asymmetric square beats the
+pinball loss two- to six-fold on far-tail mean squared error at n = 100; but by Proposition 3, at
+matched weight and on a correctly specified GPD(0, 1, 0.2), the pinball loss has the <em>lower</em>
+asymptotic variance for the shape &mdash; 1.42 against 1.81 &mdash; and it is lower for every
+&xi; above about 0.06. And the interior optimum in the one-sided loss's knot disappears entirely
+in the limit, where its variance is monotone in k and the plain asymmetric square at a sharper
+weight dominates it (Section 6.1). Neither reversal invalidates the finite-sample results, which
+are what a hydrologist with a hundred annual maxima experiences. Both mean that the mechanism we
+have been attributing them to &mdash; a better functional &mdash; is wrong: what the asymmetric
+square and the knot buy at n = 100 is finite-sample stability, not asymptotic efficiency, and the
+paper should say so rather than let the reader infer otherwise.</p>
+
 <p>A further direction is the interaction with penultimate approximation. This paper takes the
 extreme-value family as exactly correct in the tail and asks only how to protect that fit from the
 body; penultimate theory says the family is never exactly correct at a finite level, and that the
@@ -811,7 +1066,7 @@ the sample maximum.</p>
 <p>Several other directions remain. The exponent of the loss can be varied continuously between one and
 two, giving the L<sup>a</sup>-quantiles; we found these dominated by the elastile on accuracy at
 every return period tested, but they are the only continuous path off the pinball loss that widens
-the admissible domain (Table 1), and are the natural recourse when &xi; is too large for the
+the admissible domain (Table 3), and are the natural recourse when &xi; is too large for the
 asymmetric square to have a limit distribution. The mixing weight &alpha; may be made a function of
 the level while remaining proper, though the oracle ceiling for doing so is small. And the sandwich
 variance of Section 2.2 gives analytic standard errors that we have not exploited; the near-flat
@@ -820,7 +1075,7 @@ over the tail-weighted region, which suggests a reparameterisation or a penalty 
 rather than a further change of loss.</p>
 </div>
 
-<h2><span class="n">7</span><span>References</span></h2>
+<h2><span class="n">8</span><span>References</span></h2>
 <ol class="refs">
 <li><b>Basu, A., Harris, I. R., Hjort, N. L. and Jones, M. C.</b> (1998). Robust and efficient
 estimation by minimising a density power divergence. <i>Biometrika</i> <b>85</b>, 549&ndash;559.</li>
